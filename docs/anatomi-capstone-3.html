@@ -1,0 +1,533 @@
+<title>Anatomi Capstone 3</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,600..800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: satu kolom baca panjang, seri yang sama dengan "Anatomi Clipper"; bab bernomor = urutan membangun aplikasi; kartu "asumsi" menggantikan "data nyata" sampai dataset datang */
+:root {
+  --bg: #F1F3F6; --surface: #FFFFFF; --surface-2: #E6EAF0; --fg: #141922; --muted: #566173; --line: #CDD4DE;
+  --accent: #D9481F; --qdrant: #C2185B; --llm: #0C8A7B; --obs: #94650F; --ui: #6A4FC9; --data: #2F5BD3;
+  --code-bg: #121820; --code-fg: #DCE4EE; --code-c: #8A97A8; --code-k: #FF9E7A;
+  --font-display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0E1218; --surface: #161B24; --surface-2: #1F2632; --fg: #E7EBF1; --muted: #9AA4B4; --line: #2C3442;
+  --accent: #FF7A55; --qdrant: #F06C9B; --llm: #3FD2BE; --obs: #E2B65E; --ui: #A894FF; --data: #82A2FF;
+  --code-bg: #0A0E13; --code-fg: #D6DEE8; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0E1218; --surface: #161B24; --surface-2: #1F2632; --fg: #E7EBF1; --muted: #9AA4B4; --line: #2C3442;
+  --accent: #FF7A55; --qdrant: #F06C9B; --llm: #3FD2BE; --obs: #E2B65E; --ui: #A894FF; --data: #82A2FF;
+  --code-bg: #0A0E13; --code-fg: #D6DEE8; color-scheme: dark; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 16px; line-height: 1.6; }
+.wrap { max-width: 62rem; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 2.5rem 5rem; }
+a { color: inherit; } a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+p { margin: 0; max-width: 68ch; }
+.eyebrow { font-family: var(--font-mono); font-size: .76rem; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--font-display); font-stretch: 115%; font-weight: 800; font-size: clamp(2.3rem, 7vw, 3.8rem); line-height: 1; letter-spacing: -.01em; margin: .5rem 0 1rem; text-wrap: balance; }
+h2 { font-family: var(--font-display); font-stretch: 112%; font-weight: 700; font-size: 1.7rem; line-height: 1.1; margin: 0; text-wrap: balance; }
+h3 { font-weight: 600; font-size: 1.12rem; margin: 0; line-height: 1.3; text-wrap: balance; }
+h4 { font-family: var(--font-mono); font-weight: 500; font-size: .78rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.lead { color: var(--muted); font-size: 1.1rem; }
+em.t { font-style: normal; font-family: var(--font-mono); font-size: .9em; }
+code { font-family: var(--font-mono); font-size: .86em; background: var(--surface-2); padding: .05rem .3rem; border-radius: 4px; }
+pre.code { font-family: var(--font-mono); font-size: .78rem; line-height: 1.55; background: var(--code-bg); color: var(--code-fg); padding: .9rem 1rem; border-radius: 8px; overflow-x: auto; margin: 0; white-space: pre; }
+pre.code .c { color: var(--code-c); } pre.code .k { color: var(--code-k); }
+.toc { margin-top: 1.8rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: .3rem 1.5rem; padding: 1rem 1.2rem; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.toc a { text-decoration: none; display: grid; grid-template-columns: 2rem minmax(0,1fr); font-size: .92rem; padding: .15rem 0; }
+.toc a span:first-child { font-family: var(--font-mono); color: var(--muted); font-size: .8rem; padding-top: .1rem; }
+.toc a:hover span:last-child { color: var(--accent); }
+.tiles { margin-top: 1.6rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 10.5rem), 1fr)); gap: .6rem; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: .8rem .9rem; display: grid; gap: .15rem; align-content: start; }
+.tile b { font-family: var(--font-display); font-stretch: 110%; font-size: 1.55rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.tile span { font-size: .8rem; color: var(--muted); line-height: 1.35; }
+.banner { margin-top: 1.2rem; border: 1px dashed var(--accent); border-radius: 10px; padding: .8rem 1rem; font-size: .92rem; background: color-mix(in srgb, var(--accent) 6%, var(--surface)); }
+.chap { margin-top: 4rem; display: grid; gap: 1.1rem; scroll-margin-top: 1rem; }
+.chap-head { display: grid; grid-template-columns: auto minmax(0,1fr); gap: .1rem 1rem; align-items: end; padding-bottom: .8rem; border-bottom: 2px solid var(--fg); }
+.chap-no { font-family: var(--font-display); font-stretch: 125%; font-weight: 800; font-size: 2.8rem; line-height: .85; color: var(--accent); font-variant-numeric: tabular-nums; }
+.sub { display: grid; gap: .7rem; margin-top: .6rem; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: .8rem; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.1rem; display: grid; gap: .55rem; align-content: start; min-width: 0; }
+.card p, .card li { font-size: .94rem; }
+.card ul, .card ol { margin: 0; padding-left: 1.15rem; display: grid; gap: .3rem; }
+.asm { border-left: 3px solid var(--data); } .asm h4 { color: var(--data); }
+.jc { border-left: 3px solid var(--ui); } .jc h4 { color: var(--ui); }
+.warn { border-left: 3px solid var(--accent); } .warn h4 { color: var(--accent); }
+.case-imdb { border-top: 4px solid var(--llm); } .case-imdb h3 { color: var(--llm); }
+.case-res { border-top: 4px solid var(--qdrant); } .case-res h3 { color: var(--qdrant); }
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .87rem; min-width: 38rem; }
+th, td { text-align: left; padding: .5rem .75rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--font-mono); font-weight: 500; font-size: .7rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); }
+tr:last-child td { border-bottom: 0; }
+td.n, th.n { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tag { display: inline-block; font-family: var(--font-mono); font-size: .7rem; padding: .05rem .45rem; border-radius: 999px; white-space: nowrap; }
+.tag.lock { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); }
+.tag.free { background: color-mix(in srgb, var(--llm) 15%, transparent); color: var(--llm); }
+.tag.opt { background: var(--surface-2); color: var(--muted); }
+.tag.tbd { background: color-mix(in srgb, var(--data) 15%, transparent); color: var(--data); }
+.diagram { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1rem; overflow-x: auto; }
+.diagram pre.mermaid { margin: 0; display: flex; justify-content: center; min-width: 36rem; }
+.cap { font-size: .82rem; color: var(--muted); }
+.tree { font-family: var(--font-mono); font-size: .8rem; line-height: 1.6; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: .9rem 1rem; overflow-x: auto; white-space: pre; margin: 0; }
+.tree .d { color: var(--muted); }
+.stack { display: flex; height: 2.2rem; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); }
+.stack span { display: block; height: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: .35rem 1rem; font-size: .8rem; color: var(--muted); }
+.legend i { display: inline-block; width: .75rem; height: .75rem; border-radius: 2px; margin-right: .35rem; vertical-align: -1px; }
+.c-ui { background: var(--ui); } .c-llm { background: var(--llm); } .c-q { background: var(--qdrant); } .c-obs { background: var(--obs); } .c-data { background: var(--data); } .c-ac { background: var(--accent); } .c-mu { background: color-mix(in srgb, var(--muted) 45%, var(--surface)); }
+.scale { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: .7rem; color: var(--muted); margin-top: .25rem; }
+.check { list-style: none; padding-left: 0 !important; }
+.check li { display: grid; grid-template-columns: 1.4rem minmax(0,1fr); gap: .2rem; }
+.check li::before { content: "☐"; font-family: var(--font-mono); color: var(--muted); }
+.foot { margin-top: 4rem; padding-top: 1rem; border-top: 1px solid var(--line); font-size: .84rem; color: var(--muted); display: grid; gap: .4rem; }
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">Draft arsitektur · JCAIEH Module 3 · disusun 21 Oktober 2026 · dataset belum diterima</div>
+  <h1>Anatomi Capstone 3</h1>
+  <p class="lead">Rancangan sementara aplikasi agentic RAG untuk capstone Module 3: data masuk ke Qdrant Cloud, agent memilih tool, prompt dan trace tersimpan di Langfuse, semuanya dibungkus Streamlit. Satu arsitektur untuk dua kemungkinan kasus, IMDB atau Resume, sampai dataset datang besok.</p>
+  <div class="banner"><b>Status: tentatif.</b> Semua yang ditandai <span class="tag tbd">asumsi</span> harus dicek ulang setelah dataset dari Purwadhika diterima. Kutipan ketentuan diambil dari transkrip kelas exercise (JCAIEAH-005), jadi bisa ada salah dengar.</div>
+  <div class="tiles">
+    <div class="tile"><b>1</b><span>kasus yang perlu dipilih (IMDB atau Resume)</span></div>
+    <div class="tile"><b>3</b><span>stack yang tidak boleh diganti: Qdrant, Streamlit, Langfuse</span></div>
+    <div class="tile"><b>5</b><span>komponen wajib: ingestion, RAG tool, tool lain, agent, UI</span></div>
+    <div class="tile"><b>7–15</b><span>menit durasi video penjelasan</span></div>
+    <div class="tile"><b>10 Nov</b><span>deadline, pukul 23:59 WIB</span></div>
+    <div class="tile"><b>20</b><span>hari kalender dari hari ini sampai deadline</span></div>
+  </div>
+  <nav class="toc" aria-label="Daftar isi">
+    <a href="#kasus"><span>01</span><span>Pilih kasus: satu cukup</span></a>
+    <a href="#stack"><span>02</span><span>Stack: wajib vs bebas</span></a>
+    <a href="#alur"><span>03</span><span>Cara kerja dari 4 dimensi</span></a>
+    <a href="#ingest"><span>04</span><span>Ingestion ke Qdrant</span></a>
+    <a href="#tools"><span>05</span><span>Tools: RAG dan non-RAG</span></a>
+    <a href="#agent"><span>06</span><span>Agent: loop ReAct</span></a>
+    <a href="#langfuse"><span>07</span><span>Langfuse: prompt dan trace</span></a>
+    <a href="#ui"><span>08</span><span>Streamlit: chat, tool call, usage</span></a>
+    <a href="#ship"><span>09</span><span>Repo, secret, deploy</span></a>
+    <a href="#plan"><span>10</span><span>Jadwal sampai 10 November</span></a>
+    <a href="#video"><span>11</span><span>Video dan checklist penilaian</span></a>
+    <a href="#open"><span>12</span><span>Pertanyaan yang dijawab besok</span></a>
+  </nav>
+</header>
+
+<!-- 01 -->
+<section class="chap" id="kasus">
+  <div class="chap-head"><div class="chap-no">01</div><div><h4>Keputusan pertama</h4><h2>Pilih kasus: satu cukup</h2></div></div>
+  <p>Kata Pak Herman di kelas: <i>"Salah satunya aja, gak perlu pakai dua-duanya. Tapi kalau pengen pakai dua-duanya gak apa-apa, cuman bakal lebih kompleks dan gak nyambung. Satunya HR, satunya film."</i> Memakai keduanya tidak menambah syarat yang terpenuhi, hanya menambah kerja dan membuat pitch ke "C-level" jadi tidak fokus. Rekomendasi: <b>pilih satu</b>.</p>
+  <div class="grid2">
+    <div class="card case-imdb">
+      <h3>Opsi A · IMDB Movie</h3>
+      <p><b>Pitch:</b> asisten rekomendasi film. User cukup menceritakan selera ("film tentang balas dendam yang lambat tapi menegangkan"), agent mencarikan dan menjelaskan.</p>
+      <ul>
+        <li>Kolom terstruktur banyak (tahun, genre, rating, metascore, durasi, sutradara, pemain, gross), jadi mudah membuat tool non-RAG: statistik, filter, perbandingan.</li>
+        <li>Kata Pak Herman: cocok kalau ingin "punya banyak tools".</li>
+        <li><code>Overview</code> pendek (satu paragraf), jadi chunking hampir tidak perlu: 1 film = 1 vektor.</li>
+        <li>Ada link poster, sehingga UI Streamlit bisa tampil bagus (nilai tambah UI).</li>
+      </ul>
+    </div>
+    <div class="card case-res">
+      <h3>Opsi B · Resume (HR)</h3>
+      <p><b>Pitch:</b> asisten rekruter. HR menulis kebutuhan posisi, agent mencari kandidat yang cocok, merangkum, dan menjawab pertanyaan seperti ekspektasi gaji.</p>
+      <ul>
+        <li>Cerita bisnisnya kuat untuk presentasi: menghemat waktu screening CV.</li>
+        <li>Teks CV panjang, jadi chunking benar-benar dibutuhkan dan konsep RAG lebih terlihat.</li>
+        <li>Kata Pak Herman: "lebih menantang". Contoh repo tutor justru memakai kasus ini (<code>search_resume</code>), jadi referensinya ada tapi risiko terlihat "mirip contoh" lebih besar.</li>
+        <li>Tool filter (kota, kategori, gaji) bergantung pada kolom terstruktur yang belum diketahui.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card warn"><h4>Kecenderungan sementara</h4><p><b>IMDB</b>, karena kolom terstrukturnya memberi tool non-RAG yang jelas dan UI yang mudah dibuat menarik dengan effort yang sama. Keputusan berubah ke <b>Resume</b> kalau dataset Resume ternyata punya kolom terstruktur (kota, gaji, pengalaman) yang memungkinkan filter, karena pitch bisnisnya lebih kuat. Diputuskan besok setelah EDA singkat kedua dataset (bab 12).</p></div>
+</section>
+
+<!-- 02 -->
+<section class="chap" id="stack">
+  <div class="chap-head"><div class="chap-no">02</div><div><h4>Komponen</h4><h2>Stack: wajib vs bebas</h2></div></div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Fungsi</th><th>Pilihan tentatif</th><th>Status</th><th>Catatan dari kelas</th></tr></thead>
+    <tbody>
+      <tr><td>Vector database</td><td><b>Qdrant Cloud</b> (free tier)</td><td><span class="tag lock">wajib</span></td><td>Tutor bisa diberi API key + URL untuk melihat isi collection, tanpa perlu akun.</td></tr>
+      <tr><td>Antarmuka</td><td><b>Streamlit</b>, deploy ke Streamlit Community Cloud</td><td><span class="tag lock">wajib</span></td><td>Satu app, memanggil agent langsung. FastAPI dan Docker baru untuk final project.</td></tr>
+      <tr><td>Prompt management + tracing</td><td><b>Langfuse</b> (cloud)</td><td><span class="tag lock">wajib</span></td><td>Semua prompt di Langfuse, tidak ada hardcode. Pakai API baru <code>get_client()</code>.</td></tr>
+      <tr><td>Framework agent</td><td>LangChain + LangGraph</td><td><span class="tag free">bebas</span></td><td>Boleh diganti (misalnya Pydantic AI), tapi contoh kelas memakai LangGraph.</td></tr>
+      <tr><td>LLM</td><td>Lewat OpenRouter, model dipilih setelah uji coba</td><td><span class="tag free">bebas</span></td><td>Tidak harus OpenAI. Model harus mendukung tool calling.</td></tr>
+      <tr><td>Embedding</td><td>Lewat OpenRouter, misalnya <code>text-embedding-3-small</code> (1536 dimensi)</td><td><span class="tag free">bebas</span></td><td>Pak Herman menyarankan OpenRouter supaya LLM, embedding, dan reranker di satu tempat.</td></tr>
+      <tr><td>Reranker</td><td>Tahap kedua kalau waktu cukup</td><td><span class="tag opt">opsional</span></td><td>"Reranker bukan hal wajib."</td></tr>
+      <tr><td>DB tambahan</td><td>Tidak dipakai dulu (pandas di memori cukup untuk statistik)</td><td><span class="tag opt">opsional</span></td><td>SQLite/Postgres boleh. Text-to-SQL (Sesi 16) bisa jadi tool tambahan.</td></tr>
+      <tr><td>Paket Python</td><td>Poetry, Python 3.11</td><td><span class="tag free">bebas</span></td><td>Kelas menjalankan dengan <code>poetry run streamlit run ...</code>.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 03 -->
+<section class="chap" id="alur">
+  <div class="chap-head"><div class="chap-no">03</div><div><h4>Arsitektur</h4><h2>Cara kerja dari 4 dimensi</h2></div></div>
+  <p>Aplikasi ini punya dua fase yang terpisah total. <b>Fase offline</b> dijalankan sekali: data dibersihkan, diubah jadi vektor, dan disimpan di Qdrant. <b>Fase online</b> berjalan setiap kali user bertanya: agent membaca pertanyaan, memilih tool, dan menyusun jawaban.</p>
+
+  <div class="sub"><h3>Dimensi 1 · Data flow: offline vs online</h3>
+  <div class="diagram"><pre class="mermaid">
+flowchart LR
+  subgraph OFF["Fase offline: sekali jalan"]
+    CSV["dataset.csv"] --> CLEAN["ingest.py: bersihkan kolom, susun teks"]
+    CLEAN --> CHUNK["chunking (kalau teks panjang)"]
+    CHUNK --> EMB["embedding API"]
+    EMB --> QD[("Qdrant Cloud: collection + payload")]
+  end
+  subgraph ON["Fase online: tiap pertanyaan"]
+    U["User di Streamlit"] --> AG["agent.py: ReAct agent"]
+    LFP[("Langfuse: system prompt")] --> AG
+    AG --> T1["RAG tool"]
+    AG --> T2["tool non-RAG"]
+    T1 --> QD
+    T2 --> DF[("data terstruktur: pandas/SQLite")]
+    AG --> ANS["jawaban + tool call + usage"]
+    ANS --> U
+    AG -.trace.-> LFT[("Langfuse: trace")]
+  end
+  </pre></div>
+  <p class="cap">Fase offline bisa ditulis sebagai script atau notebook (.ipynb); Pak Herman membolehkan notebook khusus untuk bagian ini.</p></div>
+
+  <div class="sub"><h3>Dimensi 2 · Decision flow: siapa memutuskan apa</h3>
+  <div class="diagram"><pre class="mermaid">
+sequenceDiagram
+  participant U as User
+  participant S as Streamlit
+  participant A as Agent
+  participant L as LLM
+  participant T as Tools
+  participant Q as Qdrant
+  participant F as Langfuse
+  S->>F: ambil system prompt (sekali, di-cache)
+  U->>S: pertanyaan
+  S->>A: riwayat pesan + pertanyaan baru
+  A->>L: pesan + daftar tool
+  L-->>A: "panggil search_movies(query, genre)"
+  A->>T: jalankan tool
+  T->>Q: query_points(vektor, filter)
+  Q-->>T: 5 hasil + payload
+  T-->>A: hasil dalam teks
+  A->>L: hasil tool
+  L-->>A: jawaban final
+  A-->>S: pesan + tool call + usage token
+  A-->>F: trace satu run
+  S-->>U: tampilkan
+  </pre></div>
+  <p class="cap">LLM hanya memutuskan <b>tool mana</b> dan <b>argumennya</b>. Pencarian, filter, dan hitungan statistik dikerjakan kode. Prinsipnya sama dengan Clipper: LLM mengusulkan, kode memutuskan.</p></div>
+
+  <div class="sub"><h3>Dimensi 3 · Struktur repo (modular, sesuai arahan kelas)</h3>
+<pre class="tree">capstone-3/
+├── README.md              <span class="d"># diagram alur, install, env, cara run, contoh query</span>
+├── pyproject.toml         <span class="d"># dependensi Poetry</span>
+├── .env.example           <span class="d"># nama variabel saja, tanpa nilai</span>
+├── .gitignore             <span class="d"># .env, .venv, data mentah besar</span>
+├── data/                  <span class="d"># dataset dari Purwadhika</span>
+├── scripts/
+│   └── ingest.py          <span class="d"># fase offline: CSV → chunk → embedding → Qdrant</span>
+├── app/
+│   ├── config.py          <span class="d"># baca env var, satu tempat</span>
+│   ├── clients.py         <span class="d"># klien Qdrant, LLM, embedding, Langfuse</span>
+│   ├── tools.py           <span class="d"># semua @tool</span>
+│   └── agent.py           <span class="d"># bangun agent + fungsi run_agent()</span>
+└── streamlit_app.py       <span class="d"># UI saja, memanggil app.agent</span></pre>
+  <p class="cap">Arahan Pak Herman: file Streamlit hanya untuk front end, agent di file Python terpisah, dan modul yang di-import tidak boleh berisi <code>if __name__ == "__main__"</code> yang menjalankan sesuatu.</p></div>
+
+  <div class="sub"><h3>Dimensi 4 · Di mana setiap bagian berjalan</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Bagian</th><th>Berjalan di</th><th>Dipanggil kapan</th><th>Biaya</th></tr></thead>
+    <tbody>
+      <tr><td>ingest.py</td><td>Laptop sendiri</td><td>Sekali, atau saat data berubah</td><td>Embedding seluruh dataset (sekali)</td></tr>
+      <tr><td>Streamlit + agent + tools</td><td>Streamlit Community Cloud</td><td>Tiap pertanyaan</td><td>Gratis</td></tr>
+      <tr><td>LLM + embedding query</td><td>OpenRouter (API)</td><td>Tiap pertanyaan, 1 sampai beberapa kali</td><td>Per token</td></tr>
+      <tr><td>Vector search</td><td>Qdrant Cloud</td><td>Tiap pemanggilan RAG tool</td><td>Free tier</td></tr>
+      <tr><td>Prompt + trace</td><td>Langfuse Cloud</td><td>Prompt saat start, trace tiap run</td><td>Free tier</td></tr>
+    </tbody>
+  </table></div></div>
+  <div class="card jc"><h4>Kaitan JCAIEH</h4><p>M3 Sesi 09 <b>Intro to LangChain</b>, Sesi 10 <b>Single ReAct Agent</b>, Sesi 12 <b>Vector Database</b>, Sesi 13 <b>RAG</b>, Sesi 14 <b>Agentic RAG</b>, Sesi 17 <b>LLM Observability</b>. M1 Sesi 08 <b>Modular Programming</b> untuk struktur repo.</p></div>
+</section>
+
+<!-- 04 -->
+<section class="chap" id="ingest">
+  <div class="chap-head"><div class="chap-no">04</div><div><h4>Fase offline</h4><h2>Ingestion ke Qdrant</h2></div></div>
+  <div class="grid2">
+    <div class="card"><h4>Langkah</h4><ol>
+      <li><b>Load + bersihkan</b> dengan pandas: ubah <code>Runtime</code> "142 min" jadi angka, <code>Gross</code> "28,341,469" jadi angka, isi nilai kosong.</li>
+      <li><b>Susun teks yang di-embed</b>: gabungkan kolom yang bermakna semantik (judul, genre, overview, sutradara, pemain) jadi satu string. Angka tidak perlu di-embed; angka disimpan di payload.</li>
+      <li><b>Chunking</b>: IMDB tidak perlu (overview pendek). Resume perlu, misalnya ±800 karakter dengan overlap ±100, dan setiap chunk membawa <code>resume_id</code> di payload.</li>
+      <li><b>Embedding</b> per batch (misalnya 100 teks per request) supaya cepat dan tidak kena rate limit.</li>
+      <li><b>Upsert</b> ke collection Qdrant: <em class="t">vector</em> + <em class="t">payload</em> (semua kolom asli).</li>
+      <li><b>Payload index</b> untuk kolom yang akan difilter (genre, tahun, rating; atau kategori, kota).</li>
+    </ol></div>
+    <div class="card"><h4>Kode inti (sketsa)</h4>
+<pre class="code"><span class="k">from</span> qdrant_client <span class="k">import</span> QdrantClient, models
+
+qdrant = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+
+qdrant.create_collection(
+    collection_name=<span class="k">"movies"</span>,
+    vectors_config=models.VectorParams(
+        size=<span class="k">1536</span>,                      <span class="c"># = dimensi model embedding</span>
+        distance=models.Distance.COSINE, <span class="c"># Sesi 01: cosine similarity</span>
+    ),
+)
+
+qdrant.upsert(
+    collection_name=<span class="k">"movies"</span>,
+    points=[
+        models.PointStruct(id=i, vector=vec, payload=row)
+        <span class="k">for</span> i, (vec, row) <span class="k">in</span> enumerate(zip(vectors, rows))
+    ],
+)
+
+qdrant.create_payload_index(
+    <span class="k">"movies"</span>, field_name=<span class="k">"genres"</span>,
+    field_schema=models.PayloadSchemaType.KEYWORD,
+)</pre></div>
+  </div>
+  <div class="card asm"><h4>Asumsi · skema dataset</h4>
+    <p><span class="tag tbd">asumsi</span> <b>IMDB</b>: dari kolom yang disebut di kelas (poster link, series title, runtime, overview, metascore, bintang), kemungkinan besar dataset <i>IMDB Top 1000</i>: <code>Poster_Link, Series_Title, Released_Year, Certificate, Runtime, Genre, IMDB_Rating, Overview, Meta_score, Director, Star1–4, No_of_Votes, Gross</code>.</p>
+    <p><span class="tag tbd">asumsi</span> <b>Resume</b>: belum diketahui. Kelas menyebut ekspektasi gaji dan kota, jadi mungkin ada kolom terstruktur selain teks CV. Ini yang paling menentukan desain tool Opsi B.</p>
+  </div>
+  <div class="card jc"><h4>Kaitan JCAIEH</h4><p>M3 Sesi 01 <b>cosine similarity</b>, Sesi 06 <b>embedding OpenAI</b> dan chunking RAG, Sesi 12 <b>Vector Database</b>. M1 Sesi 12 <b>Pandas</b> untuk pembersihan data.</p></div>
+</section>
+
+<!-- 05 -->
+<section class="chap" id="tools">
+  <div class="chap-head"><div class="chap-no">05</div><div><h4>Kemampuan agent</h4><h2>Tools: RAG dan non-RAG</h2></div></div>
+  <p>Ketentuannya: minimal satu tool yang <b>retrieve dari Qdrant</b>, plus tool lain yang bukan RAG. Docstring setiap tool ikut dikirim ke LLM sebagai deskripsi, jadi docstring yang jelas menentukan apakah agent memilih tool yang benar.</p>
+  <div class="grid2">
+    <div class="card case-imdb"><h3>Opsi A · IMDB</h3>
+      <div class="tablewrap"><table style="min-width:0">
+        <thead><tr><th>Tool</th><th>Jenis</th><th>Contoh pertanyaan</th></tr></thead>
+        <tbody>
+          <tr><td><code>search_movies</code></td><td>RAG + filter</td><td>"Film thriller psikologis setelah 2000"</td></tr>
+          <tr><td><code>get_movie_detail</code></td><td>lookup</td><td>"Siapa pemain The Prestige?"</td></tr>
+          <tr><td><code>movie_stats</code></td><td>statistik</td><td>"Rata-rata rating film Nolan"</td></tr>
+          <tr><td><code>top_movies</code></td><td>ranking</td><td>"5 film drama dengan gross tertinggi"</td></tr>
+          <tr><td><code>compare_movies</code></td><td>bonus</td><td>"Bandingkan Inception dan Interstellar"</td></tr>
+        </tbody>
+      </table></div></div>
+    <div class="card case-res"><h3>Opsi B · Resume</h3>
+      <div class="tablewrap"><table style="min-width:0">
+        <thead><tr><th>Tool</th><th>Jenis</th><th>Contoh pertanyaan</th></tr></thead>
+        <tbody>
+          <tr><td><code>search_candidates</code></td><td>RAG + filter</td><td>"Data analyst yang paham SQL dan Tableau"</td></tr>
+          <tr><td><code>get_resume</code></td><td>lookup</td><td>"Tampilkan CV kandidat 1042"</td></tr>
+          <tr><td><code>filter_candidates</code></td><td>filter</td><td>"Kandidat di Jakarta, maks 10 juta"</td></tr>
+          <tr><td><code>candidate_stats</code></td><td>statistik</td><td>"Rata-rata ekspektasi gaji per kategori"</td></tr>
+          <tr><td><code>score_match</code></td><td>bonus</td><td>"Nilai kecocokan kandidat ini dengan JD"</td></tr>
+        </tbody>
+      </table></div></div>
+  </div>
+  <div class="card"><h4>Bentuk RAG tool (sketsa, kasus IMDB)</h4>
+<pre class="code"><span class="k">from</span> langchain_core.tools <span class="k">import</span> tool
+
+@tool
+<span class="k">def</span> search_movies(query: str, genre: str | None = None,
+                  min_rating: float | None = None, limit: int = <span class="k">5</span>) -> str:
+    <span class="k">"""Cari film berdasarkan deskripsi cerita, suasana, atau tema.
+    Pakai ini kalau user menjelaskan selera, bukan menyebut judul."""</span>
+    must = []
+    <span class="k">if</span> genre:
+        must.append(models.FieldCondition(key=<span class="k">"genres"</span>, match=models.MatchValue(value=genre)))
+    <span class="k">if</span> min_rating:
+        must.append(models.FieldCondition(key=<span class="k">"rating"</span>, range=models.Range(gte=min_rating)))
+
+    hits = qdrant.query_points(
+        collection_name=<span class="k">"movies"</span>,
+        query=embed(query),                                 <span class="c"># vektor pertanyaan</span>
+        query_filter=models.Filter(must=must) <span class="k">if</span> must <span class="k">else</span> None,
+        limit=limit,
+    ).points
+    <span class="k">return</span> format_hits(hits)                               <span class="c"># teks ringkas untuk LLM</span></pre>
+  <p class="cap">Gabungan vektor + filter payload disebut <em class="t">filtered vector search</em>: makna dicari lewat vektor, syarat pasti (genre, rating) lewat filter.</p></div>
+</section>
+
+<!-- 06 -->
+<section class="chap" id="agent">
+  <div class="chap-head"><div class="chap-no">06</div><div><h4>Orkestrasi</h4><h2>Agent: loop ReAct</h2></div></div>
+  <div class="grid2">
+    <div class="card"><h4>Cara kerja ReAct</h4>
+      <p><b>Re</b>ason + <b>Act</b>: LLM berpikir, memanggil tool, membaca hasilnya, lalu memutuskan lagi, sampai bisa menjawab tanpa tool.</p>
+      <div class="diagram" style="padding:.5rem"><pre class="mermaid">
+flowchart TD
+  Q["pesan user"] --> M["LLM + daftar tool"]
+  M -->|"ada tool_call"| X["jalankan tool"]
+  X --> M
+  M -->|"tidak ada tool_call"| R["jawaban final"]
+      </pre></div></div>
+    <div class="card"><h4>Kode inti (sketsa)</h4>
+<pre class="code"><span class="k">from</span> langchain.agents <span class="k">import</span> create_agent
+<span class="k">from</span> langfuse <span class="k">import</span> get_client
+<span class="k">from</span> langfuse.langchain <span class="k">import</span> CallbackHandler
+
+langfuse = get_client()
+system_prompt = langfuse.get_prompt(<span class="k">"movie-agent-system"</span>).compile()
+
+agent = create_agent(
+    model=llm,
+    tools=[search_movies, get_movie_detail, movie_stats, top_movies],
+    system_prompt=system_prompt,
+)
+
+<span class="k">def</span> run_agent(messages: list) -> dict:
+    <span class="k">return</span> agent.invoke(
+        {<span class="k">"messages"</span>: messages},
+        config={<span class="k">"callbacks"</span>: [CallbackHandler()]},  <span class="c"># trace ke Langfuse</span>
+    )</pre></div>
+  </div>
+  <div class="card warn"><h4>Yang harus dicek di slide Sesi 10</h4><p>Di transkrip, Pak Herman meminta agent "diubah ke create react agent, bukan create agent lagi". Di LangChain/LangGraph terbaru justru sebaliknya: <code>langgraph.prebuilt.create_react_agent</code> sudah digantikan <code>langchain.agents.create_agent</code>. Kemungkinan salah dengar di transkrip. Pilih yang sesuai slide dan versi library yang terpasang, lalu siapkan satu kalimat alasannya untuk video. Agent supervisor (multi-agent, Sesi 15) boleh, tapi tidak wajib.</p></div>
+</section>
+
+<!-- 07 -->
+<section class="chap" id="langfuse">
+  <div class="chap-head"><div class="chap-no">07</div><div><h4>Observability</h4><h2>Langfuse: prompt dan trace</h2></div></div>
+  <div class="grid2">
+    <div class="card"><h4>1 · Prompt management</h4><ul>
+      <li>System prompt agent dibuat di Langfuse dengan nama tetap, misalnya <code>movie-agent-system</code>, label <code>production</code>.</li>
+      <li>Kode hanya memanggil <code>get_prompt(nama)</code>. Mengganti prompt tidak perlu deploy ulang, dan setiap versi tercatat.</li>
+      <li>Prompt lain (misalnya untuk tool <code>score_match</code> atau reranker berbasis LLM) juga disimpan di Langfuse. Syaratnya: <b>tidak ada prompt hardcode</b> di repo.</li>
+      <li>Isi prompt: role, daftar tool dan kapan dipakai, aturan jawaban (bahasa, format, jangan mengarang di luar hasil tool). Struktur dari Sesi 08.</li>
+    </ul></div>
+    <div class="card"><h4>2 · Tracing</h4><ul>
+      <li><code>CallbackHandler</code> mengirim setiap run agent ke Langfuse: pesan, setiap pemanggilan LLM, setiap tool call beserta argumen dan hasil, token, latensi, dan biaya.</li>
+      <li>Trace dikaitkan ke <em class="t">session id</em> Streamlit supaya satu percakapan terlihat utuh.</li>
+      <li>Saat demo video: tunjukkan satu trace di dashboard Langfuse setelah bertanya di Streamlit.</li>
+    </ul></div>
+  </div>
+  <div class="card asm"><h4>Prompt caching: perlu atau tidak?</h4><p>Dari tanya-jawab di kelas: caching Anthropic baru aktif kalau prompt yang di-cache melewati batas minimum token (1.024 sampai 4.096 tergantung model), dan yang cocok di-cache hanya system prompt karena isinya selalu sama. System prompt capstone kemungkinan jauh di bawah batas itu, jadi caching <b>tidak perlu</b> untuk capstone ini.</p></div>
+  <div class="card jc"><h4>Kaitan JCAIEH</h4><p>M3 Sesi 08 <b>Prompt Engineering</b> (anatomi system prompt, prompt caching) dan Sesi 17 <b>LLM Observability</b>.</p></div>
+</section>
+
+<!-- 08 -->
+<section class="chap" id="ui">
+  <div class="chap-head"><div class="chap-no">08</div><div><h4>Front end</h4><h2>Streamlit: chat, tool call, usage</h2></div></div>
+  <p>Tiga hal yang disebut Pak Herman harus ada di contoh Streamlit: <b>chat history</b>, <b>tool call</b>, dan <b>usage detail</b>.</p>
+  <div class="grid2">
+    <div class="card"><h4>Susunan layar</h4><ul>
+      <li><b>Sidebar</b>: nama aplikasi, contoh pertanyaan yang bisa diklik, tombol reset percakapan, ringkasan token dan biaya sesi.</li>
+      <li><b>Area chat</b>: <code>st.chat_message</code> untuk setiap pesan, disimpan di <code>st.session_state.messages</code> supaya tidak hilang saat Streamlit rerun.</li>
+      <li><b>Di bawah tiap jawaban</b>: <code>st.expander("Tool calls")</code> berisi nama tool, argumen, dan cuplikan hasil; lalu baris kecil token input/output.</li>
+      <li><b>Nilai tambah IMDB</b>: kartu film dengan poster dari <code>Poster_Link</code> (<code>st.image</code>).</li>
+    </ul></div>
+    <div class="card"><h4>Kode inti (sketsa)</h4>
+<pre class="code"><span class="k">import</span> streamlit <span class="k">as</span> st
+<span class="k">from</span> app.agent <span class="k">import</span> run_agent
+
+<span class="k">if</span> <span class="k">"messages"</span> <span class="k">not in</span> st.session_state:
+    st.session_state.messages = []
+
+<span class="k">for</span> m <span class="k">in</span> st.session_state.messages:          <span class="c"># chat history</span>
+    st.chat_message(m[<span class="k">"role"</span>]).write(m[<span class="k">"content"</span>])
+
+<span class="k">if</span> q := st.chat_input(<span class="k">"Ceritakan film yang kamu suka..."</span>):
+    st.session_state.messages.append({<span class="k">"role"</span>: <span class="k">"user"</span>, <span class="k">"content"</span>: q})
+    result = run_agent(st.session_state.messages)
+    final = result[<span class="k">"messages"</span>][-<span class="k">1</span>]
+    <span class="c"># tool call: AIMessage.tool_calls + ToolMessage di result["messages"]</span>
+    <span class="c"># usage: AIMessage.usage_metadata -> input_tokens, output_tokens</span></pre></div>
+  </div>
+</section>
+
+<!-- 09 -->
+<section class="chap" id="ship">
+  <div class="chap-head"><div class="chap-no">09</div><div><h4>Pengumpulan</h4><h2>Repo, secret, deploy</h2></div></div>
+  <div class="grid2">
+    <div class="card"><h4>Environment variable</h4>
+<pre class="code"><span class="c"># .env.example (yang di-commit hanya file ini)</span>
+OPENROUTER_API_KEY=
+LLM_MODEL=
+EMBEDDING_MODEL=
+QDRANT_URL=
+QDRANT_API_KEY=
+QDRANT_COLLECTION=
+LANGFUSE_PUBLIC_KEY=
+LANGFUSE_SECRET_KEY=
+LANGFUSE_HOST=</pre>
+      <p class="cap">Di Streamlit Cloud, nilai yang sama diisi lewat menu <b>Secrets</b>, bukan dari file <code>.env</code>.</p></div>
+    <div class="card"><h4>Aturan pengumpulan</h4><ul class="check">
+      <li>Repo GitHub <b>publik</b>, <code>.env</code> tidak pernah ter-commit (cek <code>git log</code> sebelum publish).</li>
+      <li>App Streamlit Cloud bisa dibuka tutor.</li>
+      <li>API key Qdrant <b>read-only</b> disiapkan kalau tutor ingin melihat isi collection.</li>
+      <li>Video di Google Drive atau YouTube, link publik.</li>
+      <li>Semua link dikirim lewat Google Form dari tim operasional.</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- 10 -->
+<section class="chap" id="plan">
+  <div class="chap-head"><div class="chap-no">10</div><div><h4>Jadwal</h4><h2>Jadwal sampai 10 November</h2></div></div>
+  <p>Module 4 (Computer Vision) berjalan paralel sampai ±5 November, jadi jadwal ini menyisakan 2 hari cadangan sebelum deadline.</p>
+  <div class="card">
+    <div class="stack" role="img" aria-label="22 Oktober persiapan, 23 sampai 25 Oktober ingestion dan tools, 26 sampai 29 Oktober agent dan Langfuse, 30 Oktober sampai 2 November Streamlit dan deploy, 3 sampai 5 November README dan pengujian, 6 sampai 8 November video, 9 sampai 10 November cadangan">
+      <span class="c-data" style="width:5%"></span><span class="c-q" style="width:15%"></span><span class="c-llm" style="width:20%"></span><span class="c-ui" style="width:20%"></span><span class="c-obs" style="width:15%"></span><span class="c-ac" style="width:15%"></span><span class="c-mu" style="width:10%"></span>
+    </div>
+    <div class="scale"><span>22 Okt</span><span>26 Okt</span><span>30 Okt</span><span>3 Nov</span><span>6 Nov</span><span>10 Nov</span></div>
+    <div class="legend"><span><i class="c-data"></i>22 Okt · EDA, pilih kasus, akun</span><span><i class="c-q"></i>23–25 · ingestion + tools</span><span><i class="c-llm"></i>26–29 · agent + Langfuse</span><span><i class="c-ui"></i>30 Okt–2 Nov · Streamlit + deploy</span><span><i class="c-obs"></i>3–5 · README + uji</span><span><i class="c-ac"></i>6–8 · video</span><span><i class="c-mu"></i>9–10 · cadangan, submit</span></div>
+  </div>
+  <div class="card warn"><h4>Aturan kerja</h4><p>Setiap tahap baru dianggap selesai kalau Anda bisa menjelaskan ulang file dan fungsi pentingnya tanpa melihat catatan. Itu syarat dari Pak Herman: "selama teman-teman bisa menjelaskan, gak apa-apa".</p></div>
+</section>
+
+<!-- 11 -->
+<section class="chap" id="video">
+  <div class="chap-head"><div class="chap-no">11</div><div><h4>Penilaian</h4><h2>Video dan checklist penilaian</h2></div></div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Bagian video</th><th>Isi</th><th class="n">Menit</th></tr></thead>
+    <tbody>
+      <tr><td>Perkenalan</td><td>Nama, wajah terlihat</td><td class="n">0,5</td></tr>
+      <tr><td>Tujuan</td><td>Pitch seperti ke C-level atau manager: masalah apa, untuk siapa</td><td class="n">1</td></tr>
+      <tr><td>Workflow membangun</td><td>Data → Qdrant → tools → agent → Langfuse → Streamlit (pakai diagram README)</td><td class="n">1,5</td></tr>
+      <tr><td>Alur aplikasi + tools</td><td>Dari user mengetik sampai jawaban keluar; daftar tool dan fungsinya</td><td class="n">1,5</td></tr>
+      <tr><td>Demo</td><td>3–4 pertanyaan yang memicu tool berbeda, lalu satu trace di Langfuse</td><td class="n">3</td></tr>
+      <tr><td>Kode</td><td>Per fungsi, berurutan: Streamlit → agent → tools → ingestion. Tidak per baris.</td><td class="n">4</td></tr>
+      <tr><td>Penutup</td><td>Ringkasan dan pengembangan berikutnya</td><td class="n">0,5</td></tr>
+      <tr><td><b>Total</b></td><td>Batas 7–15 menit</td><td class="n"><b>12</b></td></tr>
+    </tbody>
+  </table></div>
+  <div class="grid2">
+    <div class="card"><h4>Syarat minimal (target nilai ≥ 80)</h4><ul class="check">
+      <li>Kode ingestion: chunking (kalau perlu), embedding, upsert ke Qdrant</li>
+      <li>RAG tool yang retrieve dari Qdrant</li>
+      <li>Tool non-RAG</li>
+      <li>Agent terhubung ke Langfuse</li>
+      <li>Semua prompt di Langfuse, tanpa hardcode</li>
+      <li>Streamlit: chat history, tool call, usage</li>
+      <li>README: diagram, install, env, cara run, contoh query</li>
+      <li>Video 7–15 menit dengan urutan di atas</li>
+      <li>Dikumpulkan sebelum 10 November 23:59</li>
+    </ul></div>
+    <div class="card"><h4>Nilai tambah (disebut di kelas)</h4><ul>
+      <li>Fitur tambahan: tool lebih banyak, reranker, filter cerdas.</li>
+      <li>UI rapi. Pak Herman dulu desainer grafis, jadi ini kemungkinan diperhatikan.</li>
+      <li>Presentasi jelas, kode terbaca di rekaman (uji rekam dulu).</li>
+      <li>Kode modular dan rapi.</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- 12 -->
+<section class="chap" id="open">
+  <div class="chap-head"><div class="chap-no">12</div><div><h4>Besok</h4><h2>Pertanyaan yang dijawab besok</h2></div></div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Pertanyaan</th><th>Cara menjawab</th><th>Mengubah apa</th></tr></thead>
+    <tbody>
+      <tr><td>Kolom apa saja di dataset Resume? Ada kota, gaji, pengalaman?</td><td>EDA singkat: <code>df.info()</code>, <code>df.head()</code>, nilai unik</td><td>Pilihan kasus (bab 01), tool filter (bab 05)</td></tr>
+      <tr><td>Apakah dataset IMDB sama dengan IMDB Top 1000?</td><td>Cocokkan nama kolom dan jumlah baris</td><td>Skema payload (bab 04)</td></tr>
+      <tr><td>Seberapa panjang teks yang di-embed?</td><td>Distribusi panjang karakter/token per baris</td><td>Perlu chunking atau tidak, ukuran chunk</td></tr>
+      <tr><td><code>create_agent</code> atau <code>create_react_agent</code>?</td><td>Baca slide Sesi 10 dan notebook Materi 9; cek versi library</td><td>Kode agent (bab 06)</td></tr>
+      <tr><td>Pola Langfuse dan Qdrant versi kelas?</td><td>Baca slide Sesi 12, 13, 14, 17</td><td>Gaya kode supaya mudah dikaitkan ke materi saat presentasi</td></tr>
+      <tr><td>Model LLM mana yang tool calling-nya andal dan murah?</td><td>Uji 2–3 model OpenRouter dengan 5 pertanyaan yang sama</td><td><code>LLM_MODEL</code></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<footer class="foot">
+  <p>Sumber: transkrip kelas exercise dan capstone (JCAIEAH-005), slide <i>Exercise: Building Simple LLM Apps</i>, catatan JCAIEH Module 3 Sesi 04 (info capstone), dan daftar slide Module 3 Sesi 09–17.</p>
+  <p>Dokumen ini akan diperbarui setelah dataset diterima dan kasus dipilih. Kode di halaman ini masih sketsa dan belum dijalankan.</p>
+</footer>
+</div>
