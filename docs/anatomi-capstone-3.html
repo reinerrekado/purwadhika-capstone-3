@@ -88,12 +88,12 @@ td.n, th.n { text-align: right; font-family: var(--font-mono); font-variant-nume
 
 <div class="wrap">
 <header>
-  <div class="eyebrow">Draft arsitektur · JCAIEH Module 3 · disusun 21 Oktober 2026 · dataset belum diterima</div>
+  <div class="eyebrow">Draft arsitektur · JCAIEH Module 3 · diperbarui 21 Oktober 2026 · kasus: IMDB</div>
   <h1>Anatomi Capstone 3</h1>
-  <p class="lead">Rancangan sementara aplikasi agentic RAG untuk capstone Module 3: data masuk ke Qdrant Cloud, agent memilih tool, prompt dan trace tersimpan di Langfuse, semuanya dibungkus Streamlit. Satu arsitektur untuk dua kemungkinan kasus, IMDB atau Resume, sampai dataset datang besok.</p>
-  <div class="banner"><b>Status: tentatif.</b> Semua yang ditandai <span class="tag tbd">asumsi</span> harus dicek ulang setelah dataset dari Purwadhika diterima. Kutipan ketentuan diambil dari transkrip kelas exercise (JCAIEAH-005), jadi bisa ada salah dengar.</div>
+  <p class="lead">Rancangan sementara aplikasi agentic RAG untuk capstone Module 3: data masuk ke Qdrant Cloud, agent memilih tool, prompt dan trace tersimpan di Langfuse, semuanya dibungkus Streamlit. Kasus yang dipilih: IMDB Top 1000, asisten rekomendasi film.</p>
+  <div class="banner"><b>Status: dataset diterima, IMDB dipilih.</b> Skema data di bab 04 sudah dicek dengan EDA. Kode masih sketsa dan belum dijalankan. Kutipan ketentuan diambil dari transkrip kelas exercise (JCAIEAH-005), jadi bisa ada salah dengar.</div>
   <div class="tiles">
-    <div class="tile"><b>1</b><span>kasus yang perlu dipilih (IMDB atau Resume)</span></div>
+    <div class="tile"><b>1.000</b><span>film di dataset IMDB Top 1000, 16 kolom</span></div>
     <div class="tile"><b>3</b><span>stack yang tidak boleh diganti: Qdrant, Streamlit, Langfuse</span></div>
     <div class="tile"><b>5</b><span>komponen wajib: ingestion, RAG tool, tool lain, agent, UI</span></div>
     <div class="tile"><b>7–15</b><span>menit durasi video penjelasan</span></div>
@@ -101,7 +101,7 @@ td.n, th.n { text-align: right; font-family: var(--font-mono); font-variant-nume
     <div class="tile"><b>20</b><span>hari kalender dari hari ini sampai deadline</span></div>
   </div>
   <nav class="toc" aria-label="Daftar isi">
-    <a href="#kasus"><span>01</span><span>Pilih kasus: satu cukup</span></a>
+    <a href="#kasus"><span>01</span><span>Kasus: IMDB</span></a>
     <a href="#stack"><span>02</span><span>Stack: wajib vs bebas</span></a>
     <a href="#alur"><span>03</span><span>Cara kerja dari 4 dimensi</span></a>
     <a href="#ingest"><span>04</span><span>Ingestion ke Qdrant</span></a>
@@ -118,7 +118,7 @@ td.n, th.n { text-align: right; font-family: var(--font-mono); font-variant-nume
 
 <!-- 01 -->
 <section class="chap" id="kasus">
-  <div class="chap-head"><div class="chap-no">01</div><div><h4>Keputusan pertama</h4><h2>Pilih kasus: satu cukup</h2></div></div>
+  <div class="chap-head"><div class="chap-no">01</div><div><h4>Keputusan pertama</h4><h2>Kasus: IMDB</h2></div></div>
   <p>Kata Pak Herman di kelas: <i>"Salah satunya aja, gak perlu pakai dua-duanya. Tapi kalau pengen pakai dua-duanya gak apa-apa, cuman bakal lebih kompleks dan gak nyambung. Satunya HR, satunya film."</i> Memakai keduanya tidak menambah syarat yang terpenuhi, hanya menambah kerja dan membuat pitch ke "C-level" jadi tidak fokus. Rekomendasi: <b>pilih satu</b>.</p>
   <div class="grid2">
     <div class="card case-imdb">
@@ -142,7 +142,7 @@ td.n, th.n { text-align: right; font-family: var(--font-mono); font-variant-nume
       </ul>
     </div>
   </div>
-  <div class="card warn"><h4>Kecenderungan sementara</h4><p><b>IMDB</b>, karena kolom terstrukturnya memberi tool non-RAG yang jelas dan UI yang mudah dibuat menarik dengan effort yang sama. Keputusan berubah ke <b>Resume</b> kalau dataset Resume ternyata punya kolom terstruktur (kota, gaji, pengalaman) yang memungkinkan filter, karena pitch bisnisnya lebih kuat. Diputuskan besok setelah EDA singkat kedua dataset (bab 12).</p></div>
+  <div class="card warn"><h4>Keputusan · 21 Oktober 2026</h4><p><b>IMDB dipilih.</b> Kolom terstrukturnya memberi tool non-RAG yang jelas, overview-nya cukup pendek sehingga satu film cukup jadi satu vektor, dan poster membuat UI mudah dibuat menarik. Perbandingan dengan Resume di atas disimpan sebagai alasan pemilihan, untuk bagian "tujuan" di video.</p></div>
 </section>
 
 <!-- 02 -->
@@ -257,7 +257,7 @@ sequenceDiagram
     <div class="card"><h4>Langkah</h4><ol>
       <li><b>Load + bersihkan</b> dengan pandas: ubah <code>Runtime</code> "142 min" jadi angka, <code>Gross</code> "28,341,469" jadi angka, isi nilai kosong.</li>
       <li><b>Susun teks yang di-embed</b>: gabungkan kolom yang bermakna semantik (judul, genre, overview, sutradara, pemain) jadi satu string. Angka tidak perlu di-embed; angka disimpan di payload.</li>
-      <li><b>Chunking</b>: IMDB tidak perlu (overview pendek). Resume perlu, misalnya ±800 karakter dengan overlap ±100, dan setiap chunk membawa <code>resume_id</code> di payload.</li>
+      <li><b>Chunking: tidak perlu.</b> Overview terpanjang 313 karakter (56 kata), jauh di bawah batas input model embedding. Satu film = satu point. Alasan ini perlu dijelaskan di video, karena Pak Herman menyebut chunking "kalau butuh".</li>
       <li><b>Embedding</b> per batch (misalnya 100 teks per request) supaya cepat dan tidak kena rate limit.</li>
       <li><b>Upsert</b> ke collection Qdrant: <em class="t">vector</em> + <em class="t">payload</em> (semua kolom asli).</li>
       <li><b>Payload index</b> untuk kolom yang akan difilter (genre, tahun, rating; atau kategori, kota).</li>
@@ -288,9 +288,24 @@ qdrant.create_payload_index(
     field_schema=models.PayloadSchemaType.KEYWORD,
 )</pre></div>
   </div>
-  <div class="card asm"><h4>Asumsi · skema dataset</h4>
-    <p><span class="tag tbd">asumsi</span> <b>IMDB</b>: dari kolom yang disebut di kelas (poster link, series title, runtime, overview, metascore, bintang), kemungkinan besar dataset <i>IMDB Top 1000</i>: <code>Poster_Link, Series_Title, Released_Year, Certificate, Runtime, Genre, IMDB_Rating, Overview, Meta_score, Director, Star1–4, No_of_Votes, Gross</code>.</p>
-    <p><span class="tag tbd">asumsi</span> <b>Resume</b>: belum diketahui. Kelas menyebut ekspektasi gaji dan kota, jadi mungkin ada kolom terstruktur selain teks CV. Ini yang paling menentukan desain tool Opsi B.</p>
+  <div class="card asm"><h4>Data nyata · EDA imdb_top_1000.csv (Kaggle, harshitshankhdhar)</h4>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Kolom</th><th>Isi</th><th>Masalah</th><th>Penanganan di ingest.py</th></tr></thead>
+      <tbody>
+        <tr><td><code>Series_Title</code></td><td>1.000 judul</td><td>"Drishyam" muncul 2× (2013 dan 2015, film berbeda)</td><td>ID point = nomor baris, bukan judul; lookup judul bisa mengembalikan lebih dari satu film</td></tr>
+        <tr><td><code>Released_Year</code></td><td>1920–2020, bertipe teks</td><td>Apollo 13 berisi "PG"</td><td>Perbaiki manual ke 1995, ubah ke integer</td></tr>
+        <tr><td><code>Runtime</code></td><td>"142 min"</td><td>Teks</td><td>Ambil angkanya → <code>runtime_min</code></td></tr>
+        <tr><td><code>Genre</code></td><td>21 genre unik, maks 3 per film; Drama 724 film</td><td>Satu string "Action, Crime, Drama"</td><td>Pecah jadi list <code>genres</code> + payload index keyword</td></tr>
+        <tr><td><code>IMDB_Rating</code></td><td>7,6–9,3, median 7,9</td><td>Rentang sempit (semua film top)</td><td>Filter rating kurang berguna; urutkan saja</td></tr>
+        <tr><td><code>Meta_score</code></td><td>28–100, median 79</td><td>157 kosong</td><td>Biarkan <code>null</code>, jangan diisi 0</td></tr>
+        <tr><td><code>Gross</code></td><td>"28,341,469" (USD)</td><td>Teks dengan koma; 169 kosong</td><td>Ubah ke integer, kosong tetap <code>null</code></td></tr>
+        <tr><td><code>Certificate</code></td><td>U, A, UA, R, PG-13, dll.</td><td>Campuran rating India dan AS; 101 kosong</td><td>Disimpan apa adanya, tidak dipakai untuk filter</td></tr>
+        <tr><td><code>Director</code>, <code>Star1–4</code></td><td>548 sutradara, 2.709 aktor</td><td>Aktor tersebar di 4 kolom</td><td>Gabung jadi list <code>stars</code> + index keyword</td></tr>
+        <tr><td><code>Overview</code></td><td>40–313 karakter, rata-rata 146</td><td>—</td><td>Teks utama yang di-embed</td></tr>
+        <tr><td><code>Poster_Link</code></td><td>Thumbnail 67 piksel (±2 KB)</td><td>Terlalu kecil untuk UI</td><td>Ganti akhiran URL ke <code>._V1_SX300.jpg</code> → 300 piksel (±32 KB, sudah dicoba)</td></tr>
+      </tbody>
+    </table></div>
+    <p class="cap">Encoding file UTF-8 dan aman ("La vita è bella", "Amélie"). Huruf &#xFFFD; yang sempat terlihat hanya masalah tampilan terminal Windows. 1.000 point × 1.536 dimensi ≈ 6 MB vektor, jauh di bawah kuota Qdrant free tier. Embedding seluruh dataset ±60 ribu token, biayanya kurang dari satu sen dolar.</p>
   </div>
   <div class="card jc"><h4>Kaitan JCAIEH</h4><p>M3 Sesi 01 <b>cosine similarity</b>, Sesi 06 <b>embedding OpenAI</b> dan chunking RAG, Sesi 12 <b>Vector Database</b>. M1 Sesi 12 <b>Pandas</b> untuk pembersihan data.</p></div>
 </section>
@@ -311,17 +326,13 @@ qdrant.create_payload_index(
           <tr><td><code>compare_movies</code></td><td>bonus</td><td>"Bandingkan Inception dan Interstellar"</td></tr>
         </tbody>
       </table></div></div>
-    <div class="card case-res"><h3>Opsi B · Resume</h3>
-      <div class="tablewrap"><table style="min-width:0">
-        <thead><tr><th>Tool</th><th>Jenis</th><th>Contoh pertanyaan</th></tr></thead>
-        <tbody>
-          <tr><td><code>search_candidates</code></td><td>RAG + filter</td><td>"Data analyst yang paham SQL dan Tableau"</td></tr>
-          <tr><td><code>get_resume</code></td><td>lookup</td><td>"Tampilkan CV kandidat 1042"</td></tr>
-          <tr><td><code>filter_candidates</code></td><td>filter</td><td>"Kandidat di Jakarta, maks 10 juta"</td></tr>
-          <tr><td><code>candidate_stats</code></td><td>statistik</td><td>"Rata-rata ekspektasi gaji per kategori"</td></tr>
-          <tr><td><code>score_match</code></td><td>bonus</td><td>"Nilai kecocokan kandidat ini dengan JD"</td></tr>
-        </tbody>
-      </table></div></div>
+    <div class="card"><h4>Data nyata · bahan untuk filter dan statistik</h4><ul>
+      <li><b>Genre</b>: 21 nilai, terbanyak Drama 724, Comedy 233, Crime 209, Adventure 196, Action 189.</li>
+      <li><b>Sutradara terbanyak</b>: Alfred Hitchcock 14, Steven Spielberg 13, Hayao Miyazaki 11, Martin Scorsese 10, Akira Kurosawa 10.</li>
+      <li><b>Aktor terbanyak</b> (Star1–4): Robert De Niro 17, Tom Hanks 14, Al Pacino 13, Brad Pitt 12, Clint Eastwood 12.</li>
+      <li><b>Tahun</b> 1920–2020, cocok untuk filter dekade ("film 90-an").</li>
+      <li><b>Rating IMDB</b> hanya 7,6–9,3, jadi pembeda yang lebih tajam adalah Meta_score (28–100), jumlah vote, dan gross.</li>
+    </ul><p class="cap">Contoh pertanyaan untuk README dan demo bisa diambil dari angka-angka ini, supaya jawaban agent mudah diverifikasi.</p></div>
   </div>
   <div class="card"><h4>Bentuk RAG tool (sketsa, kasus IMDB)</h4>
 <pre class="code"><span class="k">from</span> langchain_core.tools <span class="k">import</span> tool
@@ -516,9 +527,10 @@ LANGFUSE_HOST=</pre>
   <div class="tablewrap"><table>
     <thead><tr><th>Pertanyaan</th><th>Cara menjawab</th><th>Mengubah apa</th></tr></thead>
     <tbody>
-      <tr><td>Kolom apa saja di dataset Resume? Ada kota, gaji, pengalaman?</td><td>EDA singkat: <code>df.info()</code>, <code>df.head()</code>, nilai unik</td><td>Pilihan kasus (bab 01), tool filter (bab 05)</td></tr>
-      <tr><td>Apakah dataset IMDB sama dengan IMDB Top 1000?</td><td>Cocokkan nama kolom dan jumlah baris</td><td>Skema payload (bab 04)</td></tr>
-      <tr><td>Seberapa panjang teks yang di-embed?</td><td>Distribusi panjang karakter/token per baris</td><td>Perlu chunking atau tidak, ukuran chunk</td></tr>
+      <tr><td><s>Kasus mana?</s> <span class="tag free">terjawab</span></td><td>Dipilih user</td><td>IMDB (bab 01)</td></tr>
+      <tr><td><s>Apakah dataset IMDB sama dengan IMDB Top 1000?</s> <span class="tag free">terjawab</span></td><td>Dataset Description.docx + EDA</td><td>Sama persis: 1.000 baris, 16 kolom (bab 04)</td></tr>
+      <tr><td><s>Seberapa panjang teks yang di-embed?</s> <span class="tag free">terjawab</span></td><td>Panjang karakter overview</td><td>Maks 313 karakter, tidak perlu chunking</td></tr>
+      <tr><td>Teks apa persisnya yang di-embed: overview saja, atau judul + genre + overview + sutradara?</td><td>Uji 5 query dengan dua versi collection</td><td>Kualitas pencarian RAG tool</td></tr>
       <tr><td><code>create_agent</code> atau <code>create_react_agent</code>?</td><td>Baca slide Sesi 10 dan notebook Materi 9; cek versi library</td><td>Kode agent (bab 06)</td></tr>
       <tr><td>Pola Langfuse dan Qdrant versi kelas?</td><td>Baca slide Sesi 12, 13, 14, 17</td><td>Gaya kode supaya mudah dikaitkan ke materi saat presentasi</td></tr>
       <tr><td>Model LLM mana yang tool calling-nya andal dan murah?</td><td>Uji 2–3 model OpenRouter dengan 5 pertanyaan yang sama</td><td><code>LLM_MODEL</code></td></tr>
@@ -527,7 +539,7 @@ LANGFUSE_HOST=</pre>
 </section>
 
 <footer class="foot">
-  <p>Sumber: transkrip kelas exercise dan capstone (JCAIEAH-005), slide <i>Exercise: Building Simple LLM Apps</i>, catatan JCAIEH Module 3 Sesi 04 (info capstone), dan daftar slide Module 3 Sesi 09–17.</p>
-  <p>Dokumen ini akan diperbarui setelah dataset diterima dan kasus dipilih. Kode di halaman ini masih sketsa dan belum dijalankan.</p>
+  <p>Sumber: <code>imdb_top_1000.csv</code> dan Dataset Description.docx dari Purwadhika, transkrip kelas exercise dan capstone (JCAIEAH-005), slide <i>Exercise: Building Simple LLM Apps</i>, catatan JCAIEH Module 3 Sesi 04 (info capstone), dan daftar slide Module 3 Sesi 09–17.</p>
+  <p>Dokumen ini diperbarui seiring pengerjaan. Kode di halaman ini masih sketsa dan belum dijalankan.</p>
 </footer>
 </div>
