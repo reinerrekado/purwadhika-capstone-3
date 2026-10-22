@@ -98,11 +98,22 @@ Status yang dipakai:
   ```
 - **Alasan:** lihat bagian [Pemilihan embedding](#pemilihan-embedding) di bawah.
 - **Status:** 🔁 Beda dari contoh (modelnya sama, jalurnya berbeda)
+- **Terbukti (23 Okt, `scripts/check_connections.py`):** vektor 1536 dimensi; query "a thief who enters people's dreams" paling mirip dengan overview Inception (0,588), jauh di atas The Prestige (0,226) dan Interstellar (0,211).
 
 ### K12 · Query pencarian ditulis LLM dalam bahasa Inggris
 - **Kelas:** pertanyaan user langsung dipakai sebagai query.
 - **Kita:** docstring `search_movies` meminta LLM menulis argumen `query` sebagai deskripsi singkat dalam bahasa Inggris.
 - **Alasan:** semua overview IMDB berbahasa Inggris, sedangkan user bertanya dalam bahasa Indonesia. Kemiripan vektor paling tinggi kalau query dan dokumen memakai bahasa yang sama. LLM sudah membaca pertanyaannya, jadi menerjemahkan tidak menambah panggilan model.
+- **Bukti (23 Okt, `text-embedding-3-small`):**
+
+  | Query | Cosine ke film yang benar |
+  |---|---|
+  | "pencuri yang masuk ke mimpi orang" | Inception 0,390 |
+  | "a thief who enters people's dreams" | Inception **0,588** |
+  | "film luar angkasa tentang menyelamatkan umat manusia" | Interstellar 0,363 |
+  | "space movie about saving humanity" | Interstellar **0,526** |
+
+  Query bahasa Inggris memberi skor ±45–50% lebih tinggi. Query bahasa Indonesia tetap menemukan film yang benar, tapi selisihnya dengan film lain lebih tipis, jadi lebih rawan salah urut.
 - **Status:** 🔁 Beda dari contoh
 
 ### K13 · Yang di-embed: `judul. genre. overview`
@@ -149,6 +160,18 @@ Status yang dipakai:
   - LLM biasanya sudah memperbaiki typo sebelum memanggil tool. Kode tetap menjaga kalau LLM melewatkannya.
 - **Bukti (diuji pada dataset, 22 Okt):** `INCEPTION`, `Incepton`, `interstelar`, `the godfater`, `shawshank`, `lord of the rings`, `amelie`, `wall-e`, `harry poter`, `the matrx`, dan `dark night` semuanya ketemu. Yang gagal tanpa lapis 4: `parasite` dan `spirited away` (judul asli), serta `godfathr part 2` (angka Romawi; diatasi normalisasi di lapis 1).
 - **Status:** ✅ Tidak ada arahan yang terkait
+
+### K19 · Conda env Python 3.12 + `requirements.txt`, bukan Poetry
+- **Kelas:** demo live Sesi 14 memakai Poetry (`poetry run streamlit run ...`); `main.py` Sesi 14 memakai `requirements.txt` + `pip install -r`.
+- **Kita:** conda env `capstone3` (Python 3.12.13) + `requirements.txt` dengan versi dikunci.
+- **Alasan:** Anaconda sudah terpasang dan Poetry belum. Python bawaan laptop adalah 3.14, yang terlalu baru dan berisiko belum didukung library. Streamlit Community Cloud langsung membaca `requirements.txt`. Versi dikunci supaya laptop dan cloud memasang library yang sama persis (Pak Herman di Sesi 09: masalah terbesar LangChain adalah "bentrok versi antar library").
+- **Status:** 🔁 Beda dari contoh (sama dengan `main.py` Sesi 14, beda dari demo live)
+
+### K20 · Langfuse 5.0.4, dengan pola kode Sesi 17
+- **Kelas:** notebook Sesi 17 memakai Langfuse v3.
+- **Kita:** `pip install langfuse` saat ini memasang **5.0.4**. Pola kelas tetap dipakai apa adanya.
+- **Alasan:** diperiksa 23 Okt: `get_client()`, `CallbackHandler()` (semua argumen opsional), `get_prompt`, `auth_check`, dan `flush` masih ada, dan `auth_check()` berhasil ke `https://cloud.langfuse.com`. Cara mengirim `langfuse_session_id` lewat metadata akan dibuktikan saat trace pertama muncul.
+- **Status:** 💬 Sesuai jawaban Pak Herman ("yang mana saja yang works")
 
 ---
 
