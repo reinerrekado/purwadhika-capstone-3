@@ -309,7 +309,7 @@ QdrantVectorStore.from_documents(
         <thead><tr><th>Tool</th><th>Sumber</th><th>Menjawab</th></tr></thead>
         <tbody>
           <tr><td><code>search_movies</code></td><td>Qdrant (RAG + filter genre/tahun)</td><td>Selera dan suasana: "film tentang mimpi di dalam mimpi"</td></tr>
-          <tr><td><code>get_movie_details</code></td><td>pandas, cari judul (bisa beberapa)</td><td>Fakta satu film atau perbandingan: "bandingkan Inception dan Interstellar"</td></tr>
+          <tr><td><code>get_movie_details</code></td><td>pandas, cari judul (bisa beberapa); tahan huruf besar-kecil dan typo</td><td>Fakta satu film atau perbandingan: "bandingkan Inception dan Interstelar"</td></tr>
           <tr><td><code>rank_movies</code></td><td>pandas, filter + urutkan + ringkasan</td><td>Peringkat dan statistik: "film Nolan dengan metascore tertinggi", "berapa film Hitchcock?"</td></tr>
         </tbody>
       </table></div>
@@ -322,6 +322,17 @@ QdrantVectorStore.from_documents(
       <li><b>Rating IMDB</b> hanya 7,6–9,3, jadi pembeda yang lebih tajam adalah Meta_score (28–100), jumlah vote, dan gross.</li>
     </ul><p class="cap">Contoh pertanyaan untuk README dan demo bisa diambil dari angka-angka ini, supaya jawaban agent mudah diverifikasi.</p></div>
   </div>
+  <div class="card"><h4>Pencarian judul 4 lapis di <code>get_movie_details</code></h4>
+    <div class="tablewrap"><table>
+      <thead><tr><th class="n">Lapis</th><th>Cara</th><th>Contoh input → hasil (diuji pada dataset)</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td>Normalisasi: huruf kecil, aksen dihapus, tanda baca → spasi, angka Romawi → angka; lalu cocok persis</td><td><code>INCEPTION</code> → Inception · <code>amelie</code> → Amélie · <code>se7en</code> → Se7en</td></tr>
+        <tr><td class="n">2</td><td>Kata-kata query ada di judul</td><td><code>shawshank</code> → The Shawshank Redemption · <code>dark knight</code> → 2 film, user diminta memilih</td></tr>
+        <tr><td class="n">3</td><td>Typo per kata, <code>difflib</code> cutoff 0,8 (bawaan Python)</td><td><code>interstelar</code> → Interstellar · <code>harry poter</code> → 4 film Harry Potter · <code>the matrx</code> → The Matrix</td></tr>
+        <tr><td class="n">4</td><td>Tidak ketemu: 3 judul termirip + petunjuk "cari lewat plot dengan <code>search_movies</code>"</td><td><code>parasite</code> → judul di dataset <b>Gisaengchung</b>, ditemukan lewat plotnya</td></tr>
+      </tbody>
+    </table></div>
+    <p class="cap">Film non-Inggris di dataset memakai judul asli (Parasite = Gisaengchung, Spirited Away = Sen to Chihiro no kamikakushi). Pencocokan teks tidak bisa menebaknya, tapi agent bisa: tool judul gagal, lalu agent mencari plotnya lewat RAG. Kedua tool saling menutupi kelemahan masing-masing. Detail di K18.</p></div>
   <div class="card"><h4>Bentuk RAG tool (pola kelas Sesi 14 Bab 7, ditambah filter)</h4>
 <pre class="code"><span class="k">from</span> langchain.tools <span class="k">import</span> tool
 <span class="k">from</span> qdrant_client <span class="k">import</span> models
@@ -486,7 +497,7 @@ LANGFUSE_HOST=</pre>
       <span class="c-data" style="width:10%"></span><span class="c-q" style="width:10%"></span><span class="c-llm" style="width:20%"></span><span class="c-obs" style="width:15%"></span><span class="c-mu" style="width:20%"></span><span class="c-ac" style="width:15%"></span><span class="c-ui" style="width:10%"></span>
     </div>
     <div class="scale"><span>22 Okt</span><span>26 Okt</span><span>30 Okt</span><span>3 Nov</span><span>6 Nov</span><span>10 Nov</span></div>
-    <div class="legend"><span><i class="c-data"></i>22–23 Okt · akun, <code>data.py</code>, ingest 1.000 film</span><span><i class="c-q"></i>24–25 · kerangka berjalan: 1 tool + agent + Streamlit, <b>sudah di-deploy</b></span><span><i class="c-llm"></i>26–29 · 3 tool, Langfuse, tool call, usage, kartu poster</span><span><i class="c-obs"></i>30 Okt–1 Nov · set uji 9 pertanyaan, rapikan prompt, README</span><span><i class="c-mu"></i>2–5 · cadangan (Module 4)</span><span><i class="c-ac"></i>6–8 · rekam video</span><span><i class="c-ui"></i>9 · submit, 10 · cadangan terakhir</span></div>
+    <div class="legend"><span><i class="c-data"></i>22–23 Okt · akun, <code>data.py</code>, ingest 1.000 film</span><span><i class="c-q"></i>24–25 · kerangka berjalan: 1 tool + agent + Streamlit, <b>sudah di-deploy</b></span><span><i class="c-llm"></i>26–29 · 3 tool, Langfuse, tool call, usage, kartu poster</span><span><i class="c-obs"></i>30 Okt–1 Nov · set uji 10 pertanyaan, rapikan prompt, README</span><span><i class="c-mu"></i>2–5 · cadangan (Module 4)</span><span><i class="c-ac"></i>6–8 · rekam video</span><span><i class="c-ui"></i>9 · submit, 10 · cadangan terakhir</span></div>
   </div>
   <div class="card warn"><h4>Aturan kerja</h4><p>Setiap tahap baru dianggap selesai kalau Anda bisa menjelaskan ulang file dan fungsi pentingnya tanpa melihat catatan. Itu syarat dari Pak Herman: "selama teman-teman bisa menjelaskan, gak apa-apa".</p></div>
 </section>
@@ -526,7 +537,7 @@ LANGFUSE_HOST=</pre>
       <li>Kode modular dan rapi.</li>
     </ul></div>
   </div>
-  <div class="card asm"><h4>Set uji · 9 pertanyaan, dipakai 3 kali</h4>
+  <div class="card asm"><h4>Set uji · 10 pertanyaan, dipakai 3 kali</h4>
     <p>Satu daftar yang sama dipakai sebagai <b>tes penerimaan</b> (aplikasi dianggap selesai kalau semuanya benar), <b>contoh query di README</b>, dan <b>naskah demo video</b>. Jawaban yang diharapkan diambil dari dataset, jadi bisa dicek.</p>
     <div class="tablewrap"><table>
       <thead><tr><th class="n">#</th><th>Pertanyaan</th><th>Tool yang diharapkan</th><th>Jawaban benar (dari dataset)</th></tr></thead>
@@ -540,6 +551,7 @@ LANGFUSE_HOST=</pre>
         <tr><td class="n">7</td><td>Film Drishyam itu tentang apa?</td><td><code>get_movie_details</code></td><td>Ada <b>dua</b>: versi 2013 (Jeethu Joseph) dan 2015 (Nishikant Kamat)</td></tr>
         <tr><td class="n">8</td><td>(lanjutan dari #2) Yang kedua siapa sutradaranya?</td><td>memori percakapan</td><td>Sutradara film kedua dari jawaban #2</td></tr>
         <tr><td class="n">9</td><td>Rekomendasikan film rilisan 2023</td><td><code>rank_movies</code> atau tidak ada</td><td>Menolak dengan sopan: data hanya sampai 2020</td></tr>
+        <tr><td class="n">10</td><td>Ceritakan film Parasite</td><td><code>get_movie_details</code> gagal → <code>search_movies</code> lewat plot</td><td>Gisaengchung (2019), dengan penjelasan bahwa dataset memakai judul asli Korea</td></tr>
       </tbody>
     </table></div>
   </div>
@@ -548,7 +560,7 @@ LANGFUSE_HOST=</pre>
 <!-- 12 -->
 <section class="chap" id="open">
   <div class="chap-head"><div class="chap-no">12</div><div><h4>Review</h4><h2>Kritik diri dan perbaikan</h2></div></div>
-  <p>Rencana versi 3 dibaca ulang dengan empat prinsip kerja sebagai alat ukur. Ada 10 temuan, diurutkan dari yang paling berisiko. Semua perbaikannya sudah dimasukkan ke bab terkait di halaman ini. Setiap pilihan yang berbeda dari contoh kelas dicatat beserta alasannya di <code>notes/keputusan-desain.md</code> (17 keputusan, tidak ada yang melawan arahan).</p>
+  <p>Rencana versi 3 dibaca ulang dengan empat prinsip kerja sebagai alat ukur. Ada 10 temuan, diurutkan dari yang paling berisiko. Semua perbaikannya sudah dimasukkan ke bab terkait di halaman ini. Setiap pilihan yang berbeda dari contoh kelas dicatat beserta alasannya di <code>notes/keputusan-desain.md</code> (18 keputusan, tidak ada yang melawan arahan).</p>
   <div class="tablewrap"><table>
     <thead><tr><th class="n">#</th><th>Temuan</th><th>Kenapa bermasalah</th><th>Perbaikan</th><th>Prinsip</th></tr></thead>
     <tbody>
@@ -559,7 +571,7 @@ LANGFUSE_HOST=</pre>
       <tr><td class="n">5</td><td>Usage dan tool call diambil dari pesan terakhir</td><td>Satu pertanyaan bisa memicu 2–3 panggilan LLM, dan <code>result["messages"]</code> berisi seluruh riwayat. Angkanya jadi salah.</td><td>Ambil hanya pesan baru (<code>[len(history):]</code>), lalu jumlahkan <code>usage_metadata</code> semua AIMessage (bab 08)</td><td>logical</td></tr>
       <tr><td class="n">6</td><td>Kartu poster belum jelas datanya dari mana</td><td>Kalau dibaca dari teks jawaban LLM, mudah rusak dan bisa menampilkan film karangan</td><td>Tool mengembalikan JSON metadata; UI membuat kartu dari ToolMessage, jadi hanya film yang benar-benar ada di dataset (bab 05, 08)</td><td>logical, impressive</td></tr>
       <tr><td class="n">7</td><td>Belum ada aturan anti-halusinasi</td><td>Agent bisa merekomendasikan film di luar 1.000 data dari pengetahuannya sendiri</td><td>System prompt: hanya dari hasil tool; tolak dengan sopan kalau data tidak ada (bab 07; uji #9)</td><td>effective</td></tr>
-      <tr><td class="n">8</td><td>Tidak ada definisi "selesai" yang bisa diuji</td><td>"Sudah bagus" jadi soal perasaan, dan contoh query di README serta demo video dibuat terpisah</td><td>Set uji 9 pertanyaan dengan jawaban dari dataset, dipakai 3 kali (bab 11)</td><td>efficient, impressive</td></tr>
+      <tr><td class="n">8</td><td>Tidak ada definisi "selesai" yang bisa diuji</td><td>"Sudah bagus" jadi soal perasaan, dan contoh query di README serta demo video dibuat terpisah</td><td>Set uji 10 pertanyaan dengan jawaban dari dataset, dipakai 3 kali (bab 11)</td><td>efficient, impressive</td></tr>
       <tr><td class="n">9</td><td>Embedding lewat OpenRouter belum pernah dicoba</td><td><code>OpenAIEmbeddings</code> secara default mengirim token ID, bukan teks; tidak semua endpoint kompatibel menerimanya. Ini risiko teknis terbesar.</td><td>Dari 4 opsi (OpenRouter, OpenAI langsung, model lokal, Qdrant Inference) dipilih OpenRouter dengan <code>check_embedding_ctx_length=False</code>, supaya teks dikirim apa adanya. Diuji 1 menit sebelum ingest; cadangannya OpenAI langsung.</td><td>effective</td></tr>
       <tr><td class="n">10</td><td>Rencana uji A/B dua versi teks embedding</td><td>Kerja tambahan tanpa jaminan beda hasil</td><td>Langsung pakai <code>judul. genre. overview</code>; diubah hanya kalau set uji #1–2 gagal</td><td>simple, efficient</td></tr>
     </tbody>
