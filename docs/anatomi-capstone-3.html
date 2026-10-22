@@ -57,7 +57,6 @@ pre.code .c { color: var(--code-c); } pre.code .k { color: var(--code-k); }
 .jc { border-left: 3px solid var(--ui); } .jc h4 { color: var(--ui); }
 .warn { border-left: 3px solid var(--accent); } .warn h4 { color: var(--accent); }
 .case-imdb { border-top: 4px solid var(--llm); } .case-imdb h3 { color: var(--llm); }
-.case-res { border-top: 4px solid var(--qdrant); } .case-res h3 { color: var(--qdrant); }
 .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
 table { border-collapse: collapse; width: 100%; font-size: .87rem; min-width: 38rem; }
 th, td { text-align: left; padding: .5rem .75rem; border-bottom: 1px solid var(--line); vertical-align: top; }
@@ -118,31 +117,22 @@ td.n, th.n { text-align: right; font-family: var(--font-mono); font-variant-nume
 
 <!-- 01 -->
 <section class="chap" id="kasus">
-  <div class="chap-head"><div class="chap-no">01</div><div><h4>Keputusan pertama</h4><h2>Kasus: IMDB</h2></div></div>
-  <p>Kata Pak Herman di kelas: <i>"Salah satunya aja, gak perlu pakai dua-duanya. Tapi kalau pengen pakai dua-duanya gak apa-apa, cuman bakal lebih kompleks dan gak nyambung. Satunya HR, satunya film."</i> Memakai keduanya tidak menambah syarat yang terpenuhi, hanya menambah kerja dan membuat pitch ke "C-level" jadi tidak fokus. Rekomendasi: <b>pilih satu</b>.</p>
+  <div class="chap-head"><div class="chap-no">01</div><div><h4>Masalah dan pengguna</h4><h2>Kasus: IMDB</h2></div></div>
   <div class="grid2">
     <div class="card case-imdb">
-      <h3>Opsi A · IMDB Movie</h3>
-      <p><b>Pitch:</b> asisten rekomendasi film. User cukup menceritakan selera ("film tentang balas dendam yang lambat tapi menegangkan"), agent mencarikan dan menjelaskan.</p>
-      <ul>
-        <li>Kolom terstruktur banyak (tahun, genre, rating, metascore, durasi, sutradara, pemain, gross), jadi mudah membuat tool non-RAG: statistik, filter, perbandingan.</li>
-        <li>Kata Pak Herman: cocok kalau ingin "punya banyak tools".</li>
-        <li><code>Overview</code> pendek (satu paragraf), jadi chunking hampir tidak perlu: 1 film = 1 vektor.</li>
-        <li>Ada link poster, sehingga UI Streamlit bisa tampil bagus (nilai tambah UI).</li>
-      </ul>
+      <h3>Pitch</h3>
+      <p>Orang tahu <b>suasana</b> film yang ingin ditonton, tapi jarang tahu <b>judulnya</b>. Pencarian biasa butuh judul atau genre yang persis. Asisten ini menerima cerita bebas ("film tentang balas dendam yang lambat tapi menegangkan"), lalu mencarikan film yang cocok dari 1.000 film terbaik IMDB dan menjelaskan alasannya dengan data: rating, metascore, sutradara, dan pemain.</p>
     </div>
-    <div class="card case-res">
-      <h3>Opsi B · Resume (HR)</h3>
-      <p><b>Pitch:</b> asisten rekruter. HR menulis kebutuhan posisi, agent mencari kandidat yang cocok, merangkum, dan menjawab pertanyaan seperti ekspektasi gaji.</p>
+    <div class="card">
+      <h4>Kenapa dataset ini cocok untuk agentic RAG</h4>
       <ul>
-        <li>Cerita bisnisnya kuat untuk presentasi: menghemat waktu screening CV.</li>
-        <li>Teks CV panjang, jadi chunking benar-benar dibutuhkan dan konsep RAG lebih terlihat.</li>
-        <li>Kata Pak Herman: "lebih menantang". Contoh repo tutor justru memakai kasus ini (<code>search_resume</code>), jadi referensinya ada tapi risiko terlihat "mirip contoh" lebih besar.</li>
-        <li>Tool filter (kota, kategori, gaji) bergantung pada kolom terstruktur yang belum diketahui.</li>
+        <li><b>Teks untuk RAG</b>: setiap film punya <code>Overview</code> satu paragraf, cocok untuk pencarian makna.</li>
+        <li><b>Kolom terstruktur untuk tool non-RAG</b>: tahun, genre, rating, metascore, durasi, sutradara, pemain, gross. Kata Pak Herman, dataset ini cocok kalau ingin "punya banyak tools".</li>
+        <li><b>Overview pendek</b>: 1 film = 1 vektor, tanpa chunking (bab 04).</li>
+        <li><b>Link poster</b>: UI bisa menampilkan kartu film, sehingga demonya lebih menarik.</li>
       </ul>
     </div>
   </div>
-  <div class="card warn"><h4>Keputusan · 21 Oktober 2026</h4><p><b>IMDB dipilih.</b> Kolom terstrukturnya memberi tool non-RAG yang jelas, overview-nya cukup pendek sehingga satu film cukup jadi satu vektor, dan poster membuat UI mudah dibuat menarik. Perbandingan dengan Resume di atas disimpan sebagai alasan pemilihan, untuk bagian "tujuan" di video.</p></div>
 </section>
 
 <!-- 02 -->
@@ -156,7 +146,7 @@ td.n, th.n { text-align: right; font-family: var(--font-mono); font-variant-nume
       <tr><td>Prompt + tracing</td><td><b>Langfuse</b> v3 (cloud)</td><td><span class="tag lock">wajib</span></td><td>Hanya system prompt agent, dibuat lewat UI. Trace per pertanyaan, dikelompokkan per session.</td></tr>
       <tr><td>Framework agent</td><td>LangChain <code>create_agent</code></td><td><span class="tag free">bebas</span></td><td>Notebook Sesi 10; <code>create_react_agent</code> sudah deprecated.</td></tr>
       <tr><td>LLM</td><td><code>ChatOpenAI</code> + <code>base_url</code> OpenRouter; model dipilih dengan set uji (bab 11)</td><td><span class="tag free">bebas</span></td><td>Tanpa library tambahan. Model harus mendukung tool calling.</td></tr>
-      <tr><td>Embedding</td><td><code>text-embedding-3-small</code> (1536 dimensi) lewat OpenRouter</td><td><span class="tag free">bebas</span></td><td>Sama dengan kelas. Perlu dicoba di hari pertama (bab 12, temuan 9).</td></tr>
+      <tr><td>Embedding</td><td><code>text-embedding-3-small</code> (1536 dimensi) lewat OpenRouter</td><td><span class="tag free">bebas</span></td><td>Model sama dengan kelas, lewat <code>OpenAIEmbeddings</code> + <code>base_url</code> OpenRouter + <code>check_embedding_ctx_length=False</code>. Cadangan: langsung ke OpenAI (bab 12, temuan 9).</td></tr>
       <tr><td>Data terstruktur</td><td>pandas, dibaca dari CSV di repo lewat satu modul <code>data.py</code></td><td><span class="tag free">bebas</span></td><td>1.000 baris cukup di memori; tidak perlu SQLite/Postgres.</td></tr>
       <tr><td>Reranker</td><td>Tidak dipakai</td><td><span class="tag opt">opsional</span></td><td>Filter metadata sudah membuat hasil tepat; reranker menambah biaya dan bahan penjelasan.</td></tr>
       <tr><td>Paket Python</td><td>Poetry, Python 3.11</td><td><span class="tag free">bebas</span></td><td>Kelas menjalankan dengan <code>poetry run streamlit run ...</code>.</td></tr>
@@ -347,7 +337,8 @@ Genre = Literal[<span class="k">"Action"</span>, <span class="k">"Drama"</span>,
 <span class="k">def</span> search_movies(query: str, genre: Genre | None = None,
                   year_from: int | None = None, year_to: int | None = None) -> str:
     <span class="k">"""Cari film berdasarkan deskripsi cerita, suasana, atau tema.
-    Pakai ini kalau user menjelaskan selera, bukan menyebut judul."""</span>
+    Pakai ini kalau user menjelaskan selera, bukan menyebut judul.
+    Tulis query sebagai deskripsi singkat dalam bahasa Inggris."""</span>   <span class="c"># overview berbahasa Inggris</span>
     must = []
     <span class="k">if</span> genre:      <span class="c"># LangChain menyimpan metadata di bawah kunci "metadata"</span>
         must.append(models.FieldCondition(key=<span class="k">"metadata.genres"</span>, match=models.MatchValue(value=genre)))
@@ -557,7 +548,7 @@ LANGFUSE_HOST=</pre>
 <!-- 12 -->
 <section class="chap" id="open">
   <div class="chap-head"><div class="chap-no">12</div><div><h4>Review</h4><h2>Kritik diri dan perbaikan</h2></div></div>
-  <p>Rencana versi 3 dibaca ulang dengan empat prinsip kerja sebagai alat ukur. Ada 10 temuan, diurutkan dari yang paling berisiko. Semua perbaikannya sudah dimasukkan ke bab terkait di halaman ini.</p>
+  <p>Rencana versi 3 dibaca ulang dengan empat prinsip kerja sebagai alat ukur. Ada 10 temuan, diurutkan dari yang paling berisiko. Semua perbaikannya sudah dimasukkan ke bab terkait di halaman ini. Setiap pilihan yang berbeda dari contoh kelas dicatat beserta alasannya di <code>notes/keputusan-desain.md</code> (17 keputusan, tidak ada yang melawan arahan).</p>
   <div class="tablewrap"><table>
     <thead><tr><th class="n">#</th><th>Temuan</th><th>Kenapa bermasalah</th><th>Perbaikan</th><th>Prinsip</th></tr></thead>
     <tbody>
@@ -569,7 +560,7 @@ LANGFUSE_HOST=</pre>
       <tr><td class="n">6</td><td>Kartu poster belum jelas datanya dari mana</td><td>Kalau dibaca dari teks jawaban LLM, mudah rusak dan bisa menampilkan film karangan</td><td>Tool mengembalikan JSON metadata; UI membuat kartu dari ToolMessage, jadi hanya film yang benar-benar ada di dataset (bab 05, 08)</td><td>logical, impressive</td></tr>
       <tr><td class="n">7</td><td>Belum ada aturan anti-halusinasi</td><td>Agent bisa merekomendasikan film di luar 1.000 data dari pengetahuannya sendiri</td><td>System prompt: hanya dari hasil tool; tolak dengan sopan kalau data tidak ada (bab 07; uji #9)</td><td>effective</td></tr>
       <tr><td class="n">8</td><td>Tidak ada definisi "selesai" yang bisa diuji</td><td>"Sudah bagus" jadi soal perasaan, dan contoh query di README serta demo video dibuat terpisah</td><td>Set uji 9 pertanyaan dengan jawaban dari dataset, dipakai 3 kali (bab 11)</td><td>efficient, impressive</td></tr>
-      <tr><td class="n">9</td><td>Embedding lewat OpenRouter belum pernah dicoba</td><td><code>OpenAIEmbeddings</code> secara default mengirim token ID, bukan teks; tidak semua endpoint kompatibel menerimanya. Ini risiko teknis terbesar.</td><td>Dicoba paling awal (22–23 Okt). Kalau gagal: <code>check_embedding_ctx_length=False</code>, atau embedding langsung ke OpenAI.</td><td>effective</td></tr>
+      <tr><td class="n">9</td><td>Embedding lewat OpenRouter belum pernah dicoba</td><td><code>OpenAIEmbeddings</code> secara default mengirim token ID, bukan teks; tidak semua endpoint kompatibel menerimanya. Ini risiko teknis terbesar.</td><td>Dari 4 opsi (OpenRouter, OpenAI langsung, model lokal, Qdrant Inference) dipilih OpenRouter dengan <code>check_embedding_ctx_length=False</code>, supaya teks dikirim apa adanya. Diuji 1 menit sebelum ingest; cadangannya OpenAI langsung.</td><td>effective</td></tr>
       <tr><td class="n">10</td><td>Rencana uji A/B dua versi teks embedding</td><td>Kerja tambahan tanpa jaminan beda hasil</td><td>Langsung pakai <code>judul. genre. overview</code>; diubah hanya kalau set uji #1–2 gagal</td><td>simple, efficient</td></tr>
     </tbody>
   </table></div>
