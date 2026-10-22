@@ -91,7 +91,7 @@ td.n, th.n { text-align: right; font-family: var(--font-mono); font-variant-nume
   <div class="eyebrow">Draft arsitektur · JCAIEH Module 3 · diperbarui 21 Oktober 2026 · kasus: IMDB</div>
   <h1>Anatomi Capstone 3</h1>
   <p class="lead">Rancangan sementara aplikasi agentic RAG untuk capstone Module 3: data masuk ke Qdrant Cloud, agent memilih tool, prompt dan trace tersimpan di Langfuse, semuanya dibungkus Streamlit. Kasus yang dipilih: IMDB Top 1000, asisten rekomendasi film.</p>
-  <div class="banner"><b>Status: dataset diterima, IMDB dipilih.</b> Skema data di bab 04 sudah dicek dengan EDA. Kode masih sketsa dan belum dijalankan. Kutipan ketentuan diambil dari transkrip kelas exercise (JCAIEAH-005), jadi bisa ada salah dengar.</div>
+  <div class="banner"><b>Status: dataset diterima, IMDB dipilih.</b> Skema data di bab 04 sudah dicek dengan EDA. Sketsa kode sudah disamakan dengan pola catatan Sesi 09–17, tapi belum dijalankan. Kutipan ketentuan diambil dari transkrip kelas exercise (JCAIEAH-005), jadi bisa ada salah dengar.</div>
   <div class="tiles">
     <div class="tile"><b>1.000</b><span>film di dataset IMDB Top 1000, 16 kolom</span></div>
     <div class="tile"><b>3</b><span>stack yang tidak boleh diganti: Qdrant, Streamlit, Langfuse</span></div>
@@ -258,34 +258,33 @@ sequenceDiagram
       <li><b>Load + bersihkan</b> dengan pandas: ubah <code>Runtime</code> "142 min" jadi angka, <code>Gross</code> "28,341,469" jadi angka, isi nilai kosong.</li>
       <li><b>Susun teks yang di-embed</b>: gabungkan kolom yang bermakna semantik (judul, genre, overview, sutradara, pemain) jadi satu string. Angka tidak perlu di-embed; angka disimpan di payload.</li>
       <li><b>Chunking: tidak perlu.</b> Overview terpanjang 313 karakter (56 kata), jauh di bawah batas input model embedding. Satu film = satu point. Alasan ini perlu dijelaskan di video, karena Pak Herman menyebut chunking "kalau butuh".</li>
-      <li><b>Embedding</b> per batch (misalnya 100 teks per request) supaya cepat dan tidak kena rate limit.</li>
-      <li><b>Upsert</b> ke collection Qdrant: <em class="t">vector</em> + <em class="t">payload</em> (semua kolom asli).</li>
-      <li><b>Payload index</b> untuk kolom yang akan difilter (genre, tahun, rating; atau kategori, kota).</li>
+      <li><b>Bungkus jadi <code>Document</code></b> LangChain: <code>page_content</code> = teks yang di-embed, <code>metadata</code> = semua kolom lain. Kata Pak Herman, yang diubah ke vektor <b>hanya <code>page_content</code></b>; metadata ikut tersimpan sebagai payload tapi tidak di-embed.</li>
+      <li><b>Embed + upload</b> dengan satu panggilan <code>QdrantVectorStore.from_documents</code>: membuat collection (ukuran otomatis 1536), meng-embed, dan meng-upload sekaligus. Pola ini persis notebook Sesi 12.</li>
+      <li><b>Payload index</b> untuk kolom yang difilter (<code>metadata.genres</code>, <code>metadata.year</code>). Ini tambahan di luar kelas; dengan 1.000 film tidak wajib, tapi praktik yang baik.</li>
     </ol></div>
-    <div class="card"><h4>Kode inti (sketsa)</h4>
-<pre class="code"><span class="k">from</span> qdrant_client <span class="k">import</span> QdrantClient, models
+    <div class="card"><h4>Kode inti (pola kelas, Sesi 12 Bab 6B)</h4>
+<pre class="code"><span class="k">from</span> langchain_core.documents <span class="k">import</span> Document
+<span class="k">from</span> langchain_openai <span class="k">import</span> OpenAIEmbeddings
+<span class="k">from</span> langchain_qdrant <span class="k">import</span> QdrantVectorStore
 
-qdrant = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+embeddings = OpenAIEmbeddings(model=<span class="k">"text-embedding-3-small"</span>)  <span class="c"># 1536 dimensi</span>
 
-qdrant.create_collection(
-    collection_name=<span class="k">"movies"</span>,
-    vectors_config=models.VectorParams(
-        size=<span class="k">1536</span>,                      <span class="c"># = dimensi model embedding</span>
-        distance=models.Distance.COSINE, <span class="c"># Sesi 01: cosine similarity</span>
-    ),
-)
+documents = [
+    Document(
+        page_content=<span class="k">f"</span>{r.title}. {r.genre}. {r.overview}<span class="k">"</span>,  <span class="c"># yang di-embed</span>
+        metadata={<span class="k">"title"</span>: r.title, <span class="k">"year"</span>: r.year,
+                  <span class="k">"genres"</span>: r.genres, <span class="k">"rating"</span>: r.rating,
+                  <span class="k">"director"</span>: r.director, <span class="k">"stars"</span>: r.stars,
+                  <span class="k">"poster"</span>: r.poster, ...},          <span class="c"># payload, tidak di-embed</span>
+    )
+    <span class="k">for</span> r <span class="k">in</span> df.itertuples()
+]
 
-qdrant.upsert(
-    collection_name=<span class="k">"movies"</span>,
-    points=[
-        models.PointStruct(id=i, vector=vec, payload=row)
-        <span class="k">for</span> i, (vec, row) <span class="k">in</span> enumerate(zip(vectors, rows))
-    ],
-)
-
-qdrant.create_payload_index(
-    <span class="k">"movies"</span>, field_name=<span class="k">"genres"</span>,
-    field_schema=models.PayloadSchemaType.KEYWORD,
+QdrantVectorStore.from_documents(
+    documents, embeddings,
+    url=QDRANT_URL, api_key=QDRANT_API_KEY,
+    prefer_grpc=True,                    <span class="c"># kata kelas: pengiriman lebih cepat</span>
+    collection_name=<span class="k">"imdb_movies"</span>,
 )</pre></div>
   </div>
   <div class="card asm"><h4>Data nyata · EDA imdb_top_1000.csv (Kaggle, harshitshankhdhar)</h4>
@@ -307,7 +306,7 @@ qdrant.create_payload_index(
     </table></div>
     <p class="cap">Encoding file UTF-8 dan aman ("La vita è bella", "Amélie"). Huruf &#xFFFD; yang sempat terlihat hanya masalah tampilan terminal Windows. 1.000 point × 1.536 dimensi ≈ 6 MB vektor, jauh di bawah kuota Qdrant free tier. Embedding seluruh dataset ±60 ribu token, biayanya kurang dari satu sen dolar.</p>
   </div>
-  <div class="card jc"><h4>Kaitan JCAIEH</h4><p>M3 Sesi 01 <b>cosine similarity</b>, Sesi 06 <b>embedding OpenAI</b> dan chunking RAG, Sesi 12 <b>Vector Database</b>. M1 Sesi 12 <b>Pandas</b> untuk pembersihan data.</p></div>
+  <div class="card jc"><h4>Kaitan JCAIEH</h4><p>M3 Sesi 01 <b>cosine similarity</b>, Sesi 06 <b>embedding OpenAI</b> dan chunking RAG, Sesi 12 <b>Vector Database</b> (Bab 6B: <code>from_documents</code>, Bab 6C: point = vektor + payload). M1 Sesi 12 <b>Pandas</b> untuk pembersihan data.</p></div>
 </section>
 
 <!-- 05 -->
@@ -334,28 +333,30 @@ qdrant.create_payload_index(
       <li><b>Rating IMDB</b> hanya 7,6–9,3, jadi pembeda yang lebih tajam adalah Meta_score (28–100), jumlah vote, dan gross.</li>
     </ul><p class="cap">Contoh pertanyaan untuk README dan demo bisa diambil dari angka-angka ini, supaya jawaban agent mudah diverifikasi.</p></div>
   </div>
-  <div class="card"><h4>Bentuk RAG tool (sketsa, kasus IMDB)</h4>
-<pre class="code"><span class="k">from</span> langchain_core.tools <span class="k">import</span> tool
+  <div class="card"><h4>Bentuk RAG tool (pola kelas Sesi 14 Bab 7, ditambah filter)</h4>
+<pre class="code"><span class="k">from</span> langchain.tools <span class="k">import</span> tool
+<span class="k">from</span> qdrant_client <span class="k">import</span> models
+
+qdrant = QdrantVectorStore.from_existing_collection(   <span class="c"># sambung ke collection yang sudah ada</span>
+    embedding=embeddings, collection_name=<span class="k">"imdb_movies"</span>,
+    url=QDRANT_URL, api_key=QDRANT_API_KEY,
+)
 
 @tool
-<span class="k">def</span> search_movies(query: str, genre: str | None = None,
-                  min_rating: float | None = None, limit: int = <span class="k">5</span>) -> str:
+<span class="k">def</span> search_movies(query: str, genre: str | None = None, min_year: int | None = None) -> str:
     <span class="k">"""Cari film berdasarkan deskripsi cerita, suasana, atau tema.
     Pakai ini kalau user menjelaskan selera, bukan menyebut judul."""</span>
     must = []
-    <span class="k">if</span> genre:
-        must.append(models.FieldCondition(key=<span class="k">"genres"</span>, match=models.MatchValue(value=genre)))
-    <span class="k">if</span> min_rating:
-        must.append(models.FieldCondition(key=<span class="k">"rating"</span>, range=models.Range(gte=min_rating)))
+    <span class="k">if</span> genre:      <span class="c"># LangChain menyimpan metadata di bawah kunci "metadata"</span>
+        must.append(models.FieldCondition(key=<span class="k">"metadata.genres"</span>, match=models.MatchValue(value=genre)))
+    <span class="k">if</span> min_year:
+        must.append(models.FieldCondition(key=<span class="k">"metadata.year"</span>, range=models.Range(gte=min_year)))
 
-    hits = qdrant.query_points(
-        collection_name=<span class="k">"movies"</span>,
-        query=embed(query),                                 <span class="c"># vektor pertanyaan</span>
-        query_filter=models.Filter(must=must) <span class="k">if</span> must <span class="k">else</span> None,
-        limit=limit,
-    ).points
-    <span class="k">return</span> format_hits(hits)                               <span class="c"># teks ringkas untuk LLM</span></pre>
-  <p class="cap">Gabungan vektor + filter payload disebut <em class="t">filtered vector search</em>: makna dicari lewat vektor, syarat pasti (genre, rating) lewat filter.</p></div>
+    docs = qdrant.similarity_search(
+        query, k=<span class="k">5</span>, filter=models.Filter(must=must) <span class="k">if</span> must <span class="k">else</span> None,
+    )
+    <span class="k">return</span> format_docs(docs)          <span class="c"># judul + tahun + genre + overview, ringkas untuk LLM</span></pre>
+  <p class="cap">Kelas memakai <code>similarity_search(query, k=10)</code> tanpa filter. Tambahan filter payload (<em class="t">filtered vector search</em>) membuat makna dicari lewat vektor, sedangkan syarat pasti (genre, tahun) lewat filter. Ini nilai tambah yang bisa ditonjolkan di video.</p></div>
 </section>
 
 <!-- 06 -->
@@ -385,13 +386,16 @@ agent = create_agent(
     system_prompt=system_prompt,
 )
 
-<span class="k">def</span> run_agent(messages: list) -> dict:
+<span class="k">def</span> run_agent(messages: list, session_id: str) -> dict:
     <span class="k">return</span> agent.invoke(
-        {<span class="k">"messages"</span>: messages},
-        config={<span class="k">"callbacks"</span>: [CallbackHandler()]},  <span class="c"># trace ke Langfuse</span>
+        {<span class="k">"messages"</span>: messages},          <span class="c"># seluruh riwayat, bukan pesan terakhir saja</span>
+        config={
+            <span class="k">"callbacks"</span>: [CallbackHandler()],              <span class="c"># trace ke Langfuse</span>
+            <span class="k">"metadata"</span>: {<span class="k">"langfuse_session_id"</span>: session_id},
+        },
     )</pre></div>
   </div>
-  <div class="card warn"><h4>Yang harus dicek di slide Sesi 10</h4><p>Di transkrip, Pak Herman meminta agent "diubah ke create react agent, bukan create agent lagi". Di LangChain/LangGraph terbaru justru sebaliknya: <code>langgraph.prebuilt.create_react_agent</code> sudah digantikan <code>langchain.agents.create_agent</code>. Kemungkinan salah dengar di transkrip. Pilih yang sesuai slide dan versi library yang terpasang, lalu siapkan satu kalimat alasannya untuk video. Agent supervisor (multi-agent, Sesi 15) boleh, tapi tidak wajib.</p></div>
+  <div class="card asm"><h4>Terjawab · create_agent, bukan create_react_agent</h4><p>Catatan Sesi 10 (Bab 3C): slide 22 masih menyebut <code>create_react_agent</code> dari <code>langgraph.prebuilt</code>, tapi slide 37 dan notebook kelas memakai <b><code>create_agent</code></b> dari <code>langchain.agents</code>. Sejak LangGraph 1.0, <code>create_react_agent</code> berstatus <i>deprecated</i> dengan pesan "has been moved to <code>langchain.agents</code>". Keduanya membangun graf ReAct yang sama (model ⇄ tools). Kalimat di transkrip exercise kemungkinan salah dengar. Untuk video: "saya pakai <code>create_agent</code> karena <code>create_react_agent</code> sudah deprecated sejak LangGraph 1.0, sesuai notebook Sesi 10." Agent supervisor (Sesi 15) boleh, tapi tidak wajib.</p></div>
 </section>
 
 <!-- 07 -->
@@ -400,13 +404,14 @@ agent = create_agent(
   <div class="grid2">
     <div class="card"><h4>1 · Prompt management</h4><ul>
       <li>System prompt agent dibuat di Langfuse dengan nama tetap, misalnya <code>movie-agent-system</code>, label <code>production</code>.</li>
-      <li>Kode hanya memanggil <code>get_prompt(nama)</code>. Mengganti prompt tidak perlu deploy ulang, dan setiap versi tercatat.</li>
+      <li>Kode hanya memanggil <code>get_prompt(nama)</code> lalu <code>.compile(...)</code>. Variabel di prompt Langfuse ditulis <code>{{nama_variabel}}</code> (kurung kurawal ganda). Mengganti prompt tidak perlu deploy ulang, dan setiap versi tercatat (catatan Sesi 17 Bab C–D).</li>
       <li>Prompt lain (misalnya untuk tool <code>score_match</code> atau reranker berbasis LLM) juga disimpan di Langfuse. Syaratnya: <b>tidak ada prompt hardcode</b> di repo.</li>
       <li>Isi prompt: role, daftar tool dan kapan dipakai, aturan jawaban (bahasa, format, jangan mengarang di luar hasil tool). Struktur dari Sesi 08.</li>
     </ul></div>
     <div class="card"><h4>2 · Tracing</h4><ul>
       <li><code>CallbackHandler</code> mengirim setiap run agent ke Langfuse: pesan, setiap pemanggilan LLM, setiap tool call beserta argumen dan hasil, token, latensi, dan biaya.</li>
-      <li>Trace dikaitkan ke <em class="t">session id</em> Streamlit supaya satu percakapan terlihat utuh.</li>
+      <li>Trace dikaitkan ke <em class="t">session id</em> Streamlit supaya satu percakapan terlihat utuh. Di Langfuse v3, session id dikirim lewat <code>config["metadata"]["langfuse_session_id"]</code>, bukan argumen <code>CallbackHandler(...)</code> seperti di slide 27 (catatan Sesi 17: handler v3 tidak menerima argumen).</li>
+      <li>Butuh tiga variabel lingkungan: <code>LANGFUSE_PUBLIC_KEY</code>, <code>LANGFUSE_SECRET_KEY</code>, dan <code>LANGFUSE_HOST</code> (sesuai region, misalnya <code>https://us.cloud.langfuse.com</code>). Kata Pak Herman, host "sering lupa".</li>
       <li>Saat demo video: tunjukkan satu trace di dashboard Langfuse setelah bertanya di Streamlit.</li>
     </ul></div>
   </div>
@@ -442,6 +447,11 @@ agent = create_agent(
     <span class="c"># tool call: AIMessage.tool_calls + ToolMessage di result["messages"]</span>
     <span class="c"># usage: AIMessage.usage_metadata -> input_tokens, output_tokens</span></pre></div>
   </div>
+  <div class="card warn"><h4>Pelajaran dari main.py kelas (catatan Sesi 14 Bab 7)</h4><ul>
+    <li><b>Agent kelas tidak ingat percakapan</b>: riwayat disimpan di <code>session_state</code> hanya untuk ditampilkan, sedangkan yang dikirim ke agent hanya pesan terakhir. Capstone mengirim <b>seluruh riwayat</b> supaya pertanyaan lanjutan ("yang kedua tadi siapa sutradaranya?") bisa dijawab.</li>
+    <li>Role disimpan sebagai <code>user</code>/<code>assistant</code>, bukan "Human"/"AI", supaya riwayat bisa langsung dikirim ulang ke agent.</li>
+    <li>Tidak memakai <code>except:</code> kosong untuk membaca <code>.env</code>, karena salah ketik nama variabel jadi tidak terlihat penyebabnya.</li>
+  </ul></div>
 </section>
 
 <!-- 09 -->
@@ -531,8 +541,9 @@ LANGFUSE_HOST=</pre>
       <tr><td><s>Apakah dataset IMDB sama dengan IMDB Top 1000?</s> <span class="tag free">terjawab</span></td><td>Dataset Description.docx + EDA</td><td>Sama persis: 1.000 baris, 16 kolom (bab 04)</td></tr>
       <tr><td><s>Seberapa panjang teks yang di-embed?</s> <span class="tag free">terjawab</span></td><td>Panjang karakter overview</td><td>Maks 313 karakter, tidak perlu chunking</td></tr>
       <tr><td>Teks apa persisnya yang di-embed: overview saja, atau judul + genre + overview + sutradara?</td><td>Uji 5 query dengan dua versi collection</td><td>Kualitas pencarian RAG tool</td></tr>
-      <tr><td><code>create_agent</code> atau <code>create_react_agent</code>?</td><td>Baca slide Sesi 10 dan notebook Materi 9; cek versi library</td><td>Kode agent (bab 06)</td></tr>
-      <tr><td>Pola Langfuse dan Qdrant versi kelas?</td><td>Baca slide Sesi 12, 13, 14, 17</td><td>Gaya kode supaya mudah dikaitkan ke materi saat presentasi</td></tr>
+      <tr><td><s><code>create_agent</code> atau <code>create_react_agent</code>?</s> <span class="tag free">terjawab</span></td><td>Catatan Sesi 10 Bab 3C</td><td><code>create_agent</code> (bab 06)</td></tr>
+      <tr><td><s>Pola Langfuse dan Qdrant versi kelas?</s> <span class="tag free">terjawab</span></td><td>Catatan Sesi 12, 14, 17</td><td>Qdrant lewat <code>langchain_qdrant</code>; Langfuse v3 <code>get_client</code> + <code>CallbackHandler()</code> tanpa argumen (bab 04–07)</td></tr>
+      <tr><td>Kelas chat OpenRouter mana yang dipakai?</td><td>Catatan Sesi 09 hanya bilang "ganti kelasnya"; dicek saat setup</td><td>File <code>clients.py</code></td></tr>
       <tr><td>Model LLM mana yang tool calling-nya andal dan murah?</td><td>Uji 2–3 model OpenRouter dengan 5 pertanyaan yang sama</td><td><code>LLM_MODEL</code></td></tr>
     </tbody>
   </table></div>
