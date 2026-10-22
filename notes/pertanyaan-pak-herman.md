@@ -131,13 +131,23 @@ Di kelas exercise Bapak menyebut contoh Streamlit capstone punya **chat history,
 
 ---
 
-## Jawaban Pak Herman
+## Jawaban Pak Herman (22 Oktober 2026)
 
-> Diisi setelah bertanya.
-
-| No | Jawaban | Tanggal |
+| Pertanyaan | Jawaban | Keputusan capstone |
 |---|---|---|
-| 1. Qdrant | | |
-| 2. Langfuse | | |
-| 3. Chat history | | |
-| Tambahan | | |
+| 1.1 Qdrant lewat LangChain atau langsung? | Bebas | `langchain_qdrant`, sama dengan pola kelas |
+| 1.2 Filter metadata? | Boleh | Dipakai: filter genre dan tahun di RAG tool |
+| 1.3 Akses untuk penilaian | Intinya harus bisa dilihat Pak Herman | Siapkan URL cluster + API key **read-only** di form pengumpulan, dan tunjukkan dashboard collection di video |
+| 2.1 Langfuse v2 atau v3? | Yang mana saja yang works, dijalankan di VS Code | v3 (`get_client`, `CallbackHandler()` tanpa argumen) |
+| 2.2 Prompt apa saja di Langfuse? | Cukup di Langfuse, yang praktis | Hanya **system prompt agent**. Docstring tool tetap di kode. |
+| 2.3 Prompt lewat kode atau UI? | Cukup UI | Dibuat lewat **UI Langfuse** |
+| 2.4 Trace per pertanyaan atau per session? | Keduanya boleh | Satu trace per pertanyaan, dikelompokkan per session |
+| 3.1 Chat history | Intinya tiap sesi | Agent ingat percakapan selama satu sesi browser |
+| 3.2 Caranya | Yang ringan, tidak menyulitkan | Kirim seluruh `st.session_state.messages` ke agent (opsi a), tanpa checkpointer |
+| 3.3 Chat history, tool call, usage | **Wajib semua** | Ketiganya tampil di UI |
+| T1 Deploy | **Wajib** Streamlit | Deploy ke Streamlit Community Cloud |
+| T2 Chunking | Terserah | Tanpa chunking (1 film = 1 vektor), alasannya dijelaskan di video |
+| T3 Dataset di repo | Publik saja | CSV ikut di-commit |
+| T4 Kelas OpenRouter | Terserah | `ChatOpenAI` dengan `base_url` OpenRouter (tanpa library tambahan) |
+
+**Status:** semua pertanyaan terjawab. File ini boleh dihapus setelah keputusan di atas masuk ke README dan kode.
