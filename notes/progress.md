@@ -32,8 +32,8 @@
 - [x] System prompt `movie-agent-system` v1 di UI Langfuse, label production (23 Okt)
 - [x] Uji e2e dengan prompt asli: 3 pertanyaan dalam 1 session Langfuse (23 Okt)
 - [x] Perbaikan: genre tidak lagi ditebak (K27) (23 Okt)
-- [ ] **Anda:** jalankan `streamlit run streamlit_app.py` dan coba 3 pertanyaan
-- [ ] **Anda:** cek session `e2e-langfuse-prompt-23okt` di Langfuse → Sessions
+- [x] Jalankan `streamlit run streamlit_app.py` lokal dan coba 3 pertanyaan (23 Okt)
+- [x] Cek session `e2e-langfuse-prompt-23okt` di Langfuse → Sessions (23 Okt)
 - [ ] **Deploy pertama ke Streamlit Community Cloud**
 
 ## Fase 3 · Fitur lengkap (26–29 Okt)
