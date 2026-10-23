@@ -560,3 +560,14 @@ Sumber: [OpenRouter Embeddings API](https://openrouter.ai/docs/api-reference/emb
 - **Bukan CSS paksaan:** semua lewat `config.toml`, parameter resmi (`height`, `width="large"`, `st.logo`, `avatar`), dan komponen custom v2 (shadow DOM, gaya terisolasi). Satu-satunya HTML adalah wordmark di sidebar.
 - **Uji (AppTest):** tampilan awal (10 poster, 4 contoh), klik "semua film Nolan" → 8 film + tampilan awal hilang, rak 3/4 → tombol story, panel detail Inception, panel story; semuanya tanpa error.
 - **Status:** ✅ Arahan kelas: UI rapi menambah nilai (Pak Herman dulu desainer grafis)
+
+### K52 · Masukan setelah UI live: hover, kartu kaca, label "Muat", mode terang lebih redup, menu Streamlit
+- **Hover ala Netflix di semua kartu:** poster membesar 6% + bayangan saat disorot atau difokus keyboard. Berlaku untuk kartu jawaban, grid, dinding poster, dan rak. Mati kalau pengguna mengaktifkan "reduce motion".
+- **Hasil teratas memakai latar kaca:** kartu pertama di jawaban memakai posternya sendiri sebagai latar, diburamkan secukupnya (`blur 22px`, terang 50%, lapisan gelap 32%), jadi gambar yang diperbesar tidak terlihat pecah dan latar tidak monoton. Teks di kartu itu selalu terang karena latarnya selalu gelap, di mode gelap maupun terang.
+- **Label "Muat ... lagi" jujur:**
+  - `rank_movies` tahu totalnya, jadi labelnya "Muat 4 film lagi" kalau sisanya 4
+  - tombol hilang kalau semua sudah tampil (Nolan 8/8)
+  - pencarian makna tidak punya total, jadi labelnya "Muat lebih banyak"
+- **Mode terang lebih redup:** latar `#F4F1EC` dikeluhkan terlalu silau, jadi diturunkan ke putih tulang `#E9E4DB` (luminans 0,88 → 0,78). Teks tetap 14,5:1, teks redup ≥4,8:1.
+- **Menu ⋮ Streamlit (Print, Record screencast, Settings):** itu "viewer options" bawaan Streamlit. `client.toolbarMode = "minimal"` bisa menyembunyikannya, **tapi pengaturan tema terang/gelap ikut hilang**, dan tidak ada opsi untuk menyembunyikan screencast saja. Jadi dibiarkan `auto`: pengunjung hanya melihat viewer options; tombol developer (Rerun, Deploy) hanya untuk pemilik.
+- **Status:** 🔁 Revisi K51

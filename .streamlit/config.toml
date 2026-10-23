@@ -17,17 +17,18 @@ url = "app/static/fonts/Anton-Regular.ttf"
 weight = 400
 
 # Teks tombol utama Streamlit selalu putih, jadi oranye tombol dipilih yang lolos kontras 4,5:1 untuk teks putih.
+# Latar terang = putih tulang redup (K52): #F4F1EC terlalu silau, diturunkan ke #E9E4DB (teks tetap 14,5:1).
 [theme.light]
 primaryColor = "#C2410C"
-backgroundColor = "#F4F1EC"
-secondaryBackgroundColor = "#E9E4DC"
+backgroundColor = "#E9E4DB"
+secondaryBackgroundColor = "#DED8CE"
 textColor = "#151412"
-borderColor = "#D6D0C6"
+borderColor = "#CFC8BC"
 linkColor = "#C2410C"
 
 [theme.light.sidebar]
-backgroundColor = "#EDE8E0"
-secondaryBackgroundColor = "#E2DCD3"
+backgroundColor = "#E2DCD2"
+secondaryBackgroundColor = "#D7D0C5"
 
 [theme.dark]
 primaryColor = "#D2430E"
