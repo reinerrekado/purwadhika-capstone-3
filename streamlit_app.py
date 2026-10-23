@@ -137,7 +137,7 @@ def card_data(items: list[tuple[int, str]]) -> list[dict]:
     """Data kartu untuk komponen. Poster diambil dari data.py lewat id (K25); int/float supaya bisa jadi JSON."""
     movies = load_movies().set_index("id")
     return [{"id": int(movie_id), "title": movies.loc[movie_id, "title"], "year": int(movies.loc[movie_id, "year"]),
-             "rating": float(movies.loc[movie_id, "rating"]), "text": text,
+             "rating": f"{movies.loc[movie_id, 'rating']:.1f}", "text": text,  # "8.0", bukan "8"
              "poster": movies.loc[movie_id, "poster"] if poster_available(movies.loc[movie_id, "poster"]) else None}
             for movie_id, text in items]
 
@@ -177,7 +177,7 @@ def movie_dialog(movie_id: int) -> None:
         if similar.button("🔁 Cari yang mirip", width="stretch"):
             ask(f"Film yang mirip {movie['title']}")
 
-    st.markdown("**💡 Fakta menarik**\n" + "\n".join(f"- {fact}" for fact in movie_facts(movie_id)))
+        st.markdown("**💡 Fakta menarik**\n" + "\n".join(f"- {fact}" for fact in movie_facts(movie_id)))
 
 
 def show_answer(answer: str, details: dict, index: int) -> None:
