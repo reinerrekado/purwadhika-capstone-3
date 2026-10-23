@@ -29,16 +29,18 @@
 - [x] `app/tools.py`: `search_movies` dengan enum 21 genre + filter tahun (23 Okt)
 - [x] `app/agent.py`: `get_agent()` + `run_agent()`; memori percakapan terbukti jalan (23 Okt)
 - [x] `streamlit_app.py`: chat history, tool call, dan usage token (23 Okt)
-- [ ] **Anda:** buat system prompt `movie-agent-system` di UI Langfuse
+- [x] System prompt `movie-agent-system` v1 di UI Langfuse, label production (23 Okt)
+- [x] Uji e2e dengan prompt asli: 3 pertanyaan dalam 1 session Langfuse (23 Okt)
+- [x] Perbaikan: genre tidak lagi ditebak (K27) (23 Okt)
 - [ ] **Anda:** jalankan `streamlit run streamlit_app.py` dan coba 3 pertanyaan
-- [ ] Cek trace dan session di Langfuse
+- [ ] **Anda:** cek session `e2e-langfuse-prompt-23okt` di Langfuse → Sessions
 - [ ] **Deploy pertama ke Streamlit Community Cloud**
 
 ## Fase 3 · Fitur lengkap (26–29 Okt)
 - [ ] `get_movie_details`: pencarian judul 4 lapis (K18)
 - [ ] `rank_movies`: filter, urutkan, ringkasan statistik
 - [ ] UI: kartu film dengan poster
-- [ ] Uji: pertanyaan lanjutan ("yang kedua siapa sutradaranya?") harus memakai data tool, bukan pengetahuan model
+- [ ] Uji: pertanyaan lanjutan ("yang kedua siapa sutradaranya?") harus memakai data tool, bukan pengetahuan model. Uji 23 Okt: dijawab tanpa tool. Perbaikan: prompt **v2** di Langfuse, berisi aturan memakai `get_movie_details` untuk pertanyaan lanjutan
 
 ## Fase 4 · Uji dan dokumentasi (30 Okt – 1 Nov)
 - [ ] Set uji 10 pertanyaan: semuanya lolos

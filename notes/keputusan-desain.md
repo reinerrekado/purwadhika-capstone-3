@@ -267,6 +267,13 @@ Jawaban langsung Pak Herman, yang menjadi dasar status 💬 di bawah.
   Pertanyaan berbahasa Indonesia 11 token vs Inggris 9; jawaban Indonesia 75 vs Inggris 66 (±$0,000015 per jawaban). Tidak ada konflik: di semua uji, model menulis query bahasa Inggris, memetakan genre dengan benar ("animasi" → `Animation`), dan menjawab dalam bahasa Indonesia. Risiko satu-satunya adalah query yang lupa diterjemahkan, dan ini diperiksa otomatis di set uji. Penghematan, kalau suatu saat diperlukan, ada di hasil tool (55%) dan panjang riwayat, bukan di bahasa.
 - **Status:** ✅ Sama dengan contoh kelas
 
+### K27 · Filter hanya dipakai kalau user menyebutnya
+- **Masalah (uji e2e 23 Okt, prompt v1 dari Langfuse):** untuk "film tentang pencuri yang masuk ke mimpi orang", model menambahkan sendiri `genre='Sci-Fi'`. Kebetulan benar, tapi kalau tebakan genrenya salah, film yang dicari justru tersaring keluar.
+- **Perbaikan:** deskripsi parameter di docstring `search_movies` ditambah "Leave empty unless the user names a genre / a year or decade".
+- **Bukti (4 pertanyaan × 3 run):** genre tidak lagi ditebak (6/6 `None` untuk pertanyaan tanpa genre). Pertanyaan dengan genre tetap benar (Thriller + 1990–1999, Animation). Model kadang masih mengisi tahun 1920–2020. Ini dibiarkan karena tidak berbahaya: rentangnya mencakup seluruh dataset.
+- **Kenapa diperbaiki di docstring, bukan di system prompt:** aturan ini melekat pada parameter tool, dan docstring dibaca LLM tepat saat memilih argumen.
+- **Status:** ✅ Tidak ada arahan yang terkait
+
 ---
 
 ## Pemilihan embedding

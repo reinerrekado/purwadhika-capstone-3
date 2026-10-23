@@ -47,9 +47,9 @@ def search_movies(
 
     Args:
         query: Short description of the wanted plot or mood, written in English.
-        genre: Only return movies that have this genre.
-        year_from: Earliest release year, inclusive.
-        year_to: Latest release year, inclusive.
+        genre: Only return movies that have this genre. Leave empty unless the user names a genre.
+        year_from: Earliest release year, inclusive. Leave empty unless the user names a year or decade.
+        year_to: Latest release year, inclusive. Leave empty unless the user names a year or decade.
     """
     conditions = []
     if genre:
