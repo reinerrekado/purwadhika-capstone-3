@@ -582,6 +582,7 @@ Membuat teks dan gambar story 1080×1920 dari 1–4 film di watchlist. Logikanya
 | `Theme`, `THEMES` | Palet per genre (K48): latar, teks, sorotan, pita, swatch. Urutan list = prioritas |
 | `film_theme(movie)` | Tema satu film: tema pertama di `THEMES` yang genrenya dimiliki film (`set & set` = irisan) |
 | `auto_theme(movies)` | Tema dominan (`Counter`): muncul di ≥2 film dan tidak seri, selain itu Campur |
+| `_logo(color)` | Logo Rakfilm untuk watermark (K53): bentuk dari kanal alfa `rakfilm_mark.png`, diwarnai dengan warna teks tema |
 
 ### Baris penting
 
@@ -668,5 +669,38 @@ elif story_click:
     story_dialog()
 ```
 Streamlit hanya bisa membuka satu `st.dialog` dalam satu rerun. Klik dari rak, dinding poster, dan tombol story dikumpulkan dulu, lalu satu panel dibuka di akhir skrip.
+
+**Hover ala Netflix (K52), di `app/movie_cards.py`:**
+```css
+.card:hover .frame img { transform: scale(1.06); }
+.card:hover .frame { box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45); }
+```
+`.frame` punya `overflow: hidden`. Jadi poster membesar **di dalam** bingkainya, tidak menabrak kartu sebelah, dan bayangannya membuat kartu terlihat terangkat. Kalau pengguna menyalakan "kurangi animasi" di sistem operasinya, `prefers-reduced-motion` mematikan efek ini.
+
+**Kartu kaca untuk hasil teratas (K52):**
+```css
+.featured .glass { inset: -30px; filter: blur(22px) brightness(0.5) saturate(1.25); }
+.featured::after { background: rgba(14, 13, 12, 0.32); }
+```
+Latar kartu pertama adalah poster yang sama, diperbesar lalu diburamkan:
+- `inset: -30px` membuat gambar lebih lebar dari kartu, jadi tepi blur yang pudar terpotong dan tidak terlihat
+- blur menyembunyikan piksel yang pecah karena poster kecil diperbesar
+- lapisan gelap 32% menjaga teks putih tetap terbaca, di poster terang sekalipun
+
+**Label "Muat" yang jujur (K52), di `streamlit_app.py`:**
+```python
+left = more["total"] - len(shown) if more.get("total") is not None else None
+label = "Muat lebih banyak" if left is None else f"Muat {min(PAGE_SIZE, left)} film lagi"
+```
+- `rank_movies` menyaring data, jadi totalnya diketahui (Tom Hanks 14 film, 10 tampil → "Muat 4 film lagi"). Kalau sisanya 0, tombolnya tidak muncul.
+- Pencarian makna (`search_movies`) tidak punya total karena hasilnya selalu "film paling mirip berikutnya". Karena itu labelnya tidak menyebut angka.
+
+**Logo di IG story (K53), di `app/story.py`:**
+```python
+alpha = Image.open(LOGO).getchannel("A").resize((size, size), Image.LANCZOS)
+mark = Image.new("RGBA", (size, size), color)
+mark.putalpha(alpha)
+```
+Kanal alfa menyimpan bentuk logo: piksel logo bernilai 255, latar dan lubang sproket bernilai 0. Bentuk itu dipasang ke kotak satu warna (warna teks tema). Hasilnya logo yang sama, tapi warnanya mengikuti tema, sehingga tetap terbaca di latar kuning Komedi maupun hitam Horor.
 
 > 🎬 **Untuk video:** "Namanya Rakfilm. Tampilannya sengaja netral; warna datang dari poster filmnya, seperti Netflix atau Letterboxd. Tema terang dan gelap diatur di satu file config, logonya digambar dengan kode, dan semuanya memakai fitur resmi Streamlit, bukan CSS tempelan yang bisa rusak saat Streamlit di-update."

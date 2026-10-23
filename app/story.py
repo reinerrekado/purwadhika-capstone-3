@@ -23,6 +23,7 @@ from app.data import load_movies
 PROMPT_NAME = "story-headline"  # dibuat sekali di Langfuse, label "production"
 MAX_FILMS = 4
 FONT_DIR = Path(__file__).resolve().parent.parent / "static" / "fonts"  # Anton + IBM Plex Mono (lisensi OFL)
+LOGO = FONT_DIR.parent / "rakfilm_mark.png"  # dibuat oleh scripts/make_logo.py
 W, H, PAD, TOP = 1080, 1920, 80, 110
 PAPER = "#FFF6EC"  # lubang sproket dan teks di dalam pil ajakan
 FRAME_W, FRAME_H, FRAME_GAP = 213, 320, 22  # poster 2:3 di dalam pita film
@@ -215,6 +216,14 @@ def _film_strip(movies: list[dict], theme: Theme) -> Image.Image:
     return strip.rotate(3, resample=Image.BICUBIC, expand=True)  # CSS rotate(-3deg) = 3 derajat berlawanan jarum jam
 
 
+def _logo(color: str, size: int = 104) -> Image.Image:
+    """Logo Rakfilm (static/rakfilm_mark.png) diwarnai ulang satu warna; bentuknya diambil dari kanal alfa."""
+    alpha = Image.open(LOGO).getchannel("A").resize((size, size), Image.LANCZOS)
+    mark = Image.new("RGBA", (size, size), color)
+    mark.putalpha(alpha)
+    return mark
+
+
 def render_story(movie_ids: list[int], headline: str, cta: str, theme_name: str | None = None) -> bytes:
     """Gambar PNG 1080x1920 gaya Pita Film untuk 1–4 film. theme_name None = tema otomatis dari genre (K48)."""
     movies = watchlist_movies(movie_ids)[:MAX_FILMS]
@@ -270,6 +279,9 @@ def render_story(movie_ids: list[int], headline: str, cta: str, theme_name: str 
     small = _font("IBMPlexMono-Bold.ttf", 20)
     draw.multiline_text((W - PAD, pill_top + pill_h // 2), "dibuat dengan\nRakfilm", font=small,
                         fill=ink, anchor="rm", align="right", spacing=8)
+    mark = _logo(ink)  # logo di kiri watermark, sewarna teks supaya terbaca di semua tema
+    mark_x = W - PAD - round(draw.multiline_textbbox((0, 0), "dibuat dengan\nRakfilm", font=small, spacing=8)[2])
+    canvas.paste(mark, (mark_x - 10 - mark.width, pill_top + (pill_h - mark.height) // 2), mark)
     _spaced(draw, (PAD, pill_top - 26 - 36), stats_line(movies), _font("IBMPlexMono-Bold.ttf", 30), ink, 2)
 
     output = io.BytesIO()

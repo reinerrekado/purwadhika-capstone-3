@@ -571,3 +571,13 @@ Sumber: [OpenRouter Embeddings API](https://openrouter.ai/docs/api-reference/emb
 - **Mode terang lebih redup:** latar `#F4F1EC` dikeluhkan terlalu silau, jadi diturunkan ke putih tulang `#E9E4DB` (luminans 0,88 → 0,78). Teks tetap 14,5:1, teks redup ≥4,8:1.
 - **Menu ⋮ Streamlit (Print, Record screencast, Settings):** itu "viewer options" bawaan Streamlit. `client.toolbarMode = "minimal"` bisa menyembunyikannya, **tapi pengaturan tema terang/gelap ikut hilang**, dan tidak ada opsi untuk menyembunyikan screencast saja. Jadi dibiarkan `auto`: pengunjung hanya melihat viewer options; tombol developer (Rerun, Deploy) hanya untuk pemilik.
 - **Status:** 🔁 Revisi K51
+
+### K53 · Logo Rakfilm di IG story
+- **Sebelumnya:** watermark story hanya teks "dibuat dengan Rakfilm".
+- **Sekarang:** logo bingkai film "?" (104 px) diletakkan di kiri teks itu.
+- **Warna logo:** diwarnai ulang satu warna, sama dengan teks tema, bukan oranye asli.
+  - Alasan: oranye tenggelam di latar Komedi (kuning) dan bentrok dengan merah Horor.
+  - Logo satu warna terbaca di semua tema dan tetap dikenali dari bentuknya.
+  - Cara yang sama dipakai merek besar saat logonya menumpang di konten orang lain.
+- **Implementasi:** bentuk logo diambil dari kanal alfa `static/rakfilm_mark.png`. Jadi tetap satu sumber logo, tidak ada file kedua yang harus disinkronkan.
+- **Status:** ➕ Tambahan
