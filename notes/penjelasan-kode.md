@@ -448,7 +448,8 @@ Hanya **tampilan**. Semua logika ada di `app/agent.py` (arahan modular Pak Herma
 | `show_details()` | Poster + expander "🔧 tool call" + baris jumlah token + tombol 👍/👎 |
 | `save_feedback()` | Callback saat 👍/👎 diklik → `send_feedback` ke Langfuse |
 | `new_chat()` | Callback tombol "Percakapan baru": kosongkan chat, buat `session_id` baru |
-| `ask()` | Callback tombol "🔁 Cari yang mirip" di bawah poster: menitipkan pertanyaan "Film yang mirip <judul>" (K40) |
+| `show_posters()` → `poster_grid()` | Grid poster ala Netflix dari `app/poster_grid.py`; mengembalikan id film yang baru diklik (K41) |
+| `movie_dialog()` | Panel detail (`@st.dialog`) saat poster diklik: info lengkap, "Tonton di mana?", "Cari yang mirip" (K40, K41) |
 | `usd_to_idr()` | Kurs USD→IDR harian dari ECB (Frankfurter), di-cache sehari; `None` kalau gagal (K39) |
 | `cost_usd()`, `rupiah()` | Hitung biaya dari token, lalu ubah ke format "Rp42" |
 | sidebar (atas) | Tombol percakapan baru |
@@ -507,12 +508,35 @@ st.feedback("thumbs", key=key, on_change=save_feedback, args=(key, trace_id))
 ```
 `key` unik per percakapan dan per posisi jawaban. Kalau hanya memakai `index`, pilihan 👍 di percakapan lama akan muncul lagi di jawaban pertama percakapan baru. `on_change` dipanggil Streamlit **sebelum** rerun, dan nilai widget dibaca dari `st.session_state[key]`.
 
-**Tombol "Cari yang mirip" di bawah poster (K40):**
+**Grid poster yang bisa diklik (K41, `app/poster_grid.py`):**
 ```python
-column.button("🔁 Cari yang mirip", key=..., on_click=ask, args=(f"Film yang mirip {movie['title']}",))
+_POSTER_GRID = st.components.v2.component("poster_grid", html=..., css=..., js=...)
+card.onclick = () => setTriggerValue("opened", movie.id)        // JS: kirim id ke Python
+opened = poster_grid(cards, key=..., on_open=lambda: None)       # Python: id yang baru diklik, atau None
+if opened is not None: movie_dialog(opened)
+```
+`st.image` tidak bisa diklik, jadi grid dibuat sebagai **custom component v2**: HTML, CSS, dan JS kecil di dalam file Python, tanpa build tool. Alurnya:
+1. Python mengirim daftar film lewat `data=`.
+2. JS menggambar kartu.
+3. Saat diklik, JS memanggil `setTriggerValue("opened", id)`, dan Streamlit me-rerun app.
+4. `poster_grid()` mengembalikan id itu **hanya pada rerun tersebut**. *Trigger* berbeda dari *state*: trigger otomatis kosong lagi setelah satu rerun, jadi panel tidak terbuka ulang terus-menerus.
+
+CSS-nya meniru Netflix:
+- `aspect-ratio: 2/3` + `object-fit: cover` → semua poster sama ukuran, gambar di-crop, bukan gepeng
+- `-webkit-line-clamp: 2` + `min-height` → judul maksimal 2 baris, sehingga semua kartu sejajar
+- `.card:hover .shade` → lapisan gelap 35% + ikon expand muncul; `:focus-visible` memberi efek yang sama untuk keyboard
+- warna dari variabel tema Streamlit (`--st-text-color` dan lainnya), jadi cocok di mode gelap maupun terang
+
+**Panel detail dan "Cari yang mirip" (K40):**
+```python
+@st.dialog("Detail film", width="large")
+def movie_dialog(movie_id): ...
+    if similar.button("🔁 Cari yang mirip"):
+        st.session_state.pending = f"Film yang mirip {movie['title']}"
+        st.rerun()
 question = st.chat_input(...) or st.session_state.pop("pending", None)
 ```
-Tombol hanya menitipkan teks pertanyaan lewat `ask()`. Di bawahnya, teks itu diproses persis seperti ketikan user, lalu agent memilih `similar_movies`. `pop` mengambil sekaligus menghapusnya, jadi tidak terkirim dua kali. `key` memuat session, posisi jawaban, dan id film, karena Streamlit menolak dua tombol dengan key yang sama.
+`@st.dialog` mengubah fungsi menjadi jendela modal. Tombol di dalamnya menitipkan pertanyaan lalu memanggil `st.rerun()`, yang menutup panel dan menjalankan ulang app. Di bawahnya, pertanyaan titipan diproses persis seperti ketikan user, lalu agent memilih `similar_movies`. `pop` mengambil sekaligus menghapusnya, jadi tidak terkirim dua kali.
 
 **Biaya dalam Rupiah (K39):**
 ```python

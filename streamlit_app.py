@@ -6,10 +6,12 @@ import urllib.parse
 import urllib.request
 from uuid import uuid4
 
+import pandas as pd
 import streamlit as st
 
 from app.agent import send_feedback, stream_agent
 from app.data import load_movies
+from app.poster_grid import poster_grid
 
 # Harga openai/gpt-4.1-mini di OpenRouter (USD per 1 juta token, Okt 2026). Hanya untuk perkiraan biaya.
 PRICE_INPUT, PRICE_OUTPUT = 0.40, 1.60
@@ -27,11 +29,6 @@ def new_chat() -> None:
     """Kosongkan percakapan dan mulai session Langfuse baru."""
     st.session_state.chat = []
     st.session_state.session_id = uuid4().hex
-
-
-def ask(question: str) -> None:
-    """Callback tombol "Cari yang mirip": pertanyaannya diproses seperti ketikan di kotak chat."""
-    st.session_state.pending = question
 
 
 @st.cache_data(ttl=86400, show_spinner=False)
@@ -118,21 +115,40 @@ def poster_available(url: str) -> bool:
         return False
 
 
+@st.dialog("Detail film", width="large")
+def movie_dialog(movie_id: int) -> None:
+    """Panel detail saat poster diklik (K41): info lengkap, tempat menonton, dan cari film yang mirip (K40)."""
+    movie = load_movies().set_index("id").loc[movie_id]
+    left, right = st.columns([1, 2])
+    if poster_available(movie["poster"]):
+        left.image(movie["poster"], width="stretch")
+    else:
+        left.caption("🎞️ Poster tidak tersedia")
+    right.subheader(f"{movie['title']} ({movie['year']})")
+    certificate, meta_score = ("–" if pd.isna(movie[c]) else movie[c] for c in ("certificate", "meta_score"))
+    right.caption(f"{', '.join(movie['genres'])} · {movie['runtime_min']} menit · {certificate}")
+    right.markdown(f"⭐ **{movie['rating']}** IMDB · Metascore **{meta_score}**  \n"
+                   f"**Sutradara:** {movie['director']}  \n**Pemain:** {', '.join(movie['stars'])}")
+    right.write(movie["overview"])
+    watch, similar = right.columns(2)
+    watch.link_button("📺 Tonton di mana?", width="stretch",
+                      url="https://www.justwatch.com/id/search?q=" + urllib.parse.quote(movie["title"]))  # K37
+    if similar.button("🔁 Cari yang mirip", width="stretch"):
+        st.session_state.pending = f"Film yang mirip {movie['title']}"  # diproses seperti ketikan user
+        st.rerun()
+
+
 def show_posters(movie_ids: list[int], index: int) -> None:
-    """Kartu poster film yang disebut di jawaban. Poster diambil dari data.py lewat id (K25)."""
+    """Grid poster film yang disebut di jawaban (K41). Poster diambil dari data.py lewat id (K25)."""
     if not movie_ids:
         return
-    movies = load_movies().set_index("id")
-    for column, movie_id in zip(st.columns(5), movie_ids):
-        movie = movies.loc[movie_id]
-        if poster_available(movie["poster"]):
-            column.image(movie["poster"], width="stretch")
-        else:
-            column.container(border=True).caption("🎞️ Poster tidak tersedia")
-        watch = "https://www.justwatch.com/id/search?q=" + urllib.parse.quote(movie["title"])  # K37
-        column.caption(f"**{movie['title']}** ({movie['year']}) · ⭐ {movie['rating']} · [Tonton di mana?]({watch})")
-        column.button("🔁 Cari yang mirip", key=f"similar_{st.session_state.session_id}_{index}_{movie_id}",
-                      on_click=ask, args=(f"Film yang mirip {movie['title']}",), width="stretch")  # K40
+    rows = load_movies().set_index("id").loc[movie_ids]
+    cards = [{"id": int(movie_id), "title": row["title"], "year": int(row["year"]), "rating": float(row["rating"]),
+              "poster": row["poster"] if poster_available(row["poster"]) else None}  # int/float: harus bisa jadi JSON
+             for movie_id, row in rows.iterrows()]
+    opened = poster_grid(cards, key=f"posters_{st.session_state.session_id}_{index}", on_open=lambda: None)
+    if opened is not None:
+        movie_dialog(opened)
 
 
 def save_feedback(key: str, trace_id: str) -> None:

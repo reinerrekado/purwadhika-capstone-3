@@ -371,7 +371,20 @@ Jawaban langsung Pak Herman, yang menjadi dasar status 💬 di bawah.
 - **Kita:** setiap kartu poster punya tombol "🔁 Cari yang mirip". Klik → `ask("Film yang mirip <judul>")` → diproses seperti ketikan user → `similar_movies`. Contoh pertanyaan di sidebar dihapus seluruhnya.
 - **Kenapa judul tanpa tahun:** `find_title("Drishyam (2013)")` tidak akan cocok karena "2013" tidak ada di judul. Judul kembar sangat jarang (1 kasus dari 1.000 film).
 - **Bukti:** jawaban Spirited Away → klik di poster Sen to Chihiro → `similar_movies('Sen to Chihiro no kamikakushi')` → Totoro, Howl's Moving Castle.
+- **Revisi (K41):** tombol di bawah **setiap** poster ternyata terasa ramai (masukan Reiner). Tombolnya dipindah ke panel detail yang terbuka saat poster diklik.
 - **Status:** ✅ Tidak ada arahan yang terkait
+
+### K41 · Grid poster ala Netflix + panel detail saat diklik
+- **Masukan Reiner:**
+  1. tinggi poster tidak seragam, sehingga teks di bawahnya tidak sejajar;
+  2. tombol "Cari yang mirip" di setiap poster terasa ramai;
+  3. minta cara Netflix: ukuran tetap dan di-crop; saat disorot poster sedikit menggelap dan muncul ikon expand; detail terbuka hanya **setelah diklik**, bukan saat disorot.
+- **Kita:**
+  - **Grid** (`app/poster_grid.py`, Streamlit Custom Components v2): rasio 2:3 tetap, `object-fit: cover` (di-crop, tidak gepeng), judul maksimal 2 baris dengan tinggi tetap supaya semua kartu sejajar. Saat disorot atau difokus keyboard, muncul lapisan gelap 35% dan ikon expand. Klik → `setTriggerValue("opened", id)` → Python menerima id film.
+  - **Panel detail** (`st.dialog`): poster besar, genre, durasi, sertifikat, rating, Metascore, sutradara, pemain, sinopsis, tombol "📺 Tonton di mana?", dan **satu** tombol "🔁 Cari yang mirip".
+- **Kenapa komponen custom:** `st.image` tidak bisa diklik dan tidak bisa diberi efek hover. Komponen v2 cukup ditulis sebagai HTML, CSS, dan JS di dalam satu file Python, tanpa build tool. Warnanya memakai variabel tema Streamlit (`--st-text-color` dan lainnya), jadi tetap cocok di mode gelap maupun terang.
+- **Struktur:** file ketujuh di `app/`. Isinya murni tampilan, dipisah dari `streamlit_app.py` supaya file utama tetap terbaca.
+- **Status:** 🔁 Revisi K40
 
 ---
 
