@@ -1,6 +1,8 @@
 """Antarmuka chat. File ini hanya mengurus tampilan; logika agent ada di app/agent.py."""
 
 import json
+import re
+import urllib.request
 from uuid import uuid4
 
 import streamlit as st
@@ -24,25 +26,33 @@ def tool_movies(content: str) -> list[dict]:
         return []
 
 
-def mentioned_ids(found: dict[str, int], answer: str) -> list[int]:
-    """Id film yang judulnya disebut di jawaban, dengan urutan hasil tool (peringkat/relevansi).
+def mentioned_ids(found: dict[str, dict], answer: str) -> list[int]:
+    """Id film yang judulnya disebut di jawaban, urut sesuai daftar di jawaban.
 
-    Judul terpanjang dicocokkan dulu lalu dihapus dari teks, supaya "Star Wars" tidak ikut
-    cocok di dalam "Star Wars: Episode V - The Empire Strikes Back".
+    - Judul terpanjang dicocokkan dulu lalu ditutup, supaya "Star Wars" tidak ikut cocok
+      di dalam "Star Wars: Episode V - The Empire Strikes Back".
+    - Prompt mewajibkan format "Judul (tahun)" (aturan 3). Kalau format itu ada di jawaban, hanya
+      judul berformat itu yang dihitung, jadi "Tiga Star Wars terbaik..." tidak ikut.
+      Kalau tidak ada sama sekali, dipakai posisi judul biasa.
     """
-    mentioned = set()
+    with_year, plain = {}, {}
     for title in sorted(found, key=len, reverse=True):
-        if title in answer:
-            mentioned.add(title)
-            answer = answer.replace(title, "")
-    return [movie_id for title, movie_id in found.items() if title in mentioned]
+        if title not in answer:
+            continue
+        match = re.search(rf"{re.escape(title)}\W{{0,3}}\({found[title]['year']}\)", answer)  # "Heat" (1995)
+        if match:
+            with_year[title] = match.start()
+        plain[title] = answer.find(title)
+        answer = answer.replace(title, "\0" * len(title))  # panjang tetap, posisi lain tidak bergeser
+    positions = with_year or plain
+    return [found[title]["id"] for title in sorted(positions, key=positions.get)]
 
 
 def summarize_run(new_messages: list, answer: str) -> dict:
     """Ambil tool call, film yang disebut di jawaban, dan pemakaian token dari satu run agent."""
     ai_messages = [m for m in new_messages if m.type == "ai"]
     movies = {m.tool_call_id: tool_movies(m.content) for m in new_messages if m.type == "tool"}
-    found = {movie["title"]: movie["id"] for result in movies.values() for movie in result}
+    found = {movie["title"]: movie for result in movies.values() for movie in result}
     return {
         "tool_calls": [
             {"name": call["name"], "args": call["args"],
@@ -55,6 +65,15 @@ def summarize_run(new_messages: list, answer: str) -> dict:
     }
 
 
+@st.cache_data(ttl=86400, show_spinner=False)
+def poster_available(url: str) -> bool:
+    """90 dari 1.000 poster sudah dihapus dari server Amazon (404). Dicek sekali per URL, di-cache sehari."""
+    try:
+        return urllib.request.urlopen(urllib.request.Request(url, method="HEAD"), timeout=3).status == 200
+    except OSError:  # HTTPError, URLError, dan timeout semuanya turunan OSError
+        return False
+
+
 def show_posters(movie_ids: list[int]) -> None:
     """Kartu poster film yang disebut di jawaban. Poster diambil dari data.py lewat id (K25)."""
     if not movie_ids:
@@ -62,7 +81,10 @@ def show_posters(movie_ids: list[int]) -> None:
     movies = load_movies().set_index("id")
     for column, movie_id in zip(st.columns(5), movie_ids):
         movie = movies.loc[movie_id]
-        column.image(movie["poster"], width="stretch")
+        if poster_available(movie["poster"]):
+            column.image(movie["poster"], width="stretch")
+        else:
+            column.container(border=True).caption("🎞️ Poster tidak tersedia")
         column.caption(f"**{movie['title']}** ({movie['year']}) · ⭐ {movie['rating']}")
 
 

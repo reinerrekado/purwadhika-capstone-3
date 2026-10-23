@@ -303,6 +303,25 @@ Jawaban langsung Pak Herman, yang menjadi dasar status 💬 di bawah.
 - **Bukti:** "Yang kedua siapa sutradaranya?" → `get_movie_details(['The Usual Suspects'])` → Bryan Singer, dari data tool.
 - **Status:** ✅ Tidak ada arahan yang terkait
 
+### K32 · Prompt v3 + hint lebih tegas: jangan menyerah sebelum mencoba lagi
+- **Masalah (uji manual Reiner di app Cloud, 23 Okt, 15 pertanyaan):**
+  1. "ceritakan film Parasite": `get_movie_details` not_found, lalu agent langsung bilang "Dataset ini tidak memuat Parasite". Reproduksi lokal dengan v2: **gagal 3/4**.
+  2. "film drishyam tentang apa?" dijawab "tidak ada" dengan **0 tool call**. Setelah jawaban "tidak memuat" sebelumnya, model meniru polanya tanpa memeriksa.
+  3. "film animasi tentang anak perempuan di dunia roh": query model terlalu umum ("a girl in the spirit world"), sehingga Sen to Chihiro tidak masuk 5 besar. Dengan query rinci ("a young girl trapped in a world of gods and spirits") filmnya langsung #1.
+  4. Beberapa rekomendasi hanya menawarkan 1 film, padahal tool mengembalikan 5.
+- **Perbaikan:**
+  - **Hint `not_found`** (kode): "Do not tell the user the movie is missing yet... call get_movie_details again with the original title".
+  - **Docstring `query`** (kode): "One English sentence ... with the user's specific details (who, where, what happens)".
+  - **Prompt v3** (Langfuse): aturan 2 "Call at least one tool for every question about movies, even when an earlier answer seems to cover it". Aturan 3 menambahkan tahun dalam kurung di belakang setiap judul. Aturan 4 "make at least one more tool call before giving up". Aturan 6 "offer the 2-3 best matches".
+- **Bukti (6 kasus × 5 run):** Parasite 5/5, Drishyam dengan riwayat panjang persis seperti sesi app 5/5, Spirited Away 5/5, robot 5/5 (3 film), Star Wars 5/5, film 2023 5/5 (menolak dengan sopan setelah mengecek `rank_movies`).
+- **Status:** ✅ Tidak ada arahan yang terkait
+
+### K33 · Poster yang sudah dihapus dari server diganti kotak "Poster tidak tersedia"
+- **Masalah:** poster Lost Highway tampil sebagai gambar rusak. Pengecekan semua 1.000 URL: **90 poster (9%) mengembalikan 404**, termasuk link 67 px asli di dataset. Gambarnya sudah dihapus dari server Amazon, jadi kerusakannya ada di sumber data, bukan di kode.
+- **Perbaikan:** `poster_available(url)` mengirim request `HEAD` (hanya cek status, tanpa mengunduh gambar) dengan timeout 3 detik. Hasilnya di-cache sehari dengan `st.cache_data`. Kalau gagal, UI menampilkan kotak "🎞️ Poster tidak tersedia".
+- **Kenapa tidak membuat daftar poster rusak sekali saja:** status server bisa berubah. Cek langsung dengan cache selalu akurat dan hanya butuh beberapa baris kode.
+- **Status:** ✅ Tidak ada arahan yang terkait
+
 ---
 
 ## Pemilihan embedding

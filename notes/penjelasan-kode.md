@@ -442,14 +442,23 @@ Setiap tool call punya `id`, dan hasilnya (`ToolMessage`) membawa `tool_call_id`
 
 **Poster hanya untuk film yang benar-benar disebut:**
 ```python
-for title in sorted(found, key=len, reverse=True):   # judul terpanjang dulu
-    if title in answer:
-        mentioned.add(title)
-        answer = answer.replace(title, "")
+for title in sorted(found, key=len, reverse=True):                     # judul terpanjang dulu
+    match = re.search(rf"{re.escape(title)}\W{{0,3}}\({year}\)", answer)  # "Heat" (1995)
+    ...
+    answer = answer.replace(title, "\0" * len(title))                    # tutup, panjang tetap
+positions = with_year or plain
 ```
-Tool bisa mengembalikan 5–10 film, tapi jawaban mungkin hanya menyebut 3. Hanya film yang judulnya muncul di teks jawaban yang diberi poster. Cara ini bisa diandalkan karena prompt mewajibkan judul ditulis persis seperti di hasil tool (aturan 3). Ada dua jebakan yang ditemukan saat uji (23 Okt):
-1. "Star Wars" ada **di dalam** "Star Wars: Episode V - ...". Karena itu judul terpanjang dicocokkan dulu, lalu dihapus dari teks, supaya tidak ikut cocok dengan judul yang lebih pendek.
-2. Awalnya poster diurutkan berdasarkan posisi judul di jawaban. Tapi kalimat pembuka "Tiga **Star Wars** dengan rating tertinggi..." membuat Star Wars (1977) tampil paling depan. Sekarang urutannya mengikuti **hasil tool** (peringkat atau relevansi).
+Tool bisa mengembalikan 5–10 film, tapi jawaban mungkin hanya menyebut 3. Hanya film yang disebut di jawaban yang diberi poster, urut sesuai daftar di jawaban. Ada tiga jebakan yang ditemukan saat uji (23 Okt):
+1. **Judul di dalam judul.** "Star Wars" ada di dalam "Star Wars: Episode V - ...". Karena itu judul terpanjang dicocokkan dulu, lalu ditutup dengan karakter `\0` sepanjang judulnya. Panjang teks tetap sama, jadi posisi judul lain tidak bergeser.
+2. **Frasa umum.** Kalimat "Tiga **Star Wars** dengan rating tertinggi..." bukan penyebutan film Star Wars (1977). Prompt mewajibkan format `Judul (tahun)` (aturan 3), jadi posisi dicari dengan regex judul + tahun. `\W{0,3}` mengizinkan tanda kutip atau `**` di antaranya, misalnya `"Heat" (1995)` atau `**Heat** (1995)`.
+3. **Jawaban tanpa tahun.** Kalau tidak ada satu pun judul berformat `Judul (tahun)`, dipakai posisi judul biasa (`plain`). `with_year or plain` berarti: pakai `with_year` kalau tidak kosong, selain itu `plain`.
+
+**Poster yang sudah dihapus (K33):**
+```python
+@st.cache_data(ttl=86400, show_spinner=False)
+def poster_available(url): ... urlopen(Request(url, method="HEAD"), timeout=3).status == 200
+```
+90 dari 1.000 poster sudah dihapus dari server Amazon. `HEAD` hanya meminta status tanpa mengunduh gambar. `st.cache_data` menyimpan hasilnya sehari, jadi setiap URL hanya dicek sekali. `except OSError` menangkap semua kegagalan jaringan, karena `HTTPError`, `URLError`, dan timeout adalah turunan `OSError`.
 
 Posternya diambil dari `data.py` lewat `id` (K25), tidak lewat LLM.
 

@@ -56,7 +56,7 @@ def search_movies(
     or a movie series by title; use get_movie_details for that.
 
     Args:
-        query: Short description of the wanted plot or mood, written in English.
+        query: One English sentence describing the wanted plot or mood with the user's specific details (who, where, what happens).
         genre: Only return movies that have this genre. Leave empty unless the user names a genre.
         year_from: Earliest release year, inclusive. Leave empty unless the user names a year or decade.
         year_to: Latest release year, inclusive. Leave empty unless the user names a year or decade.
@@ -130,9 +130,10 @@ def get_movie_details(titles: list[str]) -> str:
     result = {"movies": movies}
     if not_found:
         result["not_found"] = not_found
-        result["hint"] = ("Non-English movies use their original title (e.g. Parasite = Gisaengchung). "
-                          "If you know the director or year, try rank_movies with those filters; "
-                          "otherwise try search_movies with a short English plot description.")
+        result["hint"] = ("Do not tell the user the movie is missing yet. Non-English movies use their "
+                          "original title (e.g. Parasite = Gisaengchung), so call get_movie_details again "
+                          "with the original title if you know it. Otherwise try rank_movies with the "
+                          "director or year, or search_movies with a short English plot description.")
     return json.dumps(result, ensure_ascii=False)
 
 

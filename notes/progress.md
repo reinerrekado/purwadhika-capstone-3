@@ -46,6 +46,11 @@
 - [x] Fase 3 di-push, Streamlit Cloud update otomatis; poster + 3 tool dicoba di app Cloud, semuanya benar (23 Okt, masih prompt v1)
 - [x] Verifikasi v2: teks dari Langfuse = draf teruji; uji e2e session `e2e-prompt-v2-23okt`, 2 pertanyaan lanjutan memakai `get_movie_details` (23 Okt)
 
+- [x] Uji manual Reiner di app Cloud: 15 pertanyaan, 11 benar + 4 temuan (Parasite, Drishyam, Spirited Away, poster rusak) (23 Okt)
+- [x] Perbaikan temuan: hint not_found, docstring query, poster 404 → kotak placeholder, urutan poster "Judul (tahun)"; draf prompt v3 diuji 6 kasus × 5 run, semuanya benar (24 Okt, K32–K33)
+- [ ] **Anda:** buat prompt `movie-agent-system` **v3** di UI Langfuse, label production
+- [ ] Verifikasi v3 dari Langfuse
+
 ## Fase 4 · Uji dan dokumentasi (30 Okt – 1 Nov)
 - [ ] Set uji 10 pertanyaan: semuanya lolos
 - [ ] Set uji memeriksa otomatis: setiap query `search_movies` berbahasa Inggris (K26)
