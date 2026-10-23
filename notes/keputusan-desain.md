@@ -581,3 +581,16 @@ Sumber: [OpenRouter Embeddings API](https://openrouter.ai/docs/api-reference/emb
   - Cara yang sama dipakai merek besar saat logonya menumpang di konten orang lain.
 - **Implementasi:** bentuk logo diambil dari kanal alfa `static/rakfilm_mark.png`. Jadi tetap satu sumber logo, tidak ada file kedua yang harus disinkronkan.
 - **Status:** ➕ Tambahan
+
+### K54 · Latar kaca jadi efek hover di semua kartu hasil (revisi K52)
+- **Maksud asli pengguna:** latar seluruh halaman hasil ikut berwarna dari poster teratas, supaya halaman punya aksen hidup.
+- **Kenapa tidak dikerjakan:**
+  - Streamlit tidak punya fitur resmi untuk mengubah latar halaman.
+  - Satu-satunya cara adalah CSS yang menyasar elemen internal Streamlit, yang bisa diam-diam hilang saat Streamlit di-update.
+  - Setelah risiko ini dijelaskan, pengguna memilih membatalkan ide tersebut.
+- **Gantinya:**
+  - Latar kaca (poster sendiri, diburamkan) tidak lagi permanen di kartu pertama.
+  - Sekarang latar kaca muncul pelan saat **kartu mana pun** di jawaban disorot, dan teksnya berganti terang.
+  - Halaman tetap tenang. Warna baru hidup saat pengguna berinteraksi, dan tiap film membawa warnanya sendiri.
+- **Kode:** parameter `featured` dihapus dari `movie_cards`. Kartu `list` yang punya poster otomatis mendapat kelas `glassy`.
+- **Status:** 🔁 Revisi K52

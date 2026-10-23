@@ -677,12 +677,14 @@ Streamlit hanya bisa membuka satu `st.dialog` dalam satu rerun. Klik dari rak, d
 ```
 `.frame` punya `overflow: hidden`. Jadi poster membesar **di dalam** bingkainya, tidak menabrak kartu sebelah, dan bayangannya membuat kartu terlihat terangkat. Kalau pengguna menyalakan "kurangi animasi" di sistem operasinya, `prefers-reduced-motion` mematikan efek ini.
 
-**Kartu kaca untuk hasil teratas (K52):**
+**Latar kaca saat kartu disorot (K54):**
 ```css
-.featured .glass { inset: -30px; filter: blur(22px) brightness(0.5) saturate(1.25); }
-.featured::after { background: rgba(14, 13, 12, 0.32); }
+.glass { inset: -30px; filter: blur(22px) brightness(0.5) saturate(1.25); opacity: 0; transition: opacity 0.3s ease; }
+.glassy:hover .glass, .glassy:hover::after { opacity: 1; }
 ```
-Latar kartu pertama adalah poster yang sama, diperbesar lalu diburamkan:
+Setiap kartu hasil yang punya poster diberi lapisan `.glass`: poster yang sama, diperbesar lalu diburamkan. Lapisan ini tidak terlihat (`opacity: 0`) sampai kartunya disorot, lalu muncul pelan dalam 0,3 detik dan teks berganti terang. Jadi tiap film punya warna hover sendiri: *Gravity* biru angkasa, *Avatar* biru-oranye.
+
+Detail tampilannya:
 - `inset: -30px` membuat gambar lebih lebar dari kartu, jadi tepi blur yang pudar terpotong dan tidak terlihat
 - blur menyembunyikan piksel yang pecah karena poster kecil diperbesar
 - lapisan gelap 32% menjaga teks putih tetap terbaca, di poster terang sekalipun

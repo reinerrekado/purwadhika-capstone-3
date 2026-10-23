@@ -246,15 +246,13 @@ def load_more(index: int) -> None:
 def show_answer(answer: str, details: dict, index: int) -> None:
     """Jawaban dengan kartu film di tempatnya (K44), grid untuk film di dalam paragraf, lalu "Muat lebih banyak"."""
     blocks, leftover = split_answer(answer, details.get("found", []))
-    clicks, first_cards = [], True
+    clicks = []
     for n, (kind, content) in enumerate(blocks):
         if kind == "text":
             st.markdown(content)
         else:
             key = f"cards_{st.session_state.session_id}_{index}_{n}"
-            clicks.append(movie_cards(card_data(content), layout="list", key=key, on_open=lambda: None,
-                                      featured=first_cards))  # hasil teratas: latar kaca (K52)
-            first_cards = False
+            clicks.append(movie_cards(card_data(content), layout="list", key=key, on_open=lambda: None))
     if leftover:
         key = f"grid_{st.session_state.session_id}_{index}"
         clicks.append(movie_cards(card_data([(i, "") for i in leftover[:10]]), layout="grid", key=key,

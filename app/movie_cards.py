@@ -27,8 +27,8 @@ _CSS = """
 .card { all: unset; cursor: pointer; display: flex; min-width: 0; box-sizing: border-box; }
 .grid .card, .wall .card, .rack .card { flex-direction: column; gap: 6px; }
 .list .card {
-  flex-direction: row; align-items: flex-start; gap: 16px;
-  padding: 8px; margin: 0 -8px; border-radius: 6px; transition: background 0.15s ease;
+  position: relative; overflow: hidden; flex-direction: row; align-items: flex-start; gap: 16px;
+  padding: 10px; margin: 0 -10px; border-radius: 8px; transition: background 0.15s ease, color 0.3s ease;
 }
 .list .card:hover, .list .card:focus-visible { background: var(--st-secondary-background-color); }
 .frame {
@@ -40,16 +40,17 @@ _CSS = """
 .frame { transition: box-shadow 0.25s ease; }
 .card:hover .frame img, .card:focus-visible .frame img { transform: scale(1.06); }
 .card:hover .frame, .card:focus-visible .frame { box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45); }
-.list .card.featured { position: relative; overflow: hidden; padding: 14px; margin: 0 -14px 6px; border-radius: 8px;
-  background: #161513; color: #F4F1EC; }
-.featured .glass { position: absolute; inset: -30px; width: calc(100% + 60px); height: calc(100% + 60px);
-  object-fit: cover; filter: blur(22px) brightness(0.5) saturate(1.25); pointer-events: none; }
-.featured::after { content: ""; position: absolute; inset: 0; border-radius: 8px; pointer-events: none;
-  background: rgba(14, 13, 12, 0.32); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); }
-.featured > .frame, .featured > .body { position: relative; z-index: 1; }
-.featured .frame { width: 5.5rem; }
-.list .card.featured:hover, .list .card.featured:focus-visible { background: #161513; }
-.featured .meta, .featured .text { opacity: 0.85; }
+/* Latar kaca saat disorot (K54): poster kartu itu sendiri, diburamkan, muncul pelan. Latarnya selalu gelap,
+   jadi teks berganti terang, di mode gelap maupun terang. */
+.glass { position: absolute; inset: -30px; width: calc(100% + 60px); height: calc(100% + 60px);
+  object-fit: cover; filter: blur(22px) brightness(0.5) saturate(1.25); pointer-events: none;
+  opacity: 0; transition: opacity 0.3s ease; }
+.glassy::after { content: ""; position: absolute; inset: 0; border-radius: 8px; pointer-events: none;
+  background: rgba(14, 13, 12, 0.32); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  opacity: 0; transition: opacity 0.3s ease; }
+.glassy:hover .glass, .glassy:focus-visible .glass, .glassy:hover::after, .glassy:focus-visible::after { opacity: 1; }
+.list .card.glassy:hover, .list .card.glassy:focus-visible { color: #F4F1EC; }
+.glassy > .frame, .glassy > .body { position: relative; z-index: 1; }
 .missing {
   position: absolute; inset: 0; display: grid; place-items: center;
   padding: 0.3rem; text-align: center; font-size: 0.7rem; opacity: 0.7;
@@ -75,7 +76,7 @@ _CSS = """
 .meta { font-family: var(--st-code-font, monospace); font-size: 0.75rem; opacity: 0.65; }
 .text { margin-top: 2px; font-size: 0.95rem; line-height: 1.55; opacity: 0.85; }
 @media (prefers-reduced-motion: reduce) {
-  .card, .shade, .shade svg, .frame, .frame img { transition: none; }
+  .card, .shade, .shade svg, .frame, .frame img, .glass, .glassy::after { transition: none; }
   .card:hover .frame img, .card:focus-visible .frame img { transform: none; }
 }
 """
@@ -97,11 +98,11 @@ export default function ({ data, parentElement, setTriggerValue }) {
   const root = parentElement.querySelector(".cards")
   root.className = `cards ${layout}`
   root.replaceChildren()
-  ;(data?.movies ?? []).forEach((movie, index) => {
-    const featured = layout === "list" && data?.featured && index === 0 && movie.poster
-    const card = el("button", featured ? "card featured" : "card")
+  ;(data?.movies ?? []).forEach((movie) => {
+    const glassy = layout === "list" && movie.poster
+    const card = el("button", glassy ? "card glassy" : "card")
     card.type = "button"
-    if (featured) {  // latar kaca: poster yang sama, diburamkan supaya tidak terlihat pecah saat diperbesar
+    if (glassy) {  // latar kaca saat disorot: poster yang sama, diburamkan supaya tidak terlihat pecah
       const glass = el("img", "glass")
       glass.src = movie.poster
       glass.alt = ""
@@ -144,14 +145,13 @@ Layout = Literal["list", "grid", "wall", "rack"]
 
 
 def movie_cards(movies: list[dict], *, layout: Layout, key: str, on_open: Callable[[], None],
-                empty: int = 0, featured: bool = False) -> int | None:
+                empty: int = 0) -> int | None:
     """Tampilkan kartu film. Kembalikan id film yang baru diklik (hanya pada rerun itu), selain itu None.
 
     movies: [{"id", "title", "year", "rating", "poster" (None kalau tidak tersedia), "text" (alasan, opsional)}]
     empty: jumlah slot kosong di akhir (dipakai rak tontonan).
-    featured: kartu pertama layout "list" diberi latar kaca dari posternya sendiri (hasil teratas, K52).
     """
-    return _MOVIE_CARDS(data={"layout": layout, "movies": movies, "empty": empty, "featured": featured}, key=key,
+    return _MOVIE_CARDS(data={"layout": layout, "movies": movies, "empty": empty}, key=key,
                         on_opened_change=on_open).opened
 
 
