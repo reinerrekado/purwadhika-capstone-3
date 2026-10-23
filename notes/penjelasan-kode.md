@@ -243,11 +243,12 @@ J: Yang penting bukan angka mutlaknya, tapi **selisihnya dengan urutan berikutny
 ## 6. `app/tools.py`
 
 ### Tugasnya
-Berisi fungsi-fungsi yang **boleh dipanggil agent**: satu tool RAG dan dua tool non-RAG.
+Berisi fungsi-fungsi yang **boleh dipanggil agent**: dua tool Qdrant dan dua tool non-RAG.
 
 | Tool | Sumber data | Dipakai untuk |
 |---|---|---|
 | `search_movies` | Qdrant (RAG) | "film tentang pencuri yang masuk ke mimpi": mencari berdasarkan makna plot |
+| `similar_movies` | Qdrant (vektor film) | "film yang mirip Inception": tetangga terdekat dari vektor sebuah film (K34) |
 | `get_movie_details` | `data.py` (pandas) | menyebut judul, pertanyaan lanjutan, perbandingan |
 | `rank_movies` | `data.py` (pandas) | "paling bagus/terlaris/berapa banyak", seri film, film seorang sutradara atau aktor |
 
@@ -288,6 +289,14 @@ models.FieldCondition(key="metadata.year", range=models.Range(gte=year_from, lte
 FIELDS_FOR_LLM = ["id", "title", "year", "genres", "rating", ...]
 ```
 LLM mendapat fakta terstruktur (K06). Poster tidak ikut karena tidak berguna untuk menjawab dan hanya memboroskan token. UI mengambil poster sendiri berdasarkan `id` (K25).
+
+**Film mirip (`similar_movies`, K34):**
+```python
+store.client.query_points(store.collection_name, query=source_id, using=store.vector_name, limit=5, ...)
+```
+Kalau `query` diisi **id** sebuah point, Qdrant memakai vektor point itu sendiri sebagai query. Tidak perlu memanggil API embedding lagi, dan film asalnya otomatis tidak ikut di hasil. `store.client` adalah `QdrantClient` yang sudah dibuat LangChain, jadi tidak perlu koneksi kedua. `using=store.vector_name` diperlukan karena LangChain memberi nama `""` pada vektornya (ingat bug `vectors[""]` di ingest).
+
+**Filter bersama (`_qdrant_filter`):** filter genre dan tahun dipakai oleh `search_movies` dan `similar_movies`, jadi kodenya ditulis sekali saja.
 
 **Normalisasi judul (`normalize`):**
 ```python
@@ -354,29 +363,46 @@ Merakit **agent ReAct**: LLM + tools + system prompt dari Langfuse, dan mencatat
 
 | Fungsi | Tugas |
 |---|---|
-| `get_agent()` | Ambil system prompt dari Langfuse, lalu `create_agent(model, tools, system_prompt)`. Dibuat sekali (`@lru_cache`) |
-| `run_agent(messages, session_id)` | Jalankan agent dengan seluruh riwayat, lalu kembalikan **hanya pesan baru** dari run ini |
+| `get_agent()` | Ambil prompt `production` dari Langfuse (di-cache SDK 60 detik), kembalikan agent + nomor versi prompt |
+| `_build_agent(system_prompt)` | `create_agent(model, tools, system_prompt)`, di-cache per teks prompt (`@lru_cache`) |
+| `stream_agent(messages, session_id, run)` | Jalankan agent dengan seluruh riwayat, alirkan teks jawaban; setelah selesai mengisi `run` dengan pesan baru + `trace_id` |
+| `send_feedback(trace_id, thumbs_up)` | Simpan 👍/👎 sebagai score di trace Langfuse |
 
 ### Baris penting
 
-**System prompt dari Langfuse, bukan hardcode:**
+**System prompt dari Langfuse, bukan hardcode, dan selalu versi terbaru (K35):**
 ```python
-system_prompt = get_client().get_prompt("movie-agent-system").compile()
+prompt = get_client().get_prompt(PROMPT_NAME)          # label production, cache SDK 60 detik
+return _build_agent(prompt.compile()), prompt.version  # agent di-cache per teks prompt
 ```
-`get_prompt` mengambil versi berlabel `production` (Sesi 17). Prompt bisa diubah di UI Langfuse tanpa mengubah kode, dan setiap versinya tercatat.
+`get_prompt` mengambil versi berlabel `production` (Sesi 17). Versi awal memakai `@lru_cache` langsung di `get_agent()`, sehingga prompt baru baru terpakai setelah app restart. Sekarang cache-nya **per teks prompt**: selama prompt sama, agent yang sama dipakai ulang; begitu label production dipindah ke versi baru, dalam ≤60 detik agent baru dibuat otomatis.
 
 **Tracing ke Langfuse:**
 ```python
-config={"callbacks": [CallbackHandler()],
-        "metadata": {"langfuse_session_id": session_id}}
+config = {"callbacks": [handler], "metadata": {
+    "langfuse_session_id": session_id,
+    "langfuse_tags": [f"prompt-v{prompt_version}"],
+}}
 ```
-`CallbackHandler` mencatat semuanya: setiap panggilan LLM, setiap tool call beserta argumen dan hasilnya, token, dan waktu. `langfuse_session_id` mengelompokkan semua pertanyaan dalam satu percakapan menjadi satu **session** di Langfuse. Di Langfuse v3 ke atas, session dikirim lewat `metadata`, bukan lewat argumen `CallbackHandler(...)` seperti di slide 27 (K02).
+`CallbackHandler` mencatat semuanya: setiap panggilan LLM, setiap tool call beserta argumen dan hasilnya, token, dan waktu. `langfuse_session_id` mengelompokkan satu percakapan menjadi satu **session**. `langfuse_tags` memberi label versi prompt pada setiap trace, sehingga feedback bisa dibandingkan antar versi. Di Langfuse v3 ke atas, keduanya dikirim lewat `metadata`, bukan lewat argumen `CallbackHandler(...)` seperti di slide 27 (K02).
 
-**Hanya pesan baru:**
+**Streaming dua jalur (K38):**
 ```python
-return result["messages"][len(messages):]
+for mode, data in agent.stream(..., stream_mode=["messages", "updates"]):
+    if mode == "messages":            # potongan token → ditampilkan langsung
+        if meta["langgraph_node"] == "model" and chunk.content: yield chunk.content
+    else:                             # pesan utuh tiap node selesai → untuk tool call & token
+        new_messages += update["messages"]
+run.update(messages=new_messages, trace_id=handler.last_trace_id)
 ```
-`agent.invoke` mengembalikan **seluruh** percakapan: riwayat lama + pesan baru. Kalau riwayatnya berisi 3 pesan, pesan baru dimulai dari indeks 3. Tanpa pemotongan ini, tool call dan token dari pertanyaan sebelumnya ikut terhitung lagi (kritik diri #5).
+Fungsi ini **generator** (`yield`): Streamlit (`st.write_stream`) menampilkan setiap potongan begitu datang. Ada dua jenis event. `messages` berisi potongan teks; hanya yang berasal dari node `model` yang ditampilkan, bukan dari node `tools`. `updates` berisi pesan utuh (AIMessage dengan `tool_calls` dan `usage_metadata`, serta ToolMessage), sehingga hanya pesan **baru** yang terkumpul, tanpa perlu memotong `[len(messages):]` lagi. Generator tidak bisa mengembalikan nilai ke `st.write_stream`, jadi hasil tambahannya dititipkan ke dict `run` yang dibawa dari pemanggil.
+
+**Feedback ke Langfuse (K36):**
+```python
+get_client().create_score(trace_id=trace_id, name="user_feedback", value=int(thumbs_up),
+                          data_type="BOOLEAN", score_id=f"{trace_id}-feedback")
+```
+Score menempel pada trace jawaban itu. `score_id` yang tetap membuat klik ulang menimpa nilai lama, bukan menambah score baru.
 
 ### Isi satu run
 Contoh hasil nyata untuk "thriller tahun 90-an":
@@ -393,12 +419,15 @@ Ini **loop ReAct** (Sesi 10): berpikir → bertindak (tool) → membaca hasil �
 J: `create_react_agent` sudah *deprecated* sejak LangGraph 1.0 dan dipindahkan ke `langchain.agents.create_agent`. Notebook Sesi 10 juga memakai `create_agent` (K01).
 
 **T: Kenapa agent tidak dibuat saat file di-import?**
-J: Itu akan mengakses jaringan (Langfuse, Qdrant) begitu file di-import, padahal arahannya modul tidak boleh punya efek samping saat di-import. Dengan `@lru_cache`, agent dibuat sekali, saat pertanyaan pertama masuk (K24).
+J: Itu akan mengakses jaringan (Langfuse, Qdrant) begitu file di-import, padahal arahannya modul tidak boleh punya efek samping saat di-import. Agent dibuat saat pertanyaan pertama masuk, lalu dipakai ulang selama prompt tidak berubah (K24, K35).
+
+**T: Feedback 👍/👎 dipakai untuk apa?**
+J: Untuk menemukan jawaban buruk dari pengguna sungguhan. Di Langfuse → Scores, filter `user_feedback = 0`, buka trace-nya, lalu lihat tool apa yang dipanggil, dengan argumen apa, dan apa hasilnya. Masalahnya direproduksi di laptop, diperbaiki (docstring, prompt, atau kode), dimasukkan ke set uji, lalu dirilis sebagai versi prompt baru. Karena setiap trace diberi tag `prompt-vN`, rasio 👍 sebelum dan sesudah perbaikan bisa dibandingkan (K36).
 
 **T: Kenapa memilih `gpt-4.1-mini`?**
 J: Dari uji 6 model: nano sempat salah menulis judul ("Seance of the Lambs"), DeepSeek berhalusinasi, Gemini lite kena rate limit, gpt-5-mini 3× lebih lambat. gpt-4.1-mini cepat (±4 dtk), teliti, dan murah (<$1 per 1.000 pertanyaan) (K23).
 
-> 🎬 **Untuk video:** "Agent saya dibuat dengan `create_agent`. System prompt-nya tidak ditulis di kode, tapi diambil dari Langfuse. Setiap run dicatat ke Langfuse dan dikelompokkan per sesi percakapan."
+> 🎬 **Untuk video:** "Agent saya dibuat dengan `create_agent`. System prompt-nya tidak ditulis di kode, tapi diambil dari Langfuse. Setiap run dicatat ke Langfuse, dikelompokkan per sesi, dan diberi tag versi prompt. Feedback 👍/👎 dari pengguna masuk ke trace yang sama, jadi saya tahu jawaban mana yang buruk dan dengan versi prompt yang mana."
 
 ---
 
@@ -415,10 +444,15 @@ Hanya **tampilan**. Semua logika ada di `app/agent.py` (arahan modular Pak Herma
 | `st.session_state.session_id` | Id acak per sesi, dikirim ke Langfuse |
 | `tool_movies()` | Baca daftar `movies` dari hasil tool (K28). Kalau isinya pesan error, kembalikan list kosong |
 | `summarize_run()` | Dari pesan baru, ambil tool call (nama, argumen, judul hasil), id film yang disebut di jawaban, dan jumlah token |
-| `show_posters()` | Kartu poster (maksimal 5) untuk film yang disebut di jawaban |
-| `show_details()` | Poster + expander "🔧 tool call" + baris jumlah token |
-| loop `for message in ...` | Menggambar ulang chat history setiap rerun |
-| `st.chat_input` | Kotak ketik; `:=` (*walrus*) menyimpan isi ketikan sekaligus mengecek apakah ada isinya |
+| `show_posters()` | Kartu poster (maksimal 5) untuk film yang disebut di jawaban, dengan link "Tonton di mana?" (K37) |
+| `show_details()` | Poster + expander "🔧 tool call" + baris jumlah token + tombol 👍/👎 |
+| `save_feedback()` | Callback saat 👍/👎 diklik → `send_feedback` ke Langfuse |
+| `new_chat()` | Callback tombol "Percakapan baru": kosongkan chat, buat `session_id` baru |
+| sidebar (atas) | 4 contoh pertanyaan yang bisa diklik + tombol percakapan baru |
+| sidebar (bawah) | Total pertanyaan, token, dan perkiraan biaya sesi. Ditulis di akhir skrip supaya sudah termasuk jawaban terbaru |
+| loop `for index, message in ...` | Menggambar ulang chat history setiap rerun |
+| `st.chat_input(...) or pending` | Pertanyaan dari kotak ketik **atau** dari tombol contoh di sidebar |
+| `st.write_stream(stream_agent(...))` | Menampilkan jawaban potong demi potong, lalu mengembalikan teks lengkapnya |
 
 ### Baris penting
 
@@ -463,9 +497,23 @@ def poster_available(url): ... urlopen(Request(url, method="HEAD"), timeout=3).s
 
 Posternya diambil dari `data.py` lewat `id` (K25), tidak lewat LLM.
 
+**Tombol feedback per jawaban:**
+```python
+key = f"feedback_{st.session_state.session_id}_{index}"
+st.feedback("thumbs", key=key, on_change=save_feedback, args=(key, trace_id))
+```
+`key` unik per percakapan dan per posisi jawaban. Kalau hanya memakai `index`, pilihan 👍 di percakapan lama akan muncul lagi di jawaban pertama percakapan baru. `on_change` dipanggil Streamlit **sebelum** rerun, dan nilai widget dibaca dari `st.session_state[key]`.
+
+**Contoh pertanyaan di sidebar:**
+```python
+if st.button(example): st.session_state.pending = example
+question = st.chat_input(...) or st.session_state.pop("pending", None)
+```
+Tombol hanya menitipkan teks contoh. Di bawahnya, teks itu diproses persis seperti ketikan user. `pop` mengambil sekaligus menghapusnya, jadi tidak terkirim dua kali.
+
 ### Menjalankan
 ```
 streamlit run streamlit_app.py
 ```
 
-> 🎬 **Untuk video:** "Di bawah setiap jawaban ada dua hal: tool apa yang dipanggil beserta argumennya, dan berapa token yang dipakai. Riwayat chat dikirim utuh ke agent, jadi saya bisa bertanya lanjutan seperti 'yang kedua siapa sutradaranya?'."
+> 🎬 **Untuk video:** "Jawaban mengalir kata demi kata. Di bawahnya ada poster film yang disebut, link tempat menonton, tool apa yang dipanggil beserta argumennya, jumlah token, dan tombol 👍/👎 yang masuk ke Langfuse. Di sidebar ada contoh pertanyaan dan total biaya sesi. Riwayat chat dikirim utuh ke agent, jadi saya bisa bertanya lanjutan seperti 'yang kedua siapa sutradaranya?'."

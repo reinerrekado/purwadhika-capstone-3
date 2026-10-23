@@ -30,6 +30,10 @@ RANK_FIELDS = ["id", "title", "year", "genres", "rating", "meta_score",
 
 ROMAN = {"ii": "2", "iii": "3", "iv": "4", "v": "5", "vi": "6", "vii": "7", "viii": "8", "ix": "9"}
 MAX_MATCHES = 10  # cukup untuk satu seri penuh, misalnya 6 film Harry Potter
+NOT_FOUND_HINT = ("Do not tell the user the movie is missing yet. Non-English movies use their original "
+                  "title (e.g. Parasite = Gisaengchung), so call the same tool again with the original "
+                  "title if you know it. Otherwise try rank_movies with the director or year, or "
+                  "search_movies with a short English plot description.")  # K32
 
 
 @lru_cache(maxsize=1)
@@ -41,6 +45,17 @@ def _vector_store() -> QdrantVectorStore:
         url=env("QDRANT_URL"),
         api_key=env("QDRANT_API_KEY"),
     )
+
+
+def _qdrant_filter(genre: str | None, year_from: int | None, year_to: int | None) -> models.Filter | None:
+    """Filter payload Qdrant (K04). Hanya dipasang kalau LLM mengisinya; LangChain menyimpan data di "metadata"."""
+    conditions = []
+    if genre:
+        conditions.append(models.FieldCondition(key="metadata.genres", match=models.MatchValue(value=genre)))
+    if year_from or year_to:
+        conditions.append(models.FieldCondition(key="metadata.year",
+                                                range=models.Range(gte=year_from, lte=year_to)))
+    return models.Filter(must=conditions) if conditions else None
 
 
 @tool(parse_docstring=True)
@@ -56,21 +71,12 @@ def search_movies(
     or a movie series by title; use get_movie_details for that.
 
     Args:
-        query: One English sentence describing the wanted plot or mood with the user's specific details (who, where, what happens).
+        query: One sentence in English (translate if the user writes in another language) describing the wanted plot or mood with the user's specific details (who, where, what happens).
         genre: Only return movies that have this genre. Leave empty unless the user names a genre.
         year_from: Earliest release year, inclusive. Leave empty unless the user names a year or decade.
         year_to: Latest release year, inclusive. Leave empty unless the user names a year or decade.
     """
-    conditions = []
-    if genre:
-        conditions.append(models.FieldCondition(key="metadata.genres", match=models.MatchValue(value=genre)))
-    if year_from or year_to:
-        conditions.append(models.FieldCondition(key="metadata.year",
-                                                range=models.Range(gte=year_from, lte=year_to)))
-
-    docs = _vector_store().similarity_search(
-        query, k=5, filter=models.Filter(must=conditions) if conditions else None,
-    )
+    docs = _vector_store().similarity_search(query, k=5, filter=_qdrant_filter(genre, year_from, year_to))
     movies = [{field: doc.metadata[field] for field in FIELDS_FOR_LLM} for doc in docs]
     return json.dumps({"movies": movies}, ensure_ascii=False)
 
@@ -129,12 +135,34 @@ def get_movie_details(titles: list[str]) -> str:
 
     result = {"movies": movies}
     if not_found:
-        result["not_found"] = not_found
-        result["hint"] = ("Do not tell the user the movie is missing yet. Non-English movies use their "
-                          "original title (e.g. Parasite = Gisaengchung), so call get_movie_details again "
-                          "with the original title if you know it. Otherwise try rank_movies with the "
-                          "director or year, or search_movies with a short English plot description.")
+        result.update(not_found=not_found, hint=NOT_FOUND_HINT)
     return json.dumps(result, ensure_ascii=False)
+
+
+@tool(parse_docstring=True)
+def similar_movies(title: str, year_from: int | None = None, year_to: int | None = None) -> str:
+    """Find movies similar to a given movie ("movies like Inception"), by comparing plot embeddings.
+
+    Args:
+        title: Title of the movie the user liked. Tolerates typos.
+        year_from: Earliest release year, inclusive. Leave empty unless the user names a year or decade.
+        year_to: Latest release year, inclusive. Leave empty unless the user names a year or decade.
+    """
+    matches = find_title(title)
+    if not matches:
+        return json.dumps({"movies": [], "not_found": [{"query": title}], "hint": NOT_FOUND_HINT})
+
+    source_id = next(iter(matches))  # judul persis, atau yang terpopuler
+    store = _vector_store()
+    # Query = id film: Qdrant memakai vektor film itu sendiri sebagai query, dan film itu tidak ikut di hasil.
+    points = store.client.query_points(
+        store.collection_name, query=source_id, using=store.vector_name, limit=5, with_payload=True,
+        query_filter=_qdrant_filter(None, year_from, year_to),  # tanpa genre: kemiripan vektor sudah mencakupnya
+    ).points
+    movies = [{field: p.payload["metadata"][field] for field in FIELDS_FOR_LLM} for p in points]
+    source = load_movies().set_index("id").loc[source_id]
+    return json.dumps({"similar_to": f"{source['title']} ({source['year']})", "movies": movies},
+                      ensure_ascii=False)
 
 
 SortField = Literal["rating", "meta_score", "votes", "gross_usd", "runtime_min", "year"]
@@ -190,4 +218,4 @@ def rank_movies(
     }, ensure_ascii=False)
 
 
-TOOLS = [search_movies, get_movie_details, rank_movies]
+TOOLS = [search_movies, similar_movies, get_movie_details, rank_movies]

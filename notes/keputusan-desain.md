@@ -322,6 +322,41 @@ Jawaban langsung Pak Herman, yang menjadi dasar status 💬 di bawah.
 - **Kenapa tidak membuat daftar poster rusak sekali saja:** status server bisa berubah. Cek langsung dengan cache selalu akurat dan hanya butuh beberapa baris kode.
 - **Status:** ✅ Tidak ada arahan yang terkait
 
+> **K34–K38: fitur tambahan (24 Okt).** Pak Herman menyebut fitur tambahan sebagai nilai tambah. Dipilih Reiner dari 4 usulan + 1 ide sendiri (link tonton).
+
+### K34 · Tool ke-4 `similar_movies`: film mirip lewat vektor film itu sendiri
+- **Kita:** "film yang mirip Inception" → `find_title` mencari id Inception → `client.query_points(query=id)`. Qdrant memakai vektor Inception yang **sudah tersimpan** sebagai query, jadi tidak perlu embedding baru. Film itu sendiri otomatis tidak ikut di hasil. Satu panggilan, ±190 ms.
+- **Beda dengan `search_movies`:** `search_movies` meng-embed **teks** user. `similar_movies` memakai **film** sebagai titik awal. Ini pemakaian kedua Qdrant yang berbeda dari RAG biasa.
+- **Tanpa parameter genre:** saat diuji, agent menebak genre sendiri (Action untuk Dark Knight, Animation untuk Spirited Away). Kemiripan vektor sudah mencakup genre, jadi parameternya dibuang. Hasilnya lebih sederhana dan tidak ada yang bisa ditebak. Filter tahun tetap ada ("mirip Dark Knight tapi tahun 90-an").
+- **Bukti:** Inception → Inside Man, The Matrix, Gattaca. Spirited Away → judul tidak ketemu → agent mencoba lagi dengan judul asli → film Ghibli. Dark Knight 90-an → Batman: Mask of the Phantasm. 10/10 tanpa tebakan genre.
+- **Status:** 🔁 Revisi K17 (3 → 4 tool)
+
+### K35 · Prompt baru terpakai tanpa restart (perbaikan K24)
+- **Masalah:** K24 memakai `@lru_cache` pada `get_agent()`, sehingga prompt disimpan **selamanya** selama proses hidup. Pernyataan "ganti prompt tanpa deploy ulang" jadi tidak sepenuhnya benar. v3 kebetulan langsung terpakai karena push berikutnya ikut me-restart app.
+- **Perbaikan:** `get_prompt()` dipanggil setiap pertanyaan. SDK Langfuse menyimpan prompt di memori 60 detik, jadi hampir selalu tanpa akses jaringan. Agent di-cache per **teks prompt** (`_build_agent(system_prompt)`), jadi agent baru hanya dibuat saat prompt benar-benar berubah.
+- **Status:** 🔁 Revisi K24
+
+### K36 · Feedback 👍/👎 disimpan sebagai score Langfuse
+- **Kita:** `st.feedback("thumbs")` di bawah setiap jawaban → `create_score(trace_id, name="user_feedback", value=1/0, data_type="BOOLEAN")`.
+  - `score_id` tetap (`{trace_id}-feedback`), jadi mengganti 👍 ke 👎 menimpa score lama, bukan menambah. Sudah dibuktikan: 2 kiriman → 1 score.
+  - Setiap trace diberi tag `prompt-v{versi}`, jadi rasio 👍 bisa dibandingkan antar versi prompt.
+- **Loop perbaikan:** Langfuse → Scores, filter `user_feedback = 0` → buka trace → lihat tool, argumen, dan hasil → reproduksi di laptop → perbaiki (docstring, prompt, atau kode) → kasus masuk set uji → versi prompt baru → bandingkan rasio 👍 per tag. Ini loop yang sama dengan K32, hanya sumber temuannya user, bukan uji manual.
+- **Status:** ✅ Tidak ada arahan yang terkait (Sesi 17: observability)
+
+### K37 · Link "Tonton di mana?" ke pencarian JustWatch, bukan API ketersediaan streaming
+- **Kita:** setiap kartu poster punya link `justwatch.com/id/search?q=<judul>`.
+- **Alternatif yang ditolak:**
+  - API TMDB watch providers: datanya dari JustWatch, gratis hanya untuk non-komersial, komersial butuh lisensi, perlu API key baru, dan judul harus dicocokkan ke ID TMDB.
+  - JustWatch Partner API: token harus diminta lewat email.
+- **Affiliate:** tidak ditemukan program affiliate resmi JustWatch (dicek 24 Okt). Disebut di pitch video sebagai pengembangan berikutnya, bukan klaim.
+- **Status:** ✅ Tidak ada arahan yang terkait
+
+### K38 · Jawaban mengalir (streaming) + sidebar
+- **Streaming:** `agent.stream(stream_mode=["messages", "updates"])`. Mode `messages` memberi potongan token untuk `st.write_stream`; hanya potongan dari node `model` yang ditampilkan. Mode `updates` memberi pesan utuh (AIMessage + ToolMessage), sehingga tool call dan usage tetap bisa dihitung seperti sebelumnya. `run_agent` diganti `stream_agent`. Hasil uji: token pertama sekitar 3 detik, teks yang di-stream sama persis dengan jawaban akhir.
+- **Sidebar:** 4 contoh pertanyaan yang bisa diklik, tombol "Percakapan baru" (kosongkan chat + session Langfuse baru), dan total pertanyaan, token, serta perkiraan biaya sesi (harga gpt-4.1-mini di OpenRouter: $0,40 input / $1,60 output per 1 juta token).
+- **Temuan sampingan:** `usage_metadata` menunjukkan `cache_read` sekitar 1.150 token. OpenAI otomatis meng-cache awalan prompt (system prompt + skema tool) yang sama, sehingga token itu ditagih lebih murah. Perkiraan biaya di sidebar belum memperhitungkan diskon ini, jadi angkanya sedikit di atas biaya sebenarnya.
+- **Status:** ✅ Tidak ada arahan yang terkait
+
 ---
 
 ## Pemilihan embedding

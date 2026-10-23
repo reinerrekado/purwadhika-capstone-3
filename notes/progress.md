@@ -51,6 +51,10 @@
 - [x] Prompt `movie-agent-system` **v3** di UI Langfuse, label production (24 Okt)
 - [x] Verifikasi v3: teks dari Langfuse = draf teruji (24 Okt)
 
+- [x] Fitur tambahan (K34–K38): tool `similar_movies`, feedback 👍/👎 → Langfuse score, sidebar (contoh, percakapan baru, token + biaya), link "Tonton di mana?" (JustWatch), jawaban streaming; prompt di-cache per teks, jadi versi baru terpakai tanpa restart (24 Okt)
+- [ ] **Anda:** buat prompt `movie-agent-system` **v4** di UI Langfuse, label production
+- [ ] Verifikasi v4 + coba fitur baru di app Cloud
+
 ## Fase 4 · Uji dan dokumentasi (30 Okt – 1 Nov)
 - [ ] Set uji 10 pertanyaan: semuanya lolos
 - [ ] Set uji memeriksa otomatis: setiap query `search_movies` berbahasa Inggris (K26)

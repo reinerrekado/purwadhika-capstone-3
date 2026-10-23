@@ -2,13 +2,23 @@
 
 import json
 import re
+import urllib.parse
 import urllib.request
 from uuid import uuid4
 
 import streamlit as st
 
-from app.agent import run_agent
+from app.agent import send_feedback, stream_agent
 from app.data import load_movies
+
+# Harga openai/gpt-4.1-mini di OpenRouter (USD per 1 juta token, Okt 2026). Hanya untuk perkiraan biaya di sidebar.
+PRICE_INPUT, PRICE_OUTPUT = 0.40, 1.60
+EXAMPLES = [
+    "Film tentang pencuri yang masuk ke mimpi orang",
+    "Film yang mirip Spirited Away",
+    "Star Wars mana yang ratingnya paling tinggi?",
+    "Bandingkan Inception dan Interstellar",
+]
 
 st.set_page_config(page_title="Asisten Film IMDB", page_icon="🎬")
 st.title("🎬 Asisten Film IMDB")
@@ -16,6 +26,20 @@ st.caption("Ceritakan film yang ingin Anda tonton. Sumber: 1.000 film terbaik IM
 
 st.session_state.setdefault("chat", [])  # [{"role", "content", "details"}]
 st.session_state.setdefault("session_id", uuid4().hex)  # satu percakapan = satu session Langfuse
+
+
+def new_chat() -> None:
+    """Kosongkan percakapan dan mulai session Langfuse baru."""
+    st.session_state.chat = []
+    st.session_state.session_id = uuid4().hex
+
+
+with st.sidebar:
+    st.subheader("Coba tanya")
+    for example in EXAMPLES:
+        if st.button(example, width="stretch"):
+            st.session_state.pending = example  # diproses seperti ketikan di kotak chat, di bawah
+    st.button("🗑️ Percakapan baru", on_click=new_chat, width="stretch", type="primary")
 
 
 def tool_movies(content: str) -> list[dict]:
@@ -87,11 +111,18 @@ def show_posters(movie_ids: list[int]) -> None:
             column.image(movie["poster"], width="stretch")
         else:
             column.container(border=True).caption("🎞️ Poster tidak tersedia")
-        column.caption(f"**{movie['title']}** ({movie['year']}) · ⭐ {movie['rating']}")
+        watch = "https://www.justwatch.com/id/search?q=" + urllib.parse.quote(movie["title"])  # K37
+        column.caption(f"**{movie['title']}** ({movie['year']}) · ⭐ {movie['rating']} · [Tonton di mana?]({watch})")
 
 
-def show_details(details: dict) -> None:
-    """Tampilkan poster, tool call (dalam expander), dan usage di bawah jawaban."""
+def save_feedback(key: str, trace_id: str) -> None:
+    """Dipanggil saat 👍/👎 diklik. st.feedback("thumbs") bernilai 1 = 👍, 0 = 👎, None = dibatalkan."""
+    if st.session_state[key] is not None:
+        send_feedback(trace_id, st.session_state[key] == 1)
+
+
+def show_details(details: dict, index: int) -> None:
+    """Tampilkan poster, tool call (dalam expander), usage, dan tombol feedback di bawah jawaban."""
     show_posters(details.get("movie_ids", []))
     calls = details["tool_calls"]
     with st.expander(f"🔧 {len(calls)} tool call"):
@@ -100,25 +131,37 @@ def show_details(details: dict) -> None:
             st.code(f"{call['name']}({args})", language="python")
             st.caption("Hasil: " + (", ".join(call["titles"]) or "tidak ada film yang cocok"))
     st.caption(f"Token: {details['input_tokens']:,} input · {details['output_tokens']:,} output")
+    if trace_id := details.get("trace_id"):
+        key = f"feedback_{st.session_state.session_id}_{index}"  # unik per percakapan dan per jawaban
+        st.feedback("thumbs", key=key, on_change=save_feedback, args=(key, trace_id))
 
 
-for message in st.session_state.chat:  # chat history
+for index, message in enumerate(st.session_state.chat):  # chat history
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
         if message.get("details"):
-            show_details(message["details"])
+            show_details(message["details"], index)
 
-if question := st.chat_input("Misalnya: thriller tahun 90-an yang bikin tegang"):
+question = st.chat_input("Misalnya: thriller tahun 90-an yang bikin tegang") or st.session_state.pop("pending", None)
+if question:
     with st.chat_message("user"):
         st.markdown(question)
     st.session_state.chat.append({"role": "user", "content": question})
 
     history = [{"role": m["role"], "content": m["content"]} for m in st.session_state.chat]
     with st.chat_message("assistant"):
+        run = {}  # diisi stream_agent setelah selesai: pesan baru + trace_id
         with st.spinner("Mencari film..."):
-            new_messages = run_agent(history, st.session_state.session_id)
-        answer = new_messages[-1].content
-        details = summarize_run(new_messages, answer)
-        st.markdown(answer)
-        show_details(details)
+            answer = st.write_stream(stream_agent(history, st.session_state.session_id, run))
+        details = summarize_run(run["messages"], answer) | {"trace_id": run["trace_id"]}
+        show_details(details, len(st.session_state.chat))
     st.session_state.chat.append({"role": "assistant", "content": answer, "details": details})
+
+with st.sidebar:  # ditulis terakhir supaya angkanya sudah termasuk jawaban yang baru selesai
+    runs = [m["details"] for m in st.session_state.chat if m.get("details")]
+    tokens_in = sum(d["input_tokens"] for d in runs)
+    tokens_out = sum(d["output_tokens"] for d in runs)
+    st.subheader("Sesi ini")
+    st.metric("Pertanyaan", len(runs))
+    st.metric("Token", f"{tokens_in + tokens_out:,}", help=f"{tokens_in:,} input · {tokens_out:,} output")
+    st.metric("Perkiraan biaya", f"${(tokens_in * PRICE_INPUT + tokens_out * PRICE_OUTPUT) / 1e6:.4f}")
