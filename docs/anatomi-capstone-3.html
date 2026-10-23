@@ -87,10 +87,10 @@ td.n, th.n { text-align: right; font-family: var(--font-mono); font-variant-nume
 
 <div class="wrap">
 <header>
-  <div class="eyebrow">Draft arsitektur · JCAIEH Module 3 · diperbarui 22 Oktober 2026 · kasus: IMDB</div>
+  <div class="eyebrow">Arsitektur · JCAIEH Module 3 · diperbarui 23 Oktober 2026 · kasus: IMDB</div>
   <h1>Anatomi Capstone 3</h1>
-  <p class="lead">Rancangan sementara aplikasi agentic RAG untuk capstone Module 3: data masuk ke Qdrant Cloud, agent memilih tool, prompt dan trace tersimpan di Langfuse, semuanya dibungkus Streamlit. Kasus yang dipilih: IMDB Top 1000, asisten rekomendasi film.</p>
-  <div class="banner"><b>Status: rencana final, belum ada kode.</b> Data sudah dicek (bab 04), keputusan sudah diklarifikasi dengan Pak Herman pada 22 Oktober, dan rencananya sudah dikritik ulang (bab 12): 10 temuan, semuanya sudah dimasukkan ke bab terkait. Prinsip kerja: <i>simple, structural, logical, efficient &amp; effective</i>, lalu dibuat <i>impressive</i>.</div>
+  <p class="lead">Aplikasi agentic RAG untuk capstone Module 3: data masuk ke Qdrant Cloud, agent memilih tool, prompt dan trace tersimpan di Langfuse, semuanya dibungkus Streamlit. Kasus yang dipilih: IMDB Top 1000, asisten rekomendasi film.</p>
+  <div class="banner"><b>Status: aplikasi sudah berjalan.</b> Fase 0–3 selesai pada 23 Oktober, 6 hari lebih awal dari jadwal: 1.000 film di Qdrant, 3 tool, agent dengan prompt v2 dari Langfuse, dan UI dengan kartu poster yang sudah di-deploy ke <code>imdb-movie-assistant.streamlit.app</code> (masih private sampai pengumpulan). Kode di halaman ini diambil dari repo, bukan sketsa. Berikutnya: set uji 10 pertanyaan dan README (bab 10). Prinsip kerja: <i>simple, structural, logical, efficient &amp; effective</i>, lalu dibuat <i>impressive</i>.</div>
   <div class="tiles">
     <div class="tile"><b>1.000</b><span>film di dataset IMDB Top 1000, 16 kolom</span></div>
     <div class="tile"><b>3</b><span>stack yang tidak boleh diganti: Qdrant, Streamlit, Langfuse</span></div>
@@ -142,14 +142,14 @@ td.n, th.n { text-align: right; font-family: var(--font-mono); font-variant-nume
     <thead><tr><th>Fungsi</th><th>Pilihan final</th><th>Status</th><th>Dasar keputusan</th></tr></thead>
     <tbody>
       <tr><td>Vector database</td><td><b>Qdrant Cloud</b> (free tier) lewat <code>langchain_qdrant</code></td><td><span class="tag lock">wajib</span></td><td>Pola Sesi 12 dan 14. Penilai diberi URL + API key <b>read-only</b>; dashboard juga ditunjukkan di video.</td></tr>
-      <tr><td>Antarmuka</td><td><b>Streamlit</b>, deploy ke Streamlit Community Cloud</td><td><span class="tag lock">wajib</span></td><td>Deploy wajib (klarifikasi 22 Okt). Satu app, memanggil agent langsung.</td></tr>
-      <tr><td>Prompt + tracing</td><td><b>Langfuse</b> v3 (cloud)</td><td><span class="tag lock">wajib</span></td><td>Hanya system prompt agent, dibuat lewat UI. Trace per pertanyaan, dikelompokkan per session.</td></tr>
-      <tr><td>Framework agent</td><td>LangChain <code>create_agent</code></td><td><span class="tag free">bebas</span></td><td>Notebook Sesi 10; <code>create_react_agent</code> sudah deprecated.</td></tr>
-      <tr><td>LLM</td><td><code>ChatOpenAI</code> + <code>base_url</code> OpenRouter; model dipilih dengan set uji (bab 11)</td><td><span class="tag free">bebas</span></td><td>Tanpa library tambahan. Model harus mendukung tool calling.</td></tr>
+      <tr><td>Antarmuka</td><td><b>Streamlit</b> 1.66, deploy ke Streamlit Community Cloud (Python 3.12)</td><td><span class="tag lock">wajib</span></td><td>Deploy wajib (klarifikasi 22 Okt). Satu app, memanggil agent langsung. Sudah live sejak 23 Okt.</td></tr>
+      <tr><td>Prompt + tracing</td><td><b>Langfuse</b> 5.0.4 (cloud, region EU), pola kode v3</td><td><span class="tag lock">wajib</span></td><td>Hanya system prompt agent, dibuat lewat UI (sekarang v2). Trace per pertanyaan, dikelompokkan per session.</td></tr>
+      <tr><td>Framework agent</td><td>LangChain 1.4 <code>create_agent</code></td><td><span class="tag free">bebas</span></td><td>Notebook Sesi 10; <code>create_react_agent</code> sudah deprecated.</td></tr>
+      <tr><td>LLM</td><td><code>openai/gpt-4.1-mini</code> lewat <code>ChatOpenAI</code> + <code>base_url</code> OpenRouter</td><td><span class="tag free">bebas</span></td><td>Menang dari uji 6 model: cepat (±4 dtk), judul tidak salah tulis, kurang dari $1 per 1.000 pertanyaan (K23).</td></tr>
       <tr><td>Embedding</td><td><code>text-embedding-3-small</code> (1536 dimensi) lewat OpenRouter</td><td><span class="tag free">bebas</span></td><td>Model sama dengan kelas, lewat <code>OpenAIEmbeddings</code> + <code>base_url</code> OpenRouter + <code>check_embedding_ctx_length=False</code>. Cadangan: langsung ke OpenAI (bab 12, temuan 9).</td></tr>
       <tr><td>Data terstruktur</td><td>pandas, dibaca dari CSV di repo lewat satu modul <code>data.py</code></td><td><span class="tag free">bebas</span></td><td>1.000 baris cukup di memori; tidak perlu SQLite/Postgres.</td></tr>
       <tr><td>Reranker</td><td>Tidak dipakai</td><td><span class="tag opt">opsional</span></td><td>Filter metadata sudah membuat hasil tepat; reranker menambah biaya dan bahan penjelasan.</td></tr>
-      <tr><td>Paket Python</td><td>Poetry, Python 3.11</td><td><span class="tag free">bebas</span></td><td>Kelas menjalankan dengan <code>poetry run streamlit run ...</code>.</td></tr>
+      <tr><td>Paket Python</td><td>conda env <code>capstone3</code> (Python 3.12) + <code>requirements.txt</code> dengan versi terkunci</td><td><span class="tag free">bebas</span></td><td>Streamlit Cloud membaca <code>requirements.txt</code> langsung, jadi lokal dan cloud memakai versi yang sama (K19).</td></tr>
     </tbody>
   </table></div>
 </section>
@@ -192,7 +192,7 @@ sequenceDiagram
   participant T as Tools
   participant Q as Qdrant
   participant F as Langfuse
-  S->>F: ambil system prompt (sekali, di-cache)
+  A->>F: ambil system prompt (sekali, saat pertanyaan pertama)
   U->>S: pertanyaan
   S->>A: riwayat pesan + pertanyaan baru
   A->>L: pesan + daftar tool
@@ -200,7 +200,7 @@ sequenceDiagram
   A->>T: jalankan tool
   T->>Q: similarity_search(query, filter)
   Q-->>T: 5 hasil + payload
-  T-->>A: hasil dalam teks
+  T-->>A: JSON {"movies": [...]}
   A->>L: hasil tool
   L-->>A: jawaban final
   A-->>S: pesan + tool call + usage token
@@ -210,19 +210,21 @@ sequenceDiagram
   <p class="cap">LLM hanya memutuskan <b>tool mana</b> dan <b>argumennya</b>. Pencarian, filter, dan hitungan statistik dikerjakan kode. Prinsipnya sama dengan Clipper: LLM mengusulkan, kode memutuskan.</p></div>
 
   <div class="sub"><h3>Dimensi 3 · Struktur repo (modular, sesuai arahan kelas)</h3>
-<pre class="tree">capstone-3/
-├── README.md              <span class="d"># diagram alur, install, env, cara run, contoh query</span>
-├── pyproject.toml         <span class="d"># dependensi Poetry</span>
+<pre class="tree">purwadhika-capstone-3/
+├── README.md              <span class="d"># diagram alur, install, env, cara run, contoh query (Fase 4)</span>
+├── requirements.txt       <span class="d"># 7 paket, versi terkunci</span>
 ├── .env.example           <span class="d"># nama variabel saja, tanpa nilai</span>
-├── .gitignore             <span class="d"># .env, .venv, data mentah besar</span>
+├── .gitignore             <span class="d"># .env, secrets.toml, __pycache__</span>
 ├── data/                  <span class="d"># imdb_top_1000.csv (publik, disetujui)</span>
 ├── scripts/
+│   ├── check_connections.py <span class="d"># cek key: embedding, Qdrant, Langfuse</span>
 │   └── ingest.py          <span class="d"># fase offline: data.py → Document → Qdrant (sekali jalan)</span>
 ├── app/
-│   ├── config.py          <span class="d"># env var + klien LLM, embedding, Qdrant</span>
+│   ├── config.py          <span class="d"># env() + get_llm() + get_embeddings()</span>
 │   ├── data.py            <span class="d"># load_movies(): satu-satunya tempat membersihkan data</span>
-│   ├── tools.py           <span class="d"># 3 @tool</span>
-│   └── agent.py           <span class="d"># create_agent + run_agent()</span>
+│   ├── tools.py           <span class="d"># 3 @tool + pencarian judul 4 lapis</span>
+│   └── agent.py           <span class="d"># get_agent() + run_agent()</span>
+├── notes/                 <span class="d"># progress, keputusan desain K01–K31, penjelasan kode</span>
 └── streamlit_app.py       <span class="d"># UI saja, memanggil app.agent</span></pre>
   <p class="cap">Arahan Pak Herman: file Streamlit hanya untuk front end, agent di file Python terpisah, dan modul yang di-import tidak boleh berisi <code>if __name__ == "__main__"</code> yang menjalankan sesuatu.</p></div>
 
@@ -252,30 +254,22 @@ sequenceDiagram
       <li><b>Embed + upload</b> dengan satu panggilan <code>QdrantVectorStore.from_documents</code>: membuat collection (ukuran otomatis 1536), meng-embed, dan meng-upload sekaligus. Pola ini persis notebook Sesi 12.</li>
       <li><b>Payload index</b> untuk kolom yang difilter (<code>metadata.genres</code>, <code>metadata.year</code>). Ini tambahan di luar kelas; dengan 1.000 film tidak wajib, tapi praktik yang baik.</li>
     </ol></div>
-    <div class="card"><h4>Kode inti (pola kelas, Sesi 12 Bab 6B)</h4>
-<pre class="code"><span class="k">from</span> langchain_core.documents <span class="k">import</span> Document
-<span class="k">from</span> langchain_openai <span class="k">import</span> OpenAIEmbeddings
-<span class="k">from</span> langchain_qdrant <span class="k">import</span> QdrantVectorStore
-
-embeddings = OpenAIEmbeddings(model=<span class="k">"text-embedding-3-small"</span>)  <span class="c"># 1536 dimensi</span>
-
-documents = [
-    Document(
-        page_content=<span class="k">f"</span>{r.title}. {r.genre}. {r.overview}<span class="k">"</span>,  <span class="c"># yang di-embed</span>
-        metadata={<span class="k">"title"</span>: r.title, <span class="k">"year"</span>: r.year,
-                  <span class="k">"genres"</span>: r.genres, <span class="k">"rating"</span>: r.rating,
-                  <span class="k">"director"</span>: r.director, <span class="k">"stars"</span>: r.stars,
-                  <span class="k">"poster"</span>: r.poster, ...},          <span class="c"># payload, tidak di-embed</span>
-    )
-    <span class="k">for</span> r <span class="k">in</span> df.itertuples()
-]
+    <div class="card"><h4>Kode inti · scripts/ingest.py (pola Sesi 12 Bab 6B)</h4>
+<pre class="code"><span class="k">def</span> build_documents() -> tuple[list[Document], list[int]]:
+    documents, ids = [], []
+    <span class="k">for</span> movie <span class="k">in</span> to_records(load_movies()):        <span class="c"># data.py: satu sumber data</span>
+        text = <span class="k">f"</span>{movie['title']}. {', '.join(movie['genres'])}. {movie['overview']}<span class="k">"</span>
+        documents.append(Document(page_content=text, metadata=movie))  <span class="c"># text di-embed, metadata = payload</span>
+        ids.append(movie[<span class="k">"id"</span>])                     <span class="c"># id tetap: ingest ulang menimpa, bukan menggandakan</span>
+    <span class="k">return</span> documents, ids
 
 QdrantVectorStore.from_documents(
-    documents, embeddings,
-    url=QDRANT_URL, api_key=QDRANT_API_KEY,
-    prefer_grpc=True,                    <span class="c"># kata kelas: pengiriman lebih cepat</span>
-    collection_name=<span class="k">"imdb_movies"</span>,
-)</pre></div>
+    documents, get_embeddings(), ids=ids,
+    url=url, api_key=api_key, prefer_grpc=True,
+    collection_name=collection, batch_size=<span class="k">100</span>,
+    force_recreate=True,                           <span class="c"># collection dibuat ulang bersih</span>
+)</pre>
+      <p class="cap">Hasil nyata 23 Okt: 1.000 point, 1.536 dimensi, Cosine, ±39 detik. Dijalankan dua kali, hasilnya tetap 1.000 point.</p></div>
   </div>
   <div class="card asm"><h4>Data nyata · EDA imdb_top_1000.csv (Kaggle, harshitshankhdhar)</h4>
     <div class="tablewrap"><table>
@@ -308,12 +302,12 @@ QdrantVectorStore.from_documents(
       <div class="tablewrap"><table style="min-width:0">
         <thead><tr><th>Tool</th><th>Sumber</th><th>Menjawab</th></tr></thead>
         <tbody>
-          <tr><td><code>search_movies</code></td><td>Qdrant (RAG + filter genre/tahun)</td><td>Selera dan suasana: "film tentang mimpi di dalam mimpi"</td></tr>
-          <tr><td><code>get_movie_details</code></td><td>pandas, cari judul (bisa beberapa); tahan huruf besar-kecil dan typo</td><td>Fakta satu film atau perbandingan: "bandingkan Inception dan Interstelar"</td></tr>
-          <tr><td><code>rank_movies</code></td><td>pandas, filter + urutkan + ringkasan</td><td>Peringkat dan statistik: "film Nolan dengan metascore tertinggi", "berapa film Hitchcock?"</td></tr>
+          <tr><td><code>search_movies</code></td><td>Qdrant (RAG + filter genre/tahun), 5 hasil</td><td>Selera dan suasana: "film tentang pencuri yang masuk ke mimpi orang"</td></tr>
+          <tr><td><code>get_movie_details</code></td><td>pandas, cari judul atau seri (bisa beberapa); tahan huruf besar-kecil dan typo</td><td>Fakta, pertanyaan lanjutan, perbandingan: "bandingkan Inception dan Interstellar"</td></tr>
+          <tr><td><code>rank_movies</code></td><td>pandas, filter (genre, tahun, judul/seri, sutradara, aktor) + urutkan + hitung</td><td>Peringkat dan statistik: "Star Wars mana yang paling bagus?", "ada berapa film horor?"</td></tr>
         </tbody>
       </table></div>
-      <p class="cap">Rencana awal punya 5 tool. <code>compare_movies</code> sama dengan <code>get_movie_details</code> untuk dua judul, dan <code>movie_stats</code> serta <code>top_movies</code> sama-sama "filter lalu hitung". Tiga tool dengan batas yang tegas lebih mudah dipilih LLM dan lebih mudah dijelaskan di video.</p></div>
+      <p class="cap">Ketiganya mengembalikan JSON dengan kunci <code>"movies"</code>, jadi UI cukup punya satu pembaca hasil (K28). Rencana awal punya 5 tool; <code>compare_movies</code> sama dengan <code>get_movie_details</code> untuk dua judul, dan <code>movie_stats</code> serta <code>top_movies</code> sama-sama "filter lalu hitung".</p></div>
     <div class="card"><h4>Data nyata · bahan untuk filter dan statistik</h4><ul>
       <li><b>Genre</b>: 21 nilai, terbanyak Drama 724, Comedy 233, Crime 209, Adventure 196, Action 189.</li>
       <li><b>Sutradara terbanyak</b>: Alfred Hitchcock 14, Steven Spielberg 13, Hayao Miyazaki 11, Martin Scorsese 10, Akira Kurosawa 10.</li>
@@ -326,42 +320,58 @@ QdrantVectorStore.from_documents(
     <div class="tablewrap"><table>
       <thead><tr><th class="n">Lapis</th><th>Cara</th><th>Contoh input → hasil (diuji pada dataset)</th></tr></thead>
       <tbody>
-        <tr><td class="n">1</td><td>Normalisasi: huruf kecil, aksen dihapus, tanda baca → spasi, angka Romawi → angka; lalu cocok persis</td><td><code>INCEPTION</code> → Inception · <code>amelie</code> → Amélie · <code>se7en</code> → Se7en</td></tr>
-        <tr><td class="n">2</td><td>Kata-kata query ada di judul</td><td><code>shawshank</code> → The Shawshank Redemption · <code>dark knight</code> → 2 film, user diminta memilih</td></tr>
-        <tr><td class="n">3</td><td>Typo per kata, <code>difflib</code> cutoff 0,8 (bawaan Python)</td><td><code>interstelar</code> → Interstellar · <code>harry poter</code> → 4 film Harry Potter · <code>the matrx</code> → The Matrix</td></tr>
-        <tr><td class="n">4</td><td>Tidak ketemu: 3 judul termirip + petunjuk "cari lewat plot dengan <code>search_movies</code>"</td><td><code>parasite</code> → judul di dataset <b>Gisaengchung</b>, ditemukan lewat plotnya</td></tr>
+        <tr><td class="n">1</td><td>Normalisasi: huruf kecil, aksen dihapus, tanda baca → spasi, angka Romawi → angka</td><td><code>INCEPTION</code> → inception · <code>Amélie</code> → amelie · <code>Part II</code> → part 2</td></tr>
+        <tr><td class="n">2</td><td>Semua kata query ada di judul. Judul yang persis sama diberi label <code>exact</code> dan ditaruh paling atas, <b>tapi pencarian tidak berhenti di situ</b></td><td><code>star wars</code> → Star Wars (exact) + Episode V, VI, VII · <code>dark knight</code> → 2 film</td></tr>
+        <tr><td class="n">3</td><td>Typo per kata, <code>difflib</code> cutoff 0,8 (bawaan Python)</td><td><code>harry poter</code> → 6 film Harry Potter · <code>the matrx</code> → The Matrix · <code>dark night</code> → The Dark Knight</td></tr>
+        <tr><td class="n">4</td><td>Tidak ketemu: 3 judul termirip + petunjuk "coba sutradara/tahun lewat <code>rank_movies</code>, atau plot lewat <code>search_movies</code>"</td><td><code>Parasite</code> → agent mencari lagi <b>Gisaengchung</b> (2019, Bong Joon Ho) → ketemu</td></tr>
       </tbody>
     </table></div>
-    <p class="cap">Film non-Inggris di dataset memakai judul asli (Parasite = Gisaengchung, Spirited Away = Sen to Chihiro no kamikakushi). Pencocokan teks tidak bisa menebaknya, tapi agent bisa: tool judul gagal, lalu agent mencari plotnya lewat RAG. Kedua tool saling menutupi kelemahan masing-masing. Detail di K18.</p></div>
-  <div class="card"><h4>Bentuk RAG tool (pola kelas Sesi 14 Bab 7, ditambah filter)</h4>
-<pre class="code"><span class="k">from</span> langchain.tools <span class="k">import</span> tool
-<span class="k">from</span> qdrant_client <span class="k">import</span> models
+    <p class="cap">Film non-Inggris di dataset memakai judul asli (Parasite = Gisaengchung, Spirited Away = Sen to Chihiro no kamikakushi). Pencocokan teks tidak bisa menebaknya, tapi agent bisa: tool judul gagal, lalu agent mengikuti petunjuknya. Setiap pencarian butuh 10–50 ms, karena datanya di memori. Detail di K18 dan K30.</p></div>
+  <div class="card warn"><h4>Dua bug yang ditemukan saat uji · 23 Okt</h4>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Pertanyaan</th><th>Jawaban salah</th><th>Penyebab</th><th>Perbaikan → hasil</th></tr></thead>
+      <tbody>
+        <tr><td>Star Wars mana yang ratingnya paling tinggi?</td><td>Star Wars (1977), 8,6</td><td>Lapis 1 menemukan judul persis "Star Wars", lalu berhenti. Episode V (8,7) tidak ikut terambil.</td><td>Judul persis tidak lagi menghentikan pencarian, dan <code>rank_movies</code> mendapat filter <code>title</code> → 3/3 benar</td></tr>
+        <tr><td>harry poter yang paling bagus</td><td>Prisoner of Azkaban, 7,9</td><td>Agent memakai pencarian makna (RAG) untuk mencari judul, dan batas hasil 5 lebih kecil dari 6 film Harry Potter</td><td>Docstring: "jangan pakai <code>search_movies</code> untuk judul"; batas 10 → Deathly Hallows: Part 2 (8,1), 3/3 benar</td></tr>
+      </tbody>
+    </table></div>
+    <p class="cap">Pelajaran untuk video: jawaban yang terdengar meyakinkan belum tentu benar. Setiap jawaban dicek ke dataset, dan setiap perbaikan diuji 3 kali.</p></div>
+  <div class="card"><h4>RAG tool · app/tools.py (pola kelas Sesi 14 Bab 7, ditambah filter)</h4>
+<pre class="code">Genre = Literal[tuple(all_genres())]               <span class="c"># 21 nilai persis dari dataset → enum di skema tool</span>
 
-qdrant = QdrantVectorStore.from_existing_collection(   <span class="c"># sambung ke collection yang sudah ada</span>
-    embedding=embeddings, collection_name=<span class="k">"imdb_movies"</span>,
-    url=QDRANT_URL, api_key=QDRANT_API_KEY,
-)
+@lru_cache(maxsize=<span class="k">1</span>)
+<span class="k">def</span> _vector_store() -> QdrantVectorStore:          <span class="c"># sambung sekali, saat pertama dipakai</span>
+    <span class="k">return</span> QdrantVectorStore.from_existing_collection(
+        embedding=get_embeddings(), collection_name=env(<span class="k">"QDRANT_COLLECTION"</span>),
+        url=env(<span class="k">"QDRANT_URL"</span>), api_key=env(<span class="k">"QDRANT_API_KEY"</span>),
+    )
 
-Genre = Literal[<span class="k">"Action"</span>, <span class="k">"Drama"</span>, <span class="k">"Thriller"</span>, ...]   <span class="c"># 21 nilai persis dari dataset</span>
-
-@tool
+@tool(parse_docstring=True)
 <span class="k">def</span> search_movies(query: str, genre: Genre | None = None,
                   year_from: int | None = None, year_to: int | None = None) -> str:
-    <span class="k">"""Cari film berdasarkan deskripsi cerita, suasana, atau tema.
-    Pakai ini kalau user menjelaskan selera, bukan menyebut judul.
-    Tulis query sebagai deskripsi singkat dalam bahasa Inggris."""</span>   <span class="c"># overview berbahasa Inggris</span>
-    must = []
-    <span class="k">if</span> genre:      <span class="c"># LangChain menyimpan metadata di bawah kunci "metadata"</span>
-        must.append(models.FieldCondition(key=<span class="k">"metadata.genres"</span>, match=models.MatchValue(value=genre)))
-    <span class="k">if</span> year_from <span class="k">or</span> year_to:
-        must.append(models.FieldCondition(key=<span class="k">"metadata.year"</span>,
-                                          range=models.Range(gte=year_from, lte=year_to)))
+    <span class="k">"""Find movies by plot, theme, or mood among the IMDB top 1,000 movies (semantic search).
 
-    docs = qdrant.similarity_search(
-        query, k=<span class="k">5</span>, filter=models.Filter(must=must) <span class="k">if</span> must <span class="k">else</span> None,
+    Use this when the user describes what they want to watch. Do not use it to find a movie
+    or a movie series by title; use get_movie_details for that.
+
+    Args:
+        query: Short description of the wanted plot or mood, written in English.
+        genre: Only return movies that have this genre. Leave empty unless the user names a genre.
+        ...
+    """</span>
+    conditions = []
+    <span class="k">if</span> genre:      <span class="c"># LangChain menyimpan metadata di bawah kunci "metadata"</span>
+        conditions.append(models.FieldCondition(key=<span class="k">"metadata.genres"</span>, match=models.MatchValue(value=genre)))
+    <span class="k">if</span> year_from <span class="k">or</span> year_to:
+        conditions.append(models.FieldCondition(key=<span class="k">"metadata.year"</span>,
+                                                range=models.Range(gte=year_from, lte=year_to)))
+
+    docs = _vector_store().similarity_search(
+        query, k=<span class="k">5</span>, filter=models.Filter(must=conditions) <span class="k">if</span> conditions <span class="k">else</span> None,
     )
-    <span class="k">return</span> json.dumps([d.metadata <span class="k">for</span> d <span class="k">in</span> docs])   <span class="c"># JSON: dibaca LLM, dan UI membuat kartu poster</span></pre>
-  <p class="cap">Kelas memakai <code>similarity_search(query, k=10)</code> tanpa filter. Tambahan filter payload (<em class="t">filtered vector search</em>) membuat makna dicari lewat vektor, sedangkan syarat pasti (genre, tahun) lewat filter. Ini nilai tambah yang bisa ditonjolkan di video.</p></div>
+    movies = [{field: doc.metadata[field] <span class="k">for</span> field <span class="k">in</span> FIELDS_FOR_LLM} <span class="k">for</span> doc <span class="k">in</span> docs]
+    <span class="k">return</span> json.dumps({<span class="k">"movies"</span>: movies}, ensure_ascii=False)   <span class="c"># tanpa poster: hemat token (K25)</span></pre>
+  <p class="cap">Kelas memakai <code>similarity_search(query, k=10)</code> tanpa filter. Dengan filter payload (<em class="t">filtered vector search</em>), makna dicari lewat vektor, sedangkan syarat pasti (genre, tahun) lewat filter. Bukti: tanpa filter, 3 dari 5 hasil "thriller 90-an" bukan film 90-an (K04). Filter hanya dipasang kalau user menyebutnya, supaya LLM tidak menebak genre (K27).</p></div>
 </section>
 
 <!-- 06 -->
@@ -377,28 +387,27 @@ flowchart TD
   X --> M
   M -->|"tidak ada tool_call"| R["jawaban final"]
       </pre></div></div>
-    <div class="card"><h4>Kode inti (sketsa)</h4>
+    <div class="card"><h4>Kode inti · app/agent.py (lengkap)</h4>
 <pre class="code"><span class="k">from</span> langchain.agents <span class="k">import</span> create_agent
 <span class="k">from</span> langfuse <span class="k">import</span> get_client
 <span class="k">from</span> langfuse.langchain <span class="k">import</span> CallbackHandler
 
-langfuse = get_client()
-system_prompt = langfuse.get_prompt(<span class="k">"movie-agent-system"</span>).compile()
+PROMPT_NAME = <span class="k">"movie-agent-system"</span>   <span class="c"># dibuat lewat UI Langfuse, label "production"</span>
 
-agent = create_agent(
-    model=llm,
-    tools=[search_movies, get_movie_details, rank_movies],
-    system_prompt=system_prompt,
-)
+@lru_cache(maxsize=<span class="k">1</span>)                 <span class="c"># dibuat sekali, saat pertanyaan pertama (K24)</span>
+<span class="k">def</span> get_agent():
+    system_prompt = get_client().get_prompt(PROMPT_NAME).compile()
+    <span class="k">return</span> create_agent(model=get_llm(), tools=TOOLS, system_prompt=system_prompt)
 
-<span class="k">def</span> run_agent(messages: list, session_id: str) -> dict:
-    <span class="k">return</span> agent.invoke(
+<span class="k">def</span> run_agent(messages: list[dict], session_id: str) -> list:
+    result = get_agent().invoke(
         {<span class="k">"messages"</span>: messages},          <span class="c"># seluruh riwayat, bukan pesan terakhir saja</span>
         config={
             <span class="k">"callbacks"</span>: [CallbackHandler()],              <span class="c"># trace ke Langfuse</span>
             <span class="k">"metadata"</span>: {<span class="k">"langfuse_session_id"</span>: session_id},
         },
-    )</pre></div>
+    )
+    <span class="k">return</span> result[<span class="k">"messages"</span>][len(messages):]   <span class="c"># hanya pesan baru dari run ini</span></pre></div>
   </div>
   <div class="card asm"><h4>Terjawab · create_agent, bukan create_react_agent</h4><p>Catatan Sesi 10 (Bab 3C): slide 22 masih menyebut <code>create_react_agent</code> dari <code>langgraph.prebuilt</code>, tapi slide 37 dan notebook kelas memakai <b><code>create_agent</code></b> dari <code>langchain.agents</code>. Sejak LangGraph 1.0, <code>create_react_agent</code> berstatus <i>deprecated</i> dengan pesan "has been moved to <code>langchain.agents</code>". Keduanya membangun graf ReAct yang sama (model ⇄ tools). Kalimat di transkrip exercise kemungkinan salah dengar. Untuk video: "saya pakai <code>create_agent</code> karena <code>create_react_agent</code> sudah deprecated sejak LangGraph 1.0, sesuai notebook Sesi 10." Agent supervisor (Sesi 15) boleh, tapi tidak wajib.</p></div>
 </section>
@@ -408,19 +417,26 @@ agent = create_agent(
   <div class="chap-head"><div class="chap-no">07</div><div><h4>Observability</h4><h2>Langfuse: prompt dan trace</h2></div></div>
   <div class="grid2">
     <div class="card"><h4>1 · Prompt management</h4><ul>
-      <li>System prompt agent dibuat di Langfuse dengan nama tetap, misalnya <code>movie-agent-system</code>, label <code>production</code>.</li>
-      <li>Kode hanya memanggil <code>get_prompt(nama)</code> lalu <code>.compile(...)</code>. Variabel di prompt Langfuse ditulis <code>{{nama_variabel}}</code> (kurung kurawal ganda). Mengganti prompt tidak perlu deploy ulang, dan setiap versi tercatat (catatan Sesi 17 Bab C–D).</li>
-      <li>Yang disimpan di Langfuse <b>hanya system prompt agent</b>, dibuat lewat UI (klarifikasi 22 Okt). Docstring tool tetap di kode karena merupakan bagian dari definisi fungsi.</li>
-      <li>Aturan wajib di system prompt: <b>hanya merekomendasikan film yang dikembalikan tool</b>, dan bilang terus terang kalau datanya tidak ada (misalnya film setelah 2020). Ini mencegah agent mengarang dari pengetahuannya sendiri.</li>
-      <li>Isi prompt: role, daftar tool dan kapan dipakai, aturan jawaban (bahasa, format, jangan mengarang di luar hasil tool). Struktur dari Sesi 08.</li>
+      <li>System prompt agent bernama <code>movie-agent-system</code>, label <code>production</code>, dibuat lewat UI Langfuse (klarifikasi 22 Okt). Kode hanya memanggil <code>get_prompt(nama).compile()</code>.</li>
+      <li>Mengganti prompt <b>tidak perlu deploy ulang</b>: buat versi baru, centang label production, dan app di Streamlit Cloud langsung memakainya.</li>
+      <li>Ditulis dalam bahasa Inggris, satu bahasa dengan docstring tool, data, dan query pencarian, tapi menjawab dalam bahasa user (K26).</li>
+      <li>Docstring tool tetap di kode karena merupakan bagian dari definisi fungsi.</li>
     </ul></div>
     <div class="card"><h4>2 · Tracing</h4><ul>
-      <li><code>CallbackHandler</code> mengirim setiap run agent ke Langfuse: pesan, setiap pemanggilan LLM, setiap tool call beserta argumen dan hasil, token, latensi, dan biaya.</li>
-      <li>Trace dikaitkan ke <em class="t">session id</em> Streamlit supaya satu percakapan terlihat utuh. Di Langfuse v3, session id dikirim lewat <code>config["metadata"]["langfuse_session_id"]</code>, bukan argumen <code>CallbackHandler(...)</code> seperti di slide 27 (catatan Sesi 17: handler v3 tidak menerima argumen).</li>
-      <li>Butuh tiga variabel lingkungan: <code>LANGFUSE_PUBLIC_KEY</code>, <code>LANGFUSE_SECRET_KEY</code>, dan <code>LANGFUSE_HOST</code> (sesuai region, misalnya <code>https://us.cloud.langfuse.com</code>). Kata Pak Herman, host "sering lupa".</li>
-      <li>Saat demo video: tunjukkan satu trace di dashboard Langfuse setelah bertanya di Streamlit.</li>
+      <li><code>CallbackHandler</code> mengirim setiap run agent ke Langfuse: setiap pemanggilan LLM, setiap tool call beserta argumen dan hasil, token, latensi, dan biaya.</li>
+      <li>Trace dikaitkan ke <em class="t">session id</em> Streamlit supaya satu percakapan terlihat utuh. Session id dikirim lewat <code>config["metadata"]["langfuse_session_id"]</code>, bukan argumen <code>CallbackHandler(...)</code> seperti di slide 27, karena handler versi baru tidak menerima argumen (K02).</li>
+      <li>Region EU: <code>LANGFUSE_HOST=https://cloud.langfuse.com</code>. Kata Pak Herman, host "sering lupa".</li>
+      <li>Saat demo video: tunjukkan satu session (contohnya <code>e2e-prompt-v2-23okt</code>) setelah bertanya di Streamlit.</li>
     </ul></div>
   </div>
+  <div class="card"><h4>Riwayat versi prompt</h4>
+    <div class="tablewrap"><table>
+      <thead><tr><th class="n">Versi</th><th>Isi</th><th>Kenapa diubah</th></tr></thead>
+      <tbody>
+        <tr><td class="n">v1</td><td>Peran, 6 aturan: hanya film dari tool, fakta hanya dari hasil tool, judul ditulis persis, tolak kalau tidak ada data, query bahasa Inggris, jawab dalam bahasa user</td><td>Versi pertama, diuji 23 Okt. Aturan "judul ditulis persis" ditambahkan setelah gpt-4.1-nano menulis "Seance of the Lambs".</td></tr>
+        <tr><td class="n">v2</td><td>+ satu baris per tool (kapan dipakai) · aturan 2: setiap fakta harus dari tool call <b>di giliran yang sama</b>, jadi pertanyaan lanjutan memanggil <code>get_movie_details</code> lagi · aturan 4: ikuti <code>hint</code> kalau judul tidak ketemu</td><td>Dengan v1, "Yang kedua siapa sutradaranya?" dijawab dari pengetahuan model, tanpa tool. Riwayat yang dikirim ke agent hanya berisi teks, tanpa hasil tool lama (K31).</td></tr>
+      </tbody>
+    </table></div></div>
   <div class="card asm"><h4>Prompt caching: perlu atau tidak?</h4><p>Dari tanya-jawab di kelas: caching Anthropic baru aktif kalau prompt yang di-cache melewati batas minimum token (1.024 sampai 4.096 tergantung model), dan yang cocok di-cache hanya system prompt karena isinya selalu sama. System prompt capstone kemungkinan jauh di bawah batas itu, jadi caching <b>tidak perlu</b> untuk capstone ini.</p></div>
   <div class="card jc"><h4>Kaitan JCAIEH</h4><p>M3 Sesi 08 <b>Prompt Engineering</b> (anatomi system prompt, prompt caching) dan Sesi 17 <b>LLM Observability</b>.</p></div>
 </section>
@@ -430,35 +446,41 @@ agent = create_agent(
   <div class="chap-head"><div class="chap-no">08</div><div><h4>Front end</h4><h2>Streamlit: chat, tool call, usage</h2></div></div>
   <p>Tiga hal yang disebut Pak Herman harus ada di contoh Streamlit: <b>chat history</b>, <b>tool call</b>, dan <b>usage detail</b>.</p>
   <div class="grid2">
-    <div class="card"><h4>Susunan layar</h4><ul>
-      <li><b>Sidebar</b>: nama aplikasi, contoh pertanyaan yang bisa diklik, tombol reset percakapan, ringkasan token dan biaya sesi.</li>
-      <li><b>Area chat</b>: <code>st.chat_message</code> untuk setiap pesan, disimpan di <code>st.session_state.messages</code> supaya tidak hilang saat Streamlit rerun.</li>
-      <li><b>Di bawah tiap jawaban</b>: <code>st.expander("Tool calls")</code> berisi nama tool, argumen, dan cuplikan hasil; lalu baris kecil token input/output.</li>
-      <li><b>Nilai tambah IMDB</b>: kartu film dengan poster dari <code>Poster_Link</code> (<code>st.image</code>).</li>
-    </ul></div>
-    <div class="card"><h4>Kode inti (sketsa)</h4>
-<pre class="code"><span class="k">import</span> streamlit <span class="k">as</span> st
-<span class="k">from</span> app.agent <span class="k">import</span> run_agent      <span class="c"># agent dibuat sekali saat modul di-import</span>
+    <div class="card"><h4>Susunan layar (yang sudah jalan)</h4><ul>
+      <li><b>Area chat</b>: <code>st.chat_message</code> untuk setiap pesan, disimpan di <code>st.session_state.chat</code> supaya tidak hilang saat Streamlit rerun.</li>
+      <li><b>Kartu poster</b> di bawah jawaban: hanya film yang <b>disebut di jawaban</b>, maksimal 5, urut sesuai hasil tool. Poster 300 px diambil dari <code>data.py</code> lewat <code>id</code>, tidak lewat LLM.</li>
+      <li><b>Expander "🔧 N tool call"</b>: nama tool, argumen, dan judul hasilnya.</li>
+      <li><b>Baris usage</b>: token input dan output, dijumlahkan dari semua panggilan LLM dalam satu pertanyaan.</li>
+    </ul>
+    <p class="cap">Contoh nyata: "film tentang membunuh suami dan menghilang" → 1 tool call, 3 poster (Gone Girl, Kahaani, Dial M for Murder), 2.641 token input · 164 output.</p></div>
+    <div class="card"><h4>Kode inti · streamlit_app.py</h4>
+<pre class="code"><span class="k">from</span> app.agent <span class="k">import</span> run_agent      <span class="c"># UI saja; logika agent di app/agent.py</span>
 
-st.session_state.setdefault(<span class="k">"messages"</span>, [])
+st.session_state.setdefault(<span class="k">"chat"</span>, [])
 st.session_state.setdefault(<span class="k">"session_id"</span>, uuid4().hex)
 
-<span class="k">for</span> m <span class="k">in</span> st.session_state.messages:          <span class="c"># chat history</span>
-    st.chat_message(m[<span class="k">"role"</span>]).write(m[<span class="k">"content"</span>])
+<span class="k">for</span> message <span class="k">in</span> st.session_state.chat:      <span class="c"># chat history</span>
+    <span class="k">with</span> st.chat_message(message[<span class="k">"role"</span>]):
+        st.markdown(message[<span class="k">"content"</span>])
+        <span class="k">if</span> message.get(<span class="k">"details"</span>):
+            show_details(message[<span class="k">"details"</span>])  <span class="c"># poster + tool call + usage</span>
 
-<span class="k">if</span> q := st.chat_input(<span class="k">"Ceritakan film yang kamu suka..."</span>):
-    history = st.session_state.messages + [{<span class="k">"role"</span>: <span class="k">"user"</span>, <span class="k">"content"</span>: q}]
-    result = run_agent(history, st.session_state.session_id)
-    new = result[<span class="k">"messages"</span>][len(history):]       <span class="c"># hanya pesan dari run ini</span>
-    ai = [m <span class="k">for</span> m <span class="k">in</span> new <span class="k">if</span> m.type == <span class="k">"ai"</span>]
-    calls  = [tc <span class="k">for</span> m <span class="k">in</span> ai <span class="k">for</span> tc <span class="k">in</span> m.tool_calls]            <span class="c"># tool call</span>
-    tokens = sum((m.usage_metadata <span class="k">or</span> {}).get(<span class="k">"total_tokens"</span>, <span class="k">0</span>) <span class="k">for</span> m <span class="k">in</span> ai)  <span class="c"># usage</span>
-    st.session_state.messages = history + [{<span class="k">"role"</span>: <span class="k">"assistant"</span>, <span class="k">"content"</span>: new[-<span class="k">1</span>].content}]</pre></div>
+<span class="k">if</span> question := st.chat_input(<span class="k">"Misalnya: thriller tahun 90-an yang bikin tegang"</span>):
+    st.session_state.chat.append({<span class="k">"role"</span>: <span class="k">"user"</span>, <span class="k">"content"</span>: question})
+    history = [{<span class="k">"role"</span>: m[<span class="k">"role"</span>], <span class="k">"content"</span>: m[<span class="k">"content"</span>]} <span class="k">for</span> m <span class="k">in</span> st.session_state.chat]
+    new_messages = run_agent(history, st.session_state.session_id)
+    answer = new_messages[-<span class="k">1</span>].content
+    details = summarize_run(new_messages, answer)   <span class="c"># tool call, id poster, token</span>
+    st.session_state.chat.append({<span class="k">"role"</span>: <span class="k">"assistant"</span>, <span class="k">"content"</span>: answer, <span class="k">"details"</span>: details})</pre></div>
   </div>
   <div class="card warn"><h4>Pelajaran dari main.py kelas (catatan Sesi 14 Bab 7)</h4><ul>
     <li><b>Agent kelas tidak ingat percakapan</b>: riwayat disimpan di <code>session_state</code> hanya untuk ditampilkan, sedangkan yang dikirim ke agent hanya pesan terakhir. Capstone mengirim <b>seluruh riwayat</b> supaya pertanyaan lanjutan ("yang kedua tadi siapa sutradaranya?") bisa dijawab.</li>
     <li>Role disimpan sebagai <code>user</code>/<code>assistant</code>, bukan "Human"/"AI", supaya riwayat bisa langsung dikirim ulang ke agent.</li>
     <li>Tidak memakai <code>except:</code> kosong untuk membaca <code>.env</code>, karena salah ketik nama variabel jadi tidak terlihat penyebabnya.</li>
+  </ul></div>
+  <div class="card asm"><h4>Poster: dua jebakan yang ditemukan saat uji</h4><ul>
+    <li><b>Judul di dalam judul.</b> "Star Wars" ada di dalam "Star Wars: Episode V - …". Karena itu judul terpanjang dicocokkan dulu, lalu dihapus dari teks jawaban, supaya judul yang lebih pendek tidak ikut cocok.</li>
+    <li><b>Urutan dari teks itu rapuh.</b> Kalimat pembuka "Tiga <i>Star Wars</i> dengan rating tertinggi…" sempat membuat poster film 1977 tampil paling depan. Sekarang urutan poster mengikuti hasil tool (peringkat atau relevansi).</li>
   </ul></div>
 </section>
 
@@ -477,10 +499,10 @@ QDRANT_COLLECTION=
 LANGFUSE_PUBLIC_KEY=
 LANGFUSE_SECRET_KEY=
 LANGFUSE_HOST=</pre>
-      <p class="cap">Di Streamlit Cloud, nilai yang sama diisi lewat menu <b>Secrets</b>, bukan dari file <code>.env</code>.</p></div>
+      <p class="cap">Di Streamlit Cloud, nilai yang sama diisi lewat menu <b>Secrets</b> (format TOML, nilai diapit tanda kutip), bukan dari file <code>.env</code>. Secret tingkat atas otomatis menjadi variabel lingkungan, jadi <code>env()</code> di <code>config.py</code> bekerja di dua tempat tanpa perubahan kode.</p></div>
     <div class="card"><h4>Aturan pengumpulan</h4><ul class="check">
-      <li>Repo GitHub <b>publik</b>, <code>.env</code> tidak pernah ter-commit (cek <code>git log</code> sebelum publish).</li>
-      <li>App Streamlit Cloud bisa dibuka tutor.</li>
+      <li>Repo GitHub <b>publik</b>, <code>.env</code> tidak pernah ter-commit (cek <code>git log</code> sebelum publish). Sampai Fase 7 repo tetap private.</li>
+      <li>App <code>imdb-movie-assistant.streamlit.app</code> diubah ke publik. Sebelumnya, pasang credit limit di key OpenRouter.</li>
       <li>API key Qdrant <b>read-only</b> disiapkan kalau tutor ingin melihat isi collection.</li>
       <li>Video di Google Drive atau YouTube, link publik.</li>
       <li>Semua link dikirim lewat Google Form dari tim operasional.</li>
@@ -499,6 +521,7 @@ LANGFUSE_HOST=</pre>
     <div class="scale"><span>22 Okt</span><span>26 Okt</span><span>30 Okt</span><span>3 Nov</span><span>6 Nov</span><span>10 Nov</span></div>
     <div class="legend"><span><i class="c-data"></i>22–23 Okt · akun, <code>data.py</code>, ingest 1.000 film</span><span><i class="c-q"></i>24–25 · kerangka berjalan: 1 tool + agent + Streamlit, <b>sudah di-deploy</b></span><span><i class="c-llm"></i>26–29 · 3 tool, Langfuse, tool call, usage, kartu poster</span><span><i class="c-obs"></i>30 Okt–1 Nov · set uji 10 pertanyaan, rapikan prompt, README</span><span><i class="c-mu"></i>2–5 · cadangan (Module 4)</span><span><i class="c-ac"></i>6–8 · rekam video</span><span><i class="c-ui"></i>9 · submit, 10 · cadangan terakhir</span></div>
   </div>
+  <div class="card asm"><h4>Realisasi · 23 Oktober</h4><p>Fase 1 sampai 3 selesai dalam satu hari: akun dan ingest, kerangka yang sudah di-deploy, lalu 3 tool, kartu poster, dan prompt v2. Sisa waktu dipakai untuk set uji, README, dan latihan menjelaskan kode.</p></div>
   <div class="card warn"><h4>Aturan kerja</h4><p>Setiap tahap baru dianggap selesai kalau Anda bisa menjelaskan ulang file dan fungsi pentingnya tanpa melihat catatan. Itu syarat dari Pak Herman: "selama teman-teman bisa menjelaskan, gak apa-apa".</p></div>
 </section>
 
@@ -543,15 +566,15 @@ LANGFUSE_HOST=</pre>
       <thead><tr><th class="n">#</th><th>Pertanyaan</th><th>Tool yang diharapkan</th><th>Jawaban benar (dari dataset)</th></tr></thead>
       <tbody>
         <tr><td class="n">1</td><td>Film tentang pencuri yang masuk ke mimpi orang</td><td><code>search_movies</code></td><td>Inception (2010)</td></tr>
-        <tr><td class="n">2</td><td>Thriller tahun 90-an yang bagus</td><td><code>search_movies</code> + filter Thriller, 1990–1999</td><td>Dari 24 kandidat, mis. The Silence of the Lambs, The Usual Suspects, Heat</td></tr>
+        <tr><td class="n">2</td><td>Thriller tahun 90-an yang bagus</td><td><code>rank_movies</code> (Thriller, 1990–1999), karena "bagus" berarti diurutkan berdasarkan rating</td><td>Dari 24 film: The Silence of the Lambs (8,6), The Usual Suspects (8,5), Reservoir Dogs (8,3)</td></tr>
         <tr><td class="n">3</td><td>Siapa pemain The Prestige dan berapa durasinya?</td><td><code>get_movie_details</code></td><td>Christian Bale, Hugh Jackman, …; 130 menit</td></tr>
         <tr><td class="n">4</td><td>Bandingkan Inception dan Interstellar</td><td><code>get_movie_details</code> (2 judul)</td><td>148 vs 169 menit, rating 8,8 vs 8,6, Meta_score sama-sama 74</td></tr>
         <tr><td class="n">5</td><td>Film Nolan dengan metascore tertinggi</td><td><code>rank_movies</code></td><td>Dunkirk (94), padahal rating IMDB-nya paling rendah (7,8)</td></tr>
         <tr><td class="n">6</td><td>Berapa film Hitchcock di dataset dan rata-rata ratingnya?</td><td><code>rank_movies</code></td><td>14 film, rata-rata 8,01</td></tr>
         <tr><td class="n">7</td><td>Film Drishyam itu tentang apa?</td><td><code>get_movie_details</code></td><td>Ada <b>dua</b>: versi 2013 (Jeethu Joseph) dan 2015 (Nishikant Kamat)</td></tr>
-        <tr><td class="n">8</td><td>(lanjutan dari #2) Yang kedua siapa sutradaranya?</td><td>memori percakapan</td><td>Sutradara film kedua dari jawaban #2</td></tr>
+        <tr><td class="n">8</td><td>(lanjutan dari #2) Yang kedua siapa sutradaranya?</td><td>memori percakapan + <code>get_movie_details</code> (prompt v2)</td><td>The Usual Suspects → Bryan Singer, dari data tool</td></tr>
         <tr><td class="n">9</td><td>Rekomendasikan film rilisan 2023</td><td><code>rank_movies</code> atau tidak ada</td><td>Menolak dengan sopan: data hanya sampai 2020</td></tr>
-        <tr><td class="n">10</td><td>Ceritakan film Parasite</td><td><code>get_movie_details</code> gagal → <code>search_movies</code> lewat plot</td><td>Gisaengchung (2019), dengan penjelasan bahwa dataset memakai judul asli Korea</td></tr>
+        <tr><td class="n">10</td><td>Ceritakan film Parasite</td><td><code>get_movie_details</code> not_found → ikuti hint → cari lagi dengan judul asli</td><td>Gisaengchung (2019, Bong Joon Ho), dengan penjelasan bahwa dataset memakai judul asli Korea</td></tr>
       </tbody>
     </table></div>
   </div>
@@ -560,7 +583,7 @@ LANGFUSE_HOST=</pre>
 <!-- 12 -->
 <section class="chap" id="open">
   <div class="chap-head"><div class="chap-no">12</div><div><h4>Review</h4><h2>Kritik diri dan perbaikan</h2></div></div>
-  <p>Rencana versi 3 dibaca ulang dengan empat prinsip kerja sebagai alat ukur. Ada 10 temuan, diurutkan dari yang paling berisiko. Semua perbaikannya sudah dimasukkan ke bab terkait di halaman ini. Setiap pilihan yang berbeda dari contoh kelas dicatat beserta alasannya di <code>notes/keputusan-desain.md</code> (18 keputusan, tidak ada yang melawan arahan).</p>
+  <p>Rencana versi 3 dibaca ulang dengan empat prinsip kerja sebagai alat ukur. Ada 10 temuan, diurutkan dari yang paling berisiko, dan semuanya sudah diterapkan di kode. Setiap pilihan yang berbeda dari contoh kelas dicatat beserta alasannya di <code>notes/keputusan-desain.md</code> (31 keputusan per 23 Okt, tidak ada yang melawan arahan).</p>
   <div class="tablewrap"><table>
     <thead><tr><th class="n">#</th><th>Temuan</th><th>Kenapa bermasalah</th><th>Perbaikan</th><th>Prinsip</th></tr></thead>
     <tbody>
@@ -569,7 +592,7 @@ LANGFUSE_HOST=</pre>
       <tr><td class="n">3</td><td>Parameter <code>genre</code> berupa teks bebas</td><td>LLM bisa mengirim "thriller" atau "Sci Fi", filter tidak cocok dengan "Thriller"/"Sci-Fi", hasilnya kosong</td><td><code>Literal</code> berisi 21 genre persis dari dataset, sehingga skema tool membatasi pilihan LLM</td><td>logical</td></tr>
       <tr><td class="n">4</td><td>Pembersihan data bisa tertulis dua kali (di ingest dan di tools)</td><td>Angka di Qdrant dan angka statistik bisa berbeda tanpa ketahuan</td><td>Satu fungsi <code>load_movies()</code> di <code>data.py</code>, dipakai keduanya (bab 03)</td><td>structural</td></tr>
       <tr><td class="n">5</td><td>Usage dan tool call diambil dari pesan terakhir</td><td>Satu pertanyaan bisa memicu 2–3 panggilan LLM, dan <code>result["messages"]</code> berisi seluruh riwayat. Angkanya jadi salah.</td><td>Ambil hanya pesan baru (<code>[len(history):]</code>), lalu jumlahkan <code>usage_metadata</code> semua AIMessage (bab 08)</td><td>logical</td></tr>
-      <tr><td class="n">6</td><td>Kartu poster belum jelas datanya dari mana</td><td>Kalau dibaca dari teks jawaban LLM, mudah rusak dan bisa menampilkan film karangan</td><td>Tool mengembalikan JSON metadata; UI membuat kartu dari ToolMessage, jadi hanya film yang benar-benar ada di dataset (bab 05, 08)</td><td>logical, impressive</td></tr>
+      <tr><td class="n">6</td><td>Kartu poster belum jelas datanya dari mana</td><td>Kalau dibaca dari teks jawaban LLM, mudah rusak dan bisa menampilkan film karangan</td><td>UI mengambil id film dari ToolMessage, memilih yang judulnya disebut di jawaban, lalu mengambil poster dari <code>data.py</code>. Jadi hanya film yang benar-benar ada di dataset yang tampil (bab 08)</td><td>logical, impressive</td></tr>
       <tr><td class="n">7</td><td>Belum ada aturan anti-halusinasi</td><td>Agent bisa merekomendasikan film di luar 1.000 data dari pengetahuannya sendiri</td><td>System prompt: hanya dari hasil tool; tolak dengan sopan kalau data tidak ada (bab 07; uji #9)</td><td>effective</td></tr>
       <tr><td class="n">8</td><td>Tidak ada definisi "selesai" yang bisa diuji</td><td>"Sudah bagus" jadi soal perasaan, dan contoh query di README serta demo video dibuat terpisah</td><td>Set uji 10 pertanyaan dengan jawaban dari dataset, dipakai 3 kali (bab 11)</td><td>efficient, impressive</td></tr>
       <tr><td class="n">9</td><td>Embedding lewat OpenRouter belum pernah dicoba</td><td><code>OpenAIEmbeddings</code> secara default mengirim token ID, bukan teks; tidak semua endpoint kompatibel menerimanya. Ini risiko teknis terbesar.</td><td>Dari 4 opsi (OpenRouter, OpenAI langsung, model lokal, Qdrant Inference) dipilih OpenRouter dengan <code>check_embedding_ctx_length=False</code>, supaya teks dikirim apa adanya. Diuji 1 menit sebelum ingest; cadangannya OpenAI langsung.</td><td>effective</td></tr>
@@ -578,8 +601,8 @@ LANGFUSE_HOST=</pre>
   </table></div>
   <div class="grid2">
     <div class="card"><h4>Yang dicek dan ternyata aman</h4><ul>
-      <li><b>Riwayat chat membengkak?</b> Yang disimpan hanya teks user dan jawaban akhir, bukan output tool, jadi tiap giliran hanya menambah ratusan token.</li>
-      <li><b>Agent dibangun ulang tiap klik?</b> <code>main.py</code> kelas begitu, karena semua kode ada di file Streamlit. Di struktur kita agent dibuat di <code>agent.py</code>, dan modul yang di-import hanya dijalankan sekali per proses, jadi tidak perlu <code>st.cache_resource</code>.</li>
+      <li><b>Riwayat chat membengkak?</b> Yang disimpan hanya teks user dan jawaban akhir, bukan output tool, jadi tiap giliran hanya menambah ratusan token. Akibatnya, pertanyaan lanjutan harus memanggil tool lagi, dan ini diatur di prompt v2.</li>
+      <li><b>Agent dibangun ulang tiap klik?</b> <code>main.py</code> kelas begitu, karena semua kode ada di file Streamlit. Di struktur kita <code>get_agent()</code> memakai <code>@lru_cache</code>, jadi agent dibuat sekali per proses saat pertanyaan pertama, bukan saat di-import (K24).</li>
       <li><b>Secret di Streamlit Cloud:</b> secret tingkat atas juga tersedia sebagai variabel lingkungan, jadi <code>os.getenv</code> di <code>config.py</code> bekerja di laptop maupun di cloud.</li>
     </ul></div>
     <div class="card"><h4>Keputusan klarifikasi Pak Herman · 22 Okt</h4><ul>
@@ -593,6 +616,6 @@ LANGFUSE_HOST=</pre>
 
 <footer class="foot">
   <p>Sumber: <code>imdb_top_1000.csv</code> dan Dataset Description.docx dari Purwadhika, transkrip kelas exercise dan capstone (JCAIEAH-005), slide <i>Exercise: Building Simple LLM Apps</i>, catatan JCAIEH Module 3 Sesi 04 dan Sesi 09–17, serta jawaban Pak Herman pada 22 Oktober 2026 (<code>notes/keputusan-desain.md</code>).</p>
-  <p>Dokumen ini diperbarui seiring pengerjaan. Kode di halaman ini masih sketsa dan belum dijalankan.</p>
+  <p>Dokumen ini diperbarui seiring pengerjaan. Kode di halaman ini diambil dari repo <code>purwadhika-capstone-3</code> per 23 Oktober 2026 dan sudah dijalankan.</p>
 </footer>
 </div>
