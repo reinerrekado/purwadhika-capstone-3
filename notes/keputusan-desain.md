@@ -496,6 +496,20 @@ Jawaban langsung Pak Herman, yang menjadi dasar status 💬 di bawah.
 - **Bukti (8 pertanyaan × 3 run, prompt v5):** 24/24 tool tepat. "Rekomendasikan saya film horor", "film komedi tahun 90-an", "mau nonton film animasi" → `rank_movies`. "Horor tentang rumah berhantu", "komedi yang bikin hati hangat", "pencuri masuk mimpi" → `search_movies`. "Mirip Inception" → `similar_movies`.
 - **Status:** 🔁 Revisi K27
 
+### K50 · Nama app "Rakfilm", berdasarkan fitur yang terbukti kuat
+- **Cek ketentuan:** nama proyek **tidak wajib** (catatan Sesi 04 bagian E dan Sesi 17 Bab 8 hanya mengatur dataset, komponen, bobot nilai, dan pengumpulan; hasil capstone bebas). Nama lama "Asisten Film IMDB" memakai merek dagang IMDb (milik Amazon) sebagai nama; sebagai keterangan sumber data tetap wajar.
+- **Uji sebelum memilih (atas keraguan Reiner, 24 Okt):** apakah app benar bisa mencari film dari "adegan"? 10 pertanyaan lewat agent asli:
+  - **inti cerita: 5/5 ketemu, semuanya #1.** Truman Show, Memento, Finding Nemo, WALL·E, The Sixth Sense.
+  - **adegan spesifik: 0/5.** Joker (menari di tangga), Titanic (pintu kayu), The Godfather (kepala kuda), The Matrix (menghindari peluru), E.T. (sepeda di depan bulan).
+  
+  Penyebabnya, sinopsis dataset hanya 1–2 kalimat inti cerita, jadi adegan tidak tercatat. Karena itu calon nama "Adegan" dan sambutan "Ingat adegannya, lupa judulnya?" **ditarik**, karena menjanjikan fitur yang tidak kuat.
+- **Keputusan Reiner:** **Rakfilm**, dikembangkan dari usulan "Rak". Nama ini menonjolkan fitur yang kuat dan unik (rak tontonan → IG story), terdengar seperti merek sungguhan, dan tidak menjanjikan kemampuan yang tidak ada. Subjudul "asisten film · IMDB Top 1000" menyebut sumber data, jadi penilai langsung paham.
+- **Turunannya:**
+  - sambutan "MAU NONTON APA?" + "Ceritakan ceritanya, sebut genrenya, atau cari yang mirip film favoritmu. Simpan ke rak, bagikan ke story."
+  - logo bingkai film + "?" dibaca "nonton apa?"
+  - watermark story "dibuat dengan Rakfilm"
+- **Status:** ✅ Tidak ada arahan yang terkait
+
 ---
 
 ## Pemilihan embedding
