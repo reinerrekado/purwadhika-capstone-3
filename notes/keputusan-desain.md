@@ -246,6 +246,17 @@ Jawaban langsung Pak Herman, yang menjadi dasar status 💬 di bawah.
 - **Alasan:** URL poster panjang (±100 karakter × 5 film) tapi tidak berguna untuk LLM menjawab. Membuangnya menghemat token input di setiap pencarian.
 - **Status:** 🔁 Pengembangan dari K06
 
+### K26 · System prompt berbahasa Inggris, jawaban berbahasa Indonesia
+- **Kelas:** system prompt di `main.py` Sesi 14 berbahasa Inggris ("You are a clothing store assistant...").
+- **Kita:** system prompt `movie-agent-system` berbahasa Inggris, dengan aturan "Reply in the user's language (Indonesian by default)".
+- **Alasan:**
+  1. **Konsisten**: docstring tool, data, dan query pencarian semuanya berbahasa Inggris, jadi semua instruksi untuk model memakai satu bahasa.
+  2. **Kepatuhan instruksi**: sebagian besar data latih LLM berbahasa Inggris, jadi aturan yang presisi paling aman ditulis dalam bahasa itu. Ini pengetahuan umum; **belum diuji A/B** dengan prompt bahasa Indonesia.
+  3. **Token** (diukur 23 Okt dengan `tiktoken` o200k_base): Inggris 196 token, Indonesia 223 token (+14%). Selisih ini kecil dan tidak menentukan.
+- **Bahasa jawaban tidak terpengaruh**: semua uji (benchmark 6 model, uji ketepatan judul) menjawab dalam bahasa Indonesia.
+- **Kalau ingin diganti:** cukup buat version baru di Langfuse, lalu jalankan ulang set uji.
+- **Status:** ✅ Sama dengan contoh kelas
+
 ---
 
 ## Pemilihan embedding
