@@ -18,11 +18,13 @@
 - [x] Conda env `capstone3` (Python 3.12) + `requirements.txt` terkunci (23 Okt)
 - [x] `scripts/check_connections.py`: embedding, Qdrant, Langfuse semuanya OK (23 Okt)
 - [x] `app/data.py`: `load_movies()`, `all_genres()`, `to_records()` (23 Okt)
-- [ ] `scripts/ingest.py`: 1.000 film masuk ke Qdrant
-- [ ] Cek collection di dashboard Qdrant (1.000 point, 1536 dimensi)
+- [x] `app/config.py` versi awal: `env()` + `get_embeddings()` (23 Okt)
+- [x] `scripts/ingest.py`: 1.000 film masuk ke Qdrant, 1536 dimensi, Cosine, ±39 detik (23 Okt)
+- [x] Uji pencarian: Inception urutan 1; filter Thriller 90-an 5/5 tepat (23 Okt)
+- [ ] Lihat sendiri collection `imdb_movies` di dashboard Qdrant (untuk video)
 
 ## Fase 2 · Kerangka berjalan (24–25 Okt)
-- [ ] `app/config.py`: env + klien LLM, embedding, Qdrant
+- [ ] `app/config.py`: tambah klien LLM
 - [ ] Pilih `LLM_MODEL` (model murah yang tool calling-nya andal)
 - [ ] `app/tools.py`: `search_movies` dulu
 - [ ] `app/agent.py`: `create_agent` + `run_agent()`

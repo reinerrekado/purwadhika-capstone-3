@@ -66,6 +66,7 @@ Jawaban langsung Pak Herman, yang menjadi dasar status 💬 di bawah.
 - **Kelas:** `qdrant.similarity_search(query, k=10)` tanpa filter (Sesi 14).
 - **Kita:** `similarity_search(query, k=5, filter=...)` dengan filter genre dan rentang tahun.
 - **Alasan:** pertanyaan seperti "thriller tahun 90-an" punya syarat pasti. Vektor mencari makna, filter menjamin syaratnya terpenuhi. Tanpa filter, film drama tahun 2010 bisa ikut muncul hanya karena ceritanya mirip.
+- **Bukti (23 Okt, Qdrant):** query "great thriller from the 90s" **tanpa filter** menghasilkan 3 dari 5 film yang bukan dari tahun 90-an (Cape Fear 1962, Strangers on a Train 1951, Wait Until Dark 1967), karena vektor tidak memahami tahun. **Dengan filter** Thriller + 1990–1999, kelimanya tepat: Misery, Lost Highway, Funny Games, Heat, The Usual Suspects.
 - **Status:** 💬 Dikonfirmasi ("boleh saja")
 
 ### K05 · Jumlah hasil pencarian `k=5`
@@ -179,6 +180,7 @@ Jawaban langsung Pak Herman, yang menjadi dasar status 💬 di bawah.
   - Lapis 1–3 menangani typo tanpa library tambahan.
   - Lapis 4 menangani karakter dataset: film non-Inggris memakai **judul asli** (*Parasite* = `Gisaengchung`, *Spirited Away* = `Sen to Chihiro no kamikakushi`). Pencocokan teks tidak bisa menebaknya. Agent cukup mencari dari plotnya lewat RAG, sehingga dua tool saling melengkapi.
   - LLM biasanya sudah memperbaiki typo sebelum memanggil tool. Kode tetap menjaga kalau LLM melewatkannya.
+- **Uji lapis 4 (23 Okt, Qdrant):** pencarian lewat plot berhasil memasukkan film yang benar ke 5 besar, tapi **belum tentu di urutan pertama**. *Parasite* → Gisaengchung di urutan 1 dengan selisih tipis (0,370 vs 0,368). *Spirited Away* → Sen to Chihiro di urutan 2, kalah dari Kurenai no buta (Porco Rosso) karena kata "pigs". Karena itu, petunjuk `not_found` meminta agent **lebih dulu memakai fakta yang ia tahu** (sutradara atau tahun, lewat `rank_movies`; misalnya Bong Joon Ho, 2019), lalu memakai plot sebagai jalan terakhir. Agent juga melihat 5 hasil lengkap dengan tahun dan sutradaranya (K06), sehingga bisa memilih yang cocok.
 - **Bukti (diuji pada dataset, 22 Okt):** `INCEPTION`, `Incepton`, `interstelar`, `the godfater`, `shawshank`, `lord of the rings`, `amelie`, `wall-e`, `harry poter`, `the matrx`, dan `dark night` semuanya ketemu. Yang gagal tanpa lapis 4: `parasite` dan `spirited away` (judul asli), serta `godfathr part 2` (angka Romawi; diatasi normalisasi di lapis 1).
 - **Status:** ✅ Tidak ada arahan yang terkait
 
@@ -193,6 +195,18 @@ Jawaban langsung Pak Herman, yang menjadi dasar status 💬 di bawah.
 - **Kita:** `pip install langfuse` saat ini memasang **5.0.4**. Pola kelas tetap dipakai apa adanya.
 - **Alasan:** diperiksa 23 Okt: `get_client()`, `CallbackHandler()` (semua argumen opsional), `get_prompt`, `auth_check`, dan `flush` masih ada, dan `auth_check()` berhasil ke `https://cloud.langfuse.com`. Cara mengirim `langfuse_session_id` lewat metadata akan dibuktikan saat trace pertama muncul.
 - **Status:** 💬 Sesuai jawaban Pak Herman ("yang mana saja yang works")
+
+### K21 · ID point = nomor baris, dan collection dibuat ulang setiap ingest
+- **Kelas:** notebook Sesi 12 membuat id acak dengan `uuid4()`.
+- **Kita:** `ids=[id film]` (nomor baris 0–999) dan `force_recreate=True`.
+- **Alasan:** dengan id acak, menjalankan ingest dua kali akan **menggandakan** data (2.000 point). Dengan id tetap dan pembuatan ulang, hasilnya selalu 1.000 point. Sudah terbukti: ingest dijalankan dua kali pada 23 Okt, dan collection tetap berisi 1.000 point. Id yang sama juga menghubungkan point di Qdrant dengan baris di `data.py`.
+- **Status:** 🔁 Beda dari contoh
+
+### K22 · Payload index untuk `metadata.genres` dan `metadata.year`
+- **Kelas:** tidak membuat payload index (Qdrant dibuat otomatis lewat `from_documents`).
+- **Kita:** `create_payload_index` untuk dua kolom yang dipakai filter di `search_movies`.
+- **Alasan:** index membuat Qdrant langsung tahu point mana yang cocok dengan genre/tahun tertentu, tanpa memeriksa semua point satu per satu. Dengan 1.000 film bedanya kecil, tapi ini praktik yang benar dan murah (2 baris kode).
+- **Status:** 🔁 Beda dari contoh
 
 ---
 

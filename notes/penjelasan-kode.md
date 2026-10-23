@@ -8,6 +8,8 @@
 1. [Persiapan: `.env` dan environment](#1-persiapan-env-dan-environment)
 2. [`scripts/check_connections.py`](#2-scriptscheck_connectionspy)
 3. [`app/data.py`](#3-appdatapy)
+4. [`app/config.py`](#4-appconfigpy)
+5. [`scripts/ingest.py`](#5-scriptsingestpy)
 
 ---
 
@@ -125,3 +127,110 @@ J: Ada dua film berjudul "Drishyam" (2013 dan 2015). Kalau judul dijadikan id, f
 J: Karena `tools.py` juga butuh data bersih yang sama. Kalau pembersihan ditulis dua kali, angkanya bisa berbeda tanpa ketahuan (kritik diri, temuan #4).
 
 > 🎬 **Untuk video:** "`data.py` adalah satu-satunya tempat pembersihan data. Contohnya metascore: saya simpan sebagai `Int64` karena nilainya bulat tapi ada 157 film kosong. Kalau kosongnya diisi nol, rata-ratanya turun dari 78 ke 66. Jadi datanya saya biarkan kosong, tidak dipalsukan."
+
+---
+
+## 4. `app/config.py`
+
+### Tugasnya
+Satu tempat untuk membaca konfigurasi dan membuat klien yang dipakai bersama. Untuk sekarang: embedding. Klien LLM menyusul.
+
+### Fungsi-fungsinya
+
+| Fungsi | Tugas |
+|---|---|
+| `env(name)` | Ambil variabel dari `.env`. Kalau kosong, berhenti dengan pesan yang jelas: variabel mana yang harus diisi, dan di mana |
+| `get_embeddings()` | Membuat `OpenAIEmbeddings` untuk `text-embedding-3-small` lewat OpenRouter |
+
+**`load_dotenv()`** membaca file `.env` ke variabel lingkungan. Di Streamlit Cloud tidak ada file `.env`, tapi Secrets di sana juga tersedia sebagai variabel lingkungan, jadi `os.getenv` bekerja di kedua tempat tanpa kode tambahan.
+
+### Pertanyaan yang mungkin ditanyakan
+**T: Kenapa tidak memakai `try/except` seperti `main.py` kelas?**
+J: `except:` kosong menyembunyikan penyebab error. Di `main.py` kelas, kalau satu variabel hilang, cabang `except`-nya justru ikut error. `env()` langsung menyebut nama variabel yang kosong (K15).
+
+> 🎬 **Untuk video:** "Semua konfigurasi dibaca di `config.py`. Kalau ada key yang lupa diisi, aplikasi langsung memberi tahu variabel mana yang kosong."
+
+---
+
+## 5. `scripts/ingest.py`
+
+### Tugasnya
+**Fase offline**: mengubah 1.000 film menjadi vektor dan menyimpannya di Qdrant Cloud. Cukup dijalankan sekali, dari folder root project:
+```
+python -m scripts.ingest
+```
+`-m` artinya menjalankan file sebagai **modul**. Dengan cara ini Python mengenali folder `app/`, sehingga `from app.data import ...` bisa dipakai.
+
+### Alurnya
+```
+data.py (1.000 film bersih)
+  → build_documents(): 1 film = 1 Document
+  → from_documents(): buat collection + embed + upload
+  → create_payload_indexes(): index genre dan tahun
+  → laporan: jumlah point, dimensi, jarak
+```
+
+### Fungsi-fungsinya
+
+| Fungsi | Tugas |
+|---|---|
+| `build_documents()` | Membuat 1.000 `Document`. `page_content` = teks yang di-embed, `metadata` = semua data film |
+| `create_payload_indexes()` | Index untuk `metadata.genres` (keyword) dan `metadata.year` (integer) |
+| `main()` | Menjalankan semuanya dan mencetak laporan |
+
+### Baris penting
+
+**Isi `page_content` (yang di-embed):**
+```python
+text = f"{movie['title']}. {', '.join(movie['genres'])}. {movie['overview']}"
+# "Inception. Action, Adventure, Sci-Fi. A thief who steals corporate secrets ..."
+```
+Hanya judul, genre, dan overview. Sutradara dan aktor tetap disimpan di `metadata`, tapi tidak di-embed (K13). Kata Pak Herman di Sesi 12: **yang diubah ke vektor hanya `page_content`; metadata ikut disimpan sebagai payload.**
+
+**Satu panggilan untuk tiga pekerjaan** (pola Sesi 12 Bab 6B):
+```python
+QdrantVectorStore.from_documents(documents, get_embeddings(), ids=ids, ...,
+                                 batch_size=100, force_recreate=True)
+```
+- Membuat collection. Ukurannya otomatis 1536, mengikuti model embedding.
+- Meng-embed 1.000 teks, dikirim per **100** teks dalam satu request (`batch_size`).
+- Meng-upload vektor + payload.
+
+| Parameter | Arti |
+|---|---|
+| `ids=ids` | Id point = nomor baris film (K21) |
+| `force_recreate=True` | Hapus collection lama lalu buat baru, supaya aman dijalankan ulang (K21) |
+| `prefer_grpc=True` | Sama dengan kelas: protokol gRPC, pengiriman lebih cepat |
+
+**Laporan akhir:** LangChain menyimpan vektor dengan **nama kosong** (`""`), sehingga konfigurasi vektornya berbentuk dict. Karena itu ada `vectors[""]`. Ini ketahuan saat percobaan pertama error, dan kemudian diperbaiki.
+
+### Hasil nyata (23 Okt)
+```
+Selesai: collection 'imdb_movies' berisi 1000 point, 1536 dimensi, jarak Cosine.
+durasi: 38.6 detik
+```
+
+### Uji pencarian setelah ingest
+
+| Uji | Hasil |
+|---|---|
+| "a thief who enters people's dreams to steal secrets" | **Inception** urutan 1 (0,532), jauh di atas urutan 2 (0,353) |
+| "great thriller from the 90s", **tanpa filter** | 3 dari 5 bukan film 90-an (1962, 1951, 1967) |
+| Query sama, **filter** Thriller + 1990–1999 | 5 dari 5 tepat: Misery, Lost Highway, Funny Games, Heat, The Usual Suspects |
+| Plot Parasite | Gisaengchung urutan 1, tapi selisihnya tipis (0,370 vs 0,368) |
+| Plot Spirited Away | Sen to Chihiro urutan 2, kalah dari Porco Rosso karena kata "pigs" |
+
+### Pertanyaan yang mungkin ditanyakan
+**T: Kenapa tidak di-chunk seperti di Sesi 13?**
+J: Overview terpanjang hanya 313 karakter. Satu film sudah pas jadi satu potongan; memotongnya justru memisahkan kalimat yang saling melengkapi (K08).
+
+**T: Kenapa perlu filter? Bukankah vektor sudah paham "tahun 90-an"?**
+J: Tidak. Vektor menangkap **makna cerita**, bukan angka tahun. Buktinya, tanpa filter muncul film tahun 1951 dan 1962. Filter menjamin syarat yang pasti (K04).
+
+**T: Apa jadinya kalau script ini dijalankan dua kali?**
+J: Tetap 1.000 point, karena id-nya tetap dan collection dibuat ulang. Dengan id acak (`uuid4`) seperti di notebook kelas, hasilnya 2.000 point duplikat (K21).
+
+**T: Skor 0,532 itu bagus atau jelek?**
+J: Yang penting bukan angka mutlaknya, tapi **selisihnya dengan urutan berikutnya**. Inception 0,532 vs urutan 2 0,353 berarti selisihnya jelas. Untuk Parasite, selisihnya hanya 0,002, jadi hasil itu rapuh.
+
+> 🎬 **Untuk video:** "Ingest cukup dijalankan sekali. Setiap film jadi satu vektor dari judul, genre, dan sinopsisnya. Lihat bedanya: tanpa filter, pencarian 'thriller tahun 90-an' memunculkan film tahun 1951. Dengan filter, lima-limanya tepat."
