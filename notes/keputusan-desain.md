@@ -208,6 +208,44 @@ Jawaban langsung Pak Herman, yang menjadi dasar status 💬 di bawah.
 - **Alasan:** index membuat Qdrant langsung tahu point mana yang cocok dengan genre/tahun tertentu, tanpa memeriksa semua point satu per satu. Dengan 1.000 film bedanya kecil, tapi ini praktik yang benar dan murah (2 baris kode).
 - **Status:** 🔁 Beda dari contoh
 
+### K23 · LLM: `openai/gpt-4.1-mini` lewat OpenRouter
+- **Kelas:** `gpt-4o-mini` (Sesi 12, 14).
+- **Kita:** `gpt-4.1-mini`, dipilih lewat dua uji pada 23 Okt. Model cukup diganti di `LLM_MODEL` tanpa mengubah kode.
+- **Uji 1: 6 model × 4 pertanyaan** (tool calling, filter, menolak film 2023, anti-halusinasi):
+
+  | Model | Hasil |
+  |---|---|
+  | qwen3.7-flash | Tidak bisa dipakai (diblokir *data policy* akun OpenRouter) |
+  | deepseek-v4-flash | Tool benar, tapi **berhalusinasi** ("orang tuanya berubah jadi babi" tidak ada di data) |
+  | gemini-2.5-flash-lite | Bagus, tapi 1 kali kena **rate limit (429)** |
+  | gpt-5-nano | Benar, tapi lambat (±18 dtk per jawaban karena *reasoning*) |
+  | gpt-4.1-nano | 4/4 benar, tercepat (±3 dtk) |
+  | gpt-5-mini | Paling rapi, tapi 2× lebih lambat dan 8× lebih mahal |
+
+- **Uji 2: ketepatan menulis judul** (3 pertanyaan × 2 kali). gpt-4.1-nano sempat menulis "**Seance** of the Lambs" (seharusnya *Silence*). gpt-4.1-mini, gemini-2.5-flash, dan gpt-5-mini tidak salah tulis.
+
+  | Model | Rata-rata waktu | Biaya per jawaban |
+  |---|---|---|
+  | gpt-4.1-nano | 3,7 dtk | $0,00024 |
+  | **gpt-4.1-mini** | **4,0 dtk** | **$0,00092** |
+  | gemini-2.5-flash | 4,6 dtk | $0,00120 |
+  | gpt-5-mini | 13,9 dtk | $0,00281 |
+
+- **Alasan:** hampir secepat nano tapi lebih teliti. Penyedianya (OpenAI) stabil, tanpa rate limit seperti Gemini. Biayanya tetap kecil (1.000 pertanyaan < $1). Cadangan: `google/gemini-2.5-flash`.
+- **Status:** 🔁 Beda dari contoh (model dari keluarga yang sama, versi lebih baru)
+
+### K24 · Agent dibuat saat pertama dipakai (`@lru_cache`), bukan saat import
+- **Kelas:** `main.py` membuat model, Qdrant, dan agent di level atas file Streamlit, sehingga semuanya dibangun ulang setiap kali halaman di-rerun.
+- **Kita:** `get_agent()` dengan `@lru_cache(maxsize=1)`. Agent dibuat sekali, saat pertanyaan pertama masuk, lalu dipakai ulang. Sama untuk koneksi Qdrant (`_vector_store()`).
+- **Alasan:** rencana awal "dibuat saat modul di-import" berarti mengakses jaringan (Langfuse, Qdrant) begitu file di-import. Itu efek samping yang dilarang arahan modular. Dengan cache, import tidak melakukan apa-apa, tapi hasilnya tetap dibuat sekali saja. Terbukti: `CacheInfo(hits=1, misses=1)` setelah dua pertanyaan.
+- **Konsekuensi:** kalau system prompt diubah di Langfuse, app perlu di-restart (atau di Streamlit Cloud: *Reboot app*) supaya prompt baru terbaca.
+- **Status:** ✅ Sesuai arahan (modular, tanpa efek samping saat import)
+
+### K25 · Poster tidak dikirim ke LLM
+- **Kita:** tool hanya mengirim fakta film ke LLM. UI mengambil poster sendiri dari `data.py` berdasarkan `id`.
+- **Alasan:** URL poster panjang (±100 karakter × 5 film) tapi tidak berguna untuk LLM menjawab. Membuangnya menghemat token input di setiap pencarian.
+- **Status:** 🔁 Pengembangan dari K06
+
 ---
 
 ## Pemilihan embedding

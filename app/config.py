@@ -3,7 +3,7 @@
 import os
 
 from dotenv import load_dotenv
-from langchain_openai import OpenAIEmbeddings
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 load_dotenv()
 
@@ -16,6 +16,15 @@ def env(name: str) -> str:
     if not value:
         raise RuntimeError(f"Variabel {name} kosong. Isi di .env (lokal) atau Secrets (Streamlit Cloud).")
     return value
+
+
+def get_llm(model: str | None = None) -> ChatOpenAI:
+    """LLM lewat OpenRouter dengan ChatOpenAI + base_url (K10). Model diambil dari LLM_MODEL."""
+    return ChatOpenAI(
+        model=model or env("LLM_MODEL"),
+        base_url=OPENROUTER_BASE_URL,
+        api_key=env("OPENROUTER_API_KEY"),
+    )
 
 
 def get_embeddings() -> OpenAIEmbeddings:

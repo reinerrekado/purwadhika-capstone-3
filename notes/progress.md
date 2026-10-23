@@ -24,22 +24,21 @@
 - [ ] Lihat sendiri collection `imdb_movies` di dashboard Qdrant (untuk video)
 
 ## Fase 2 · Kerangka berjalan (24–25 Okt)
-- [ ] `app/config.py`: tambah klien LLM
-- [ ] Pilih `LLM_MODEL` (model murah yang tool calling-nya andal)
-- [ ] `app/tools.py`: `search_movies` dulu
-- [ ] `app/agent.py`: `create_agent` + `run_agent()`
-- [ ] System prompt pertama dibuat di UI Langfuse
-- [ ] `streamlit_app.py` versi minimal: chat jalan
+- [x] `app/config.py`: tambah `get_llm()` (23 Okt)
+- [x] Pilih `LLM_MODEL`: `openai/gpt-4.1-mini` dari uji 6 model (23 Okt, K23)
+- [x] `app/tools.py`: `search_movies` dengan enum 21 genre + filter tahun (23 Okt)
+- [x] `app/agent.py`: `get_agent()` + `run_agent()`; memori percakapan terbukti jalan (23 Okt)
+- [x] `streamlit_app.py`: chat history, tool call, dan usage token (23 Okt)
+- [ ] **Anda:** buat system prompt `movie-agent-system` di UI Langfuse
+- [ ] **Anda:** jalankan `streamlit run streamlit_app.py` dan coba 3 pertanyaan
+- [ ] Cek trace dan session di Langfuse
 - [ ] **Deploy pertama ke Streamlit Community Cloud**
 
 ## Fase 3 · Fitur lengkap (26–29 Okt)
 - [ ] `get_movie_details`: pencarian judul 4 lapis (K18)
 - [ ] `rank_movies`: filter, urutkan, ringkasan statistik
-- [ ] Trace Langfuse dikelompokkan per session
-- [ ] UI: chat history
-- [ ] UI: tool call (expander)
-- [ ] UI: usage (token)
 - [ ] UI: kartu film dengan poster
+- [ ] Uji: pertanyaan lanjutan ("yang kedua siapa sutradaranya?") harus memakai data tool, bukan pengetahuan model
 
 ## Fase 4 · Uji dan dokumentasi (30 Okt – 1 Nov)
 - [ ] Set uji 10 pertanyaan: semuanya lolos
