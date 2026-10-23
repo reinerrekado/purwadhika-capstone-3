@@ -35,6 +35,7 @@
 - [x] Jalankan `streamlit run streamlit_app.py` lokal dan coba 3 pertanyaan (23 Okt)
 - [x] Cek session `e2e-langfuse-prompt-23okt` di Langfuse → Sessions (23 Okt)
 - [x] Deploy pertama ke Streamlit Community Cloud, Python 3.12 (sama dengan lokal), Secrets lewat form; semua uji lolos (23 Okt)
+  - URL: https://imdb-movie-assistant.streamlit.app (private sampai Fase 7)
 
 ## Fase 3 · Fitur lengkap (26–29 Okt)
 - [x] `get_movie_details`: pencarian judul 4 lapis (K18, K30) (23 Okt)
@@ -42,7 +43,8 @@
 - [x] UI: kartu poster untuk film yang disebut di jawaban (23 Okt)
 - [x] Uji draf prompt v2: 12 skenario + 4 pertanyaan × 3 run, semuanya benar; pertanyaan lanjutan sekarang memakai tool (K31) (23 Okt)
 - [ ] **Anda:** buat prompt `movie-agent-system` **v2** di UI Langfuse, label production
-- [ ] Verifikasi v2 dari Langfuse + uji UI (poster) lokal, lalu push → Streamlit Cloud update otomatis
+- [x] Fase 3 di-push, Streamlit Cloud update otomatis; poster + 3 tool dicoba di app Cloud, semuanya benar (23 Okt, masih prompt v1)
+- [ ] Verifikasi v2 terbaca dari Langfuse
 
 ## Fase 4 · Uji dan dokumentasi (30 Okt – 1 Nov)
 - [ ] Set uji 10 pertanyaan: semuanya lolos
