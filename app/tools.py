@@ -30,6 +30,7 @@ RANK_FIELDS = ["id", "title", "year", "genres", "rating", "meta_score",
 
 ROMAN = {"ii": "2", "iii": "3", "iv": "4", "v": "5", "vi": "6", "vii": "7", "viii": "8", "ix": "9"}
 MAX_MATCHES = 10  # cukup untuk satu seri penuh, misalnya 6 film Harry Potter
+PAGE_SIZE = 5  # film per pencarian Qdrant (K05): hemat token dan relevansi turun setelah 5 besar
 NOT_FOUND_HINT = ("Do not tell the user the movie is missing yet. Non-English movies use their original "
                   "title (e.g. Parasite = Gisaengchung), so call the same tool again with the original "
                   "title if you know it. Otherwise try rank_movies with the director or year, or "
@@ -76,9 +77,15 @@ def search_movies(
         year_from: Earliest release year, inclusive. Leave empty unless the user names a year or decade.
         year_to: Latest release year, inclusive. Leave empty unless the user names a year or decade.
     """
-    docs = _vector_store().similarity_search(query, k=5, filter=_qdrant_filter(genre, year_from, year_to))
-    movies = [{field: doc.metadata[field] for field in FIELDS_FOR_LLM} for doc in docs]
-    return json.dumps({"movies": movies}, ensure_ascii=False)
+    return json.dumps({"movies": search_page(query, genre, year_from, year_to)}, ensure_ascii=False)
+
+
+def search_page(query: str, genre: str | None = None, year_from: int | None = None, year_to: int | None = None,
+                offset: int = 0) -> list[dict]:
+    """Satu halaman (5 film) hasil search_movies. offset dipakai tombol "Muat lebih banyak" di UI (K45)."""
+    docs = _vector_store().similarity_search(query, k=PAGE_SIZE, offset=offset,
+                                             filter=_qdrant_filter(genre, year_from, year_to))
+    return [{field: doc.metadata[field] for field in FIELDS_FOR_LLM} for doc in docs]
 
 
 def normalize(text: str) -> str:
@@ -151,18 +158,24 @@ def similar_movies(title: str, year_from: int | None = None, year_to: int | None
     matches = find_title(title)
     if not matches:
         return json.dumps({"movies": [], "not_found": [{"query": title}], "hint": NOT_FOUND_HINT})
+    source = load_movies().set_index("id").loc[next(iter(matches))]
+    return json.dumps({"similar_to": f"{source['title']} ({source['year']})",
+                       "movies": similar_page(title, year_from, year_to)}, ensure_ascii=False)
 
-    source_id = next(iter(matches))  # judul persis, atau yang terpopuler
+
+def similar_page(title: str, year_from: int | None = None, year_to: int | None = None,
+                 offset: int = 0) -> list[dict]:
+    """Satu halaman (5 film) hasil similar_movies. offset dipakai tombol "Muat lebih banyak" di UI (K45)."""
+    matches = find_title(title)
+    if not matches:
+        return []
     store = _vector_store()
     # Query = id film: Qdrant memakai vektor film itu sendiri sebagai query, dan film itu tidak ikut di hasil.
     points = store.client.query_points(
-        store.collection_name, query=source_id, using=store.vector_name, limit=5, with_payload=True,
-        query_filter=_qdrant_filter(None, year_from, year_to),  # tanpa genre: kemiripan vektor sudah mencakupnya
+        store.collection_name, query=next(iter(matches)), using=store.vector_name, limit=PAGE_SIZE, offset=offset,
+        with_payload=True, query_filter=_qdrant_filter(None, year_from, year_to),  # tanpa genre (K34)
     ).points
-    movies = [{field: p.payload["metadata"][field] for field in FIELDS_FOR_LLM} for p in points]
-    source = load_movies().set_index("id").loc[source_id]
-    return json.dumps({"similar_to": f"{source['title']} ({source['year']})", "movies": movies},
-                      ensure_ascii=False)
+    return [{field: p.payload["metadata"][field] for field in FIELDS_FOR_LLM} for p in points]
 
 
 SortField = Literal["rating", "meta_score", "votes", "gross_usd", "runtime_min", "year"]
@@ -219,3 +232,4 @@ def rank_movies(
 
 
 TOOLS = [search_movies, similar_movies, get_movie_details, rank_movies]
+PAGERS = {"search_movies": search_page, "similar_movies": similar_page}  # tool yang punya "Muat lebih banyak" (K45)

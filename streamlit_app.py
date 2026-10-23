@@ -12,6 +12,7 @@ import streamlit as st
 from app.agent import send_feedback, stream_agent
 from app.data import load_movies, movie_facts
 from app.movie_cards import movie_cards
+from app.tools import PAGE_SIZE, PAGERS
 
 # Harga openai/gpt-4.1-mini di OpenRouter (USD per 1 juta token, Okt 2026). Hanya untuk perkiraan biaya.
 PRICE_INPUT, PRICE_OUTPUT = 0.40, 1.60
@@ -70,12 +71,16 @@ def summarize_run(new_messages: list) -> dict:
     ai_messages = [m for m in new_messages if m.type == "ai"]
     movies = {m.tool_call_id: tool_movies(m.content) for m in new_messages if m.type == "tool"}
     found = {movie["id"]: movie for result in movies.values() for movie in result}  # tanpa duplikat
+    tool_calls = [{"name": call["name"], "args": call["args"],
+                   "titles": [movie["title"] for movie in movies.get(call["id"], [])],
+                   "ids": [movie["id"] for movie in movies.get(call["id"], [])]}
+                  for m in ai_messages for call in m.tool_calls]
+    # Pencarian terakhir yang hasilnya penuh (5 film) bisa dilanjutkan dengan "Muat lebih banyak" (K45).
+    pageable = [c for c in tool_calls if c["name"] in PAGERS and len(c["ids"]) == PAGE_SIZE]
     return {
-        "tool_calls": [
-            {"name": call["name"], "args": call["args"],
-             "titles": [movie["title"] for movie in movies.get(call["id"], [])]}
-            for m in ai_messages for call in m.tool_calls
-        ],
+        "tool_calls": tool_calls,
+        "more": {"tool": pageable[-1]["name"], "args": pageable[-1]["args"], "offset": PAGE_SIZE,
+                 "queue": pageable[-1]["ids"], "done": False} if pageable else None,
         "found": [{"id": m["id"], "title": m["title"], "year": m["year"]} for m in found.values()],
         "input_tokens": sum((m.usage_metadata or {}).get("input_tokens", 0) for m in ai_messages),
         "output_tokens": sum((m.usage_metadata or {}).get("output_tokens", 0) for m in ai_messages),
@@ -180,21 +185,54 @@ def movie_dialog(movie_id: int) -> None:
         st.markdown("**💡 Fakta menarik**\n" + "\n".join(f"- {fact}" for fact in movie_facts(movie_id)))
 
 
+def shown_ids(index: int) -> set[int]:
+    """Id film yang sudah tampil di jawaban ke-index: kartu, grid, dan hasil "Muat lebih banyak"."""
+    message = st.session_state.chat[index]
+    blocks, leftover = split_answer(message["content"], message["details"].get("found", []))
+    carded = {movie_id for kind, items in blocks if kind == "cards" for movie_id, _ in items}
+    return carded | set(leftover) | set(message["details"].get("extra", []))
+
+
+def load_more(index: int) -> None:
+    """Callback "Muat lebih banyak" (K45): tanpa LLM, panggil fungsi pencarian yang sama dengan offset berikutnya.
+
+    Film dari hasil pertama yang belum ditampilkan agent (agent biasanya memilih 2-3 dari 5) keluar lebih dulu.
+    """
+    details = st.session_state.chat[index]["details"]
+    more, shown = details["more"], shown_ids(index)
+    queue = [movie_id for movie_id in more["queue"] if movie_id not in shown]
+    while len(queue) < PAGE_SIZE and not more["done"]:
+        page = PAGERS[more["tool"]](**more["args"], offset=more["offset"])
+        more["offset"] += PAGE_SIZE
+        more["done"] = len(page) < PAGE_SIZE  # halaman tidak penuh = hasil sudah habis
+        queue += [m["id"] for m in page if m["id"] not in shown and m["id"] not in queue]
+    details["extra"] = details.get("extra", []) + queue[:PAGE_SIZE]
+    more["queue"] = queue[PAGE_SIZE:]
+
+
 def show_answer(answer: str, details: dict, index: int) -> None:
-    """Jawaban dengan kartu film di tempatnya (K44), lalu grid untuk film yang disebut di dalam paragraf."""
+    """Jawaban dengan kartu film di tempatnya (K44), grid untuk film di dalam paragraf, lalu "Muat lebih banyak"."""
     blocks, leftover = split_answer(answer, details.get("found", []))
-    opened = None
+    clicks = []
     for n, (kind, content) in enumerate(blocks):
-        key = f"cards_{st.session_state.session_id}_{index}_{n}"
         if kind == "text":
             st.markdown(content)
-        elif (clicked := movie_cards(card_data(content), layout="list", key=key, on_open=lambda: None)) is not None:
-            opened = clicked
+        else:
+            key = f"cards_{st.session_state.session_id}_{index}_{n}"
+            clicks.append(movie_cards(card_data(content), layout="list", key=key, on_open=lambda: None))
     if leftover:
         key = f"grid_{st.session_state.session_id}_{index}"
-        clicked = movie_cards(card_data([(i, "") for i in leftover[:10]]), layout="grid", key=key, on_open=lambda: None)
-        opened = clicked if clicked is not None else opened
-    if opened is not None:
+        clicks.append(movie_cards(card_data([(i, "") for i in leftover[:10]]), layout="grid", key=key,
+                                  on_open=lambda: None))
+    if extra := details.get("extra"):  # kartu tambahan: sinopsis Indonesia sebagai teks (K42)
+        overview = load_movies().set_index("id")["overview_id"]
+        key = f"extra_{st.session_state.session_id}_{index}"
+        clicks.append(movie_cards(card_data([(i, overview[i]) for i in extra]), layout="list", key=key,
+                                  on_open=lambda: None))
+    if (more := details.get("more")) and (more["queue"] or not more["done"]):
+        st.button(f"⬇️ Muat {PAGE_SIZE} film lagi", key=f"more_{st.session_state.session_id}_{index}",
+                  on_click=load_more, args=(index,), type="tertiary")
+    if (opened := next((c for c in clicks if c is not None), None)) is not None:
         movie_dialog(opened)
 
 

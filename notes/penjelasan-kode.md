@@ -453,6 +453,8 @@ Hanya **tampilan**. Semua logika ada di `app/agent.py` (arahan modular Pak Herma
 | `card_data()` | Siapkan data kartu: judul, tahun, rating, alasan, poster (atau None kalau poster hilang) |
 | `movie_dialog()` | Panel detail (`@st.dialog`): sinopsis Indonesia, chip sutradara/pemain, "Tonton di mana?", "Cari yang mirip", Fakta menarik (K40–K43) |
 | `ask()` | Dipanggil dari panel: titipkan pertanyaan, lalu `st.rerun()` |
+| `load_more()` | Callback "⬇️ Muat 5 film lagi": panggil `search_page`/`similar_page` dengan `offset` berikutnya, tanpa LLM (K45) |
+| `shown_ids()` | Id film yang sudah tampil di satu jawaban, supaya "Muat lebih banyak" tidak mengulang |
 | `usd_to_idr()` | Kurs USD→IDR harian dari ECB (Frankfurter), di-cache sehari; `None` kalau gagal (K39) |
 | `cost_usd()`, `rupiah()` | Hitung biaya dari token, lalu ubah ke format "Rp42" |
 | sidebar (atas) | Tombol percakapan baru |

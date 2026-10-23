@@ -419,8 +419,27 @@ Jawaban langsung Pak Herman, yang menjadi dasar status 💬 di bawah.
   - Batas 5 poster dihapus, jadi daftar 10 film tampil semua.
 - **Prompt v4 aturan 6:** "Put each movie on its own line as: Title (year) - one reason... Do not end by offering more details; the app shows a movie's details when the user clicks it."
 - **Bug yang ditemukan saat uji:** jawaban Parasite berupa paragraf ("Film Gisaengchung (2019) atau Parasite bercerita...") sempat dijadikan kartu, dan judulnya terpotong dari tengah kalimat. Perbaikannya: baris hanya menjadi kartu kalau **diawali** judul.
+- **Tata letak panel (masukan Reiner):** Fakta menarik dipindah ke kolom kanan di bawah tombol, karena ruangnya masih kosong.
 - **Bukti (7 jawaban asli agent):** daftar 10 film DiCaprio → 10 kartu; thriller, Star Wars, film mirip → 3 kartu; Drishyam → 2 kartu (judul sama, id berbeda); perbandingan → teks + 2 kartu; paragraf → teks + grid.
 - **Status:** 🔁 Revisi K41
+
+### K45 · "Muat lebih banyak" langsung dari UI, tanpa LLM
+- **Pertanyaan Reiner:** apakah hasil dibatasi, kenapa, dan bisakah dilanjutkan?
+- **Batas tetap:** 5 film per pencarian (K05), karena:
+  - hasil tool = 55% token, dan setiap film sekitar 110 token
+  - relevansi pencarian makna turun setelah 5 besar
+  - jawaban chat tetap mudah dibaca
+- **Kita (opsi B, dipilih Reiner):**
+  - Tombol "⬇️ Muat 5 film lagi" di bawah jawaban `search_movies`/`similar_movies` yang hasilnya penuh. Klik → UI memanggil **fungsi pencarian yang sama** (`search_page`/`similar_page`) dengan argumen tool call terakhir + `offset`. Qdrant mendukung `offset` di `similarity_search` dan `query_points`.
+  - Logika pencarian dipisah dari `@tool`, jadi `offset` tidak terlihat oleh LLM.
+  - Film tambahan tampil sebagai kartu dengan sinopsis Indonesia (K42).
+- **Detail penting:** agent biasanya hanya menampilkan 2–3 dari 5 hasil. Klik pertama menampilkan sisa yang belum tampil **lebih dulu**, baru halaman berikutnya. Film yang sudah tampil tidak diulang.
+- **Opsi A (lewat agent) ditolak:**
+  - ±4 detik dan ≈ Rp30 per klik
+  - agent bisa salah mengulang query/filter, karena riwayat hanya berisi teks
+- **Konsekuensi:** klik "Muat lebih banyak" tidak tercatat di Langfuse, karena tidak melewati LLM.
+- **Bukti:** "film tentang anak yang tersesat": jawaban 3 film → klik 1: E.T., Stand by Me (sisa hasil pertama) + 3 baru → klik 2: 5 lagi. 13 film, 0 duplikat, 0 panggilan LLM.
+- **Status:** 🔁 Pengembangan dari K05
 
 ---
 

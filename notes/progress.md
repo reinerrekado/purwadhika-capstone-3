@@ -57,7 +57,9 @@
 - [x] Sinopsis 1.000 film diterjemahkan offline + diperiksa (24 Okt, K42)
 - [x] Panel detail: Fakta menarik + chip sutradara/pemain (24 Okt, K43)
 - [x] Kartu film langsung di dalam jawaban, tanpa batas 5 film (24 Okt, K44)
-- [ ] **Anda:** coba kartu + panel detail di app Cloud (hover, klik, chip, Cari yang mirip)
+- [x] "Muat 5 film lagi" langsung dari UI dengan offset Qdrant, tanpa LLM (24 Okt, K45)
+- [ ] **Anda:** coba kartu + panel detail + Muat lebih banyak di app Cloud
+- [ ] IG story "Watchlist minggu ini": R&D 3 arah visual di artifact → Reiner pilih → Pillow + headline LLM/aturan
 - [ ] **Anda:** buat prompt `movie-agent-system` **v4** di UI Langfuse, label production
 - [ ] Verifikasi v4 + coba fitur baru di app Cloud
 
