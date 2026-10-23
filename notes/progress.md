@@ -63,4 +63,6 @@
 ## Fase 7 · Pengumpulan (9 Nov)
 - [ ] Cek riwayat git: tidak ada key yang pernah ter-commit
 - [ ] Repo GitHub diubah jadi **public**
+- [ ] App Streamlit diubah jadi **public** (Share → "public and searchable"); sebelumnya pasang credit limit di key OpenRouter
+  - Sampai tahap ini app private. Kalau Pak Herman perlu melihat lebih awal: Share → Invite viewers → email beliau
 - [ ] Isi Google Form: repo, video, app Streamlit, akses Qdrant
