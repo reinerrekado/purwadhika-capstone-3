@@ -243,7 +243,15 @@ J: Yang penting bukan angka mutlaknya, tapi **selisihnya dengan urutan berikutny
 ## 6. `app/tools.py`
 
 ### Tugasnya
-Berisi fungsi-fungsi yang **boleh dipanggil agent**. Untuk sekarang baru satu: `search_movies` (RAG + filter). Dua tool lain menyusul di Fase 3.
+Berisi fungsi-fungsi yang **boleh dipanggil agent**: satu tool RAG dan dua tool non-RAG.
+
+| Tool | Sumber data | Dipakai untuk |
+|---|---|---|
+| `search_movies` | Qdrant (RAG) | "film tentang pencuri yang masuk ke mimpi": mencari berdasarkan makna plot |
+| `get_movie_details` | `data.py` (pandas) | menyebut judul, pertanyaan lanjutan, perbandingan |
+| `rank_movies` | `data.py` (pandas) | "paling bagus/terlaris/berapa banyak", seri film, film seorang sutradara atau aktor |
+
+Ketiganya mengembalikan JSON dengan kunci `"movies"` (K28).
 
 ### Cara LLM "melihat" sebuah tool
 Decorator `@tool` (Sesi 10) mengubah fungsi Python menjadi **skema JSON** yang dikirim ke LLM. Yang dibaca LLM:
@@ -281,14 +289,59 @@ FIELDS_FOR_LLM = ["id", "title", "year", "genres", "rating", ...]
 ```
 LLM mendapat fakta terstruktur (K06). Poster tidak ikut karena tidak berguna untuk menjawab dan hanya memboroskan token. UI mengambil poster sendiri berdasarkan `id` (K25).
 
+**Normalisasi judul (`normalize`):**
+```python
+unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()  # Amélie -> Amelie
+re.sub(r"[^a-z0-9]+", " ", text.lower().replace("&", " and "))         # WALL·E -> wall e
+ROMAN.get(word, word)                                                    # part ii -> part 2
+```
+`NFKD` memecah `é` menjadi `e` + tanda aksen, lalu `encode("ascii", "ignore")` membuang tanda aksennya. Regex mengganti semua karakter selain huruf dan angka dengan spasi. Judul di dataset **dan** ketikan user dinormalisasi dengan cara yang sama, jadi keduanya bisa dibandingkan apa adanya.
+
+**Pencarian judul (`find_title`), 4 lapis (K18, K30):**
+```python
+partial = titles.map(lambda t: set(words) <= set(t.split()))
+```
+`<=` pada `set` berarti "himpunan bagian": **semua** kata dari query ada di judul. `"dark knight"` ⊆ `"the dark knight rises"`. Judul yang persis sama juga lolos di sini, lalu diberi label `exact` dan ditaruh paling atas. Pencarian tidak berhenti di judul persis, supaya "Star Wars" tetap membawa Episode V–VII (K30).
+```python
+difflib.get_close_matches(w, t.split(), n=1, cutoff=0.8)
+```
+Lapis typo, dipakai kalau lapis sebelumnya kosong. Setiap kata query harus punya kata yang **mirip ≥ 80%** di judul (`poter` ↔ `potter` = 91%). `difflib` adalah library bawaan Python, jadi tidak perlu instal apa-apa. Kalau tetap tidak ketemu, tool mengembalikan 3 judul termirip, ditambah `hint` (lapis 4).
+
+**`rank_movies` = filter pandas bertingkat:**
+```python
+df = load_movies().dropna(subset=[sort_by])
+if genre: df = df[df["genres"].map(lambda genres: genre in genres)]
+...
+top = df.sort_values(sort_by, ascending=(order == "lowest")).head(limit)
+```
+Setiap filter hanya dipasang kalau LLM mengisinya, sama seperti `search_movies`. `dropna` membuang film yang kolom urutannya kosong (misalnya `gross_usd` kosong untuk 169 film), supaya urutannya tidak kacau. `matching_count` dihitung **sebelum** `head`, jadi "ada berapa film horor?" terjawab 32, bukan 5.
+
+### Hasil uji (23 Okt)
+| Ketikan user | Hasil |
+|---|---|
+| `inception`, `INTERSTELLAR` | exact |
+| `shawshank`, `dark knight` | partial (The Dark Knight + Rises) |
+| `the matrx`, `harry poter`, `dark night` | fuzzy |
+| `godfather part 2` | partial → The Godfather: Part II (angka Romawi) |
+| `Parasite` | not_found + hint → agent mencari `Gisaengchung` → ketemu |
+| `rank_movies(title="star wars")` | Episode V (8.7) di urutan 1 |
+
+Setiap pemanggilan butuh sekitar 10–50 ms, karena data ada di memori dan tidak perlu jaringan.
+
 ### Pertanyaan yang mungkin ditanyakan
-**T: Bagaimana LLM tahu kapan harus memanggil `search_movies`?**
-J: Dari docstring-nya: "Use this when the user describes what they want to watch instead of naming a title." LLM membaca deskripsi semua tool, lalu memilih yang cocok dengan pertanyaan (Sesi 10: tool calling).
+**T: Bagaimana LLM tahu tool mana yang dipanggil?**
+J: Dari docstring setiap tool, ditambah satu baris per tool di system prompt. Contohnya, `search_movies` berbunyi "Use this when the user describes what they want to watch. Do not use it to find a movie or a movie series by title". LLM membaca deskripsi semua tool, lalu memilih yang cocok dengan pertanyaan (Sesi 10: tool calling).
 
 **T: Siapa yang menentukan genre "Thriller" dan tahun 1990–1999?**
 J: LLM, dari kalimat user "thriller tahun 90-an". Tapi yang **menjalankan** filter adalah kode dan Qdrant. LLM hanya mengusulkan argumen, kode yang memutuskan hasilnya.
 
-> 🎬 **Untuk video:** "Ini tool RAG saya. LLM hanya mengisi argumen: query dalam bahasa Inggris, genre, dan tahun. Genre dikunci ke 21 pilihan dari dataset, jadi LLM tidak bisa salah ketik."
+**T: Kenapa `get_movie_details` dan `rank_movies` tidak lewat Qdrant?**
+J: Keduanya mencari judul atau angka secara **persis**, bukan berdasarkan makna. Pandas bisa melakukannya dengan tepat dan cepat. Embedding malah bisa meleset: pertanyaan "harry poter" lewat `search_movies` sempat melewatkan film Harry Potter yang ratingnya paling tinggi (K30).
+
+**T: Kenapa ada label `match`?**
+J: Supaya agent tahu seberapa yakin hasilnya. Kalau labelnya `fuzzy` atau hasilnya lebih dari satu, agent bisa memastikan dulu: "Maksud Anda *The Matrix*?"
+
+> 🎬 **Untuk video:** "Saya punya tiga tool. Satu tool RAG ke Qdrant untuk mencari berdasarkan plot, dan dua tool pandas untuk judul dan peringkat. Saya pernah menemukan bug: 'Star Wars terbaik' dijawab salah karena pencarian berhenti di judul yang persis sama. Ini perbaikannya, dan ini buktinya."
 
 ---
 
@@ -360,8 +413,10 @@ Hanya **tampilan**. Semua logika ada di `app/agent.py` (arahan modular Pak Herma
 |---|---|
 | `st.session_state.chat` | Riwayat percakapan yang bertahan selama sesi browser |
 | `st.session_state.session_id` | Id acak per sesi, dikirim ke Langfuse |
-| `summarize_run()` | Dari pesan baru, ambil tool call (nama, argumen, judul hasil) dan jumlahkan token |
-| `show_details()` | Expander "🔧 tool call" + baris jumlah token |
+| `tool_movies()` | Baca daftar `movies` dari hasil tool (K28). Kalau isinya pesan error, kembalikan list kosong |
+| `summarize_run()` | Dari pesan baru, ambil tool call (nama, argumen, judul hasil), id film yang disebut di jawaban, dan jumlah token |
+| `show_posters()` | Kartu poster (maksimal 5) untuk film yang disebut di jawaban |
+| `show_details()` | Poster + expander "🔧 tool call" + baris jumlah token |
 | loop `for message in ...` | Menggambar ulang chat history setiap rerun |
 | `st.chat_input` | Kotak ketik; `:=` (*walrus*) menyimpan isi ketikan sekaligus mengecek apakah ada isinya |
 
@@ -384,6 +439,19 @@ Satu pertanyaan bisa memicu 2–3 panggilan LLM (memutuskan tool → menjawab), 
 tool_results = {m.tool_call_id: json.loads(m.content) for m in new_messages if m.type == "tool"}
 ```
 Setiap tool call punya `id`, dan hasilnya (`ToolMessage`) membawa `tool_call_id` yang sama. Dari situ UI bisa menampilkan "search_movies(...) → Hasil: Misery, Heat, ...".
+
+**Poster hanya untuk film yang benar-benar disebut:**
+```python
+for title in sorted(found, key=len, reverse=True):   # judul terpanjang dulu
+    if title in answer:
+        mentioned.add(title)
+        answer = answer.replace(title, "")
+```
+Tool bisa mengembalikan 5–10 film, tapi jawaban mungkin hanya menyebut 3. Hanya film yang judulnya muncul di teks jawaban yang diberi poster. Cara ini bisa diandalkan karena prompt mewajibkan judul ditulis persis seperti di hasil tool (aturan 3). Ada dua jebakan yang ditemukan saat uji (23 Okt):
+1. "Star Wars" ada **di dalam** "Star Wars: Episode V - ...". Karena itu judul terpanjang dicocokkan dulu, lalu dihapus dari teks, supaya tidak ikut cocok dengan judul yang lebih pendek.
+2. Awalnya poster diurutkan berdasarkan posisi judul di jawaban. Tapi kalimat pembuka "Tiga **Star Wars** dengan rating tertinggi..." membuat Star Wars (1977) tampil paling depan. Sekarang urutannya mengikuti **hasil tool** (peringkat atau relevansi).
+
+Posternya diambil dari `data.py` lewat `id` (K25), tidak lewat LLM.
 
 ### Menjalankan
 ```

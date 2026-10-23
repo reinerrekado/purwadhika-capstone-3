@@ -34,13 +34,15 @@
 - [x] Perbaikan: genre tidak lagi ditebak (K27) (23 Okt)
 - [x] Jalankan `streamlit run streamlit_app.py` lokal dan coba 3 pertanyaan (23 Okt)
 - [x] Cek session `e2e-langfuse-prompt-23okt` di Langfuse → Sessions (23 Okt)
-- [ ] **Deploy pertama ke Streamlit Community Cloud**
+- [x] Deploy pertama ke Streamlit Community Cloud, Python 3.12 (sama dengan lokal), Secrets lewat form; semua uji lolos (23 Okt)
 
 ## Fase 3 · Fitur lengkap (26–29 Okt)
-- [ ] `get_movie_details`: pencarian judul 4 lapis (K18)
-- [ ] `rank_movies`: filter, urutkan, ringkasan statistik
-- [ ] UI: kartu film dengan poster
-- [ ] Uji: pertanyaan lanjutan ("yang kedua siapa sutradaranya?") harus memakai data tool, bukan pengetahuan model. Uji 23 Okt: dijawab tanpa tool. Perbaikan: prompt **v2** di Langfuse, berisi aturan memakai `get_movie_details` untuk pertanyaan lanjutan
+- [x] `get_movie_details`: pencarian judul 4 lapis (K18, K30) (23 Okt)
+- [x] `rank_movies`: filter, urutkan, hitung, filter seri film (K29, K30) (23 Okt)
+- [x] UI: kartu poster untuk film yang disebut di jawaban (23 Okt)
+- [x] Uji draf prompt v2: 12 skenario + 4 pertanyaan × 3 run, semuanya benar; pertanyaan lanjutan sekarang memakai tool (K31) (23 Okt)
+- [ ] **Anda:** buat prompt `movie-agent-system` **v2** di UI Langfuse, label production
+- [ ] Verifikasi v2 dari Langfuse + uji UI (poster) lokal, lalu push → Streamlit Cloud update otomatis
 
 ## Fase 4 · Uji dan dokumentasi (30 Okt – 1 Nov)
 - [ ] Set uji 10 pertanyaan: semuanya lolos

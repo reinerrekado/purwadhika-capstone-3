@@ -168,7 +168,7 @@ Jawaban langsung Pak Herman, yang menjadi dasar status 💬 di bawah.
 - **Alasan:** tool yang tumpang-tindih membuat LLM ragu memilih dan menambah bahan penjelasan di video.
 - **Status:** ✅ Tidak ada arahan yang terkait
 
-### K18 · Pencarian judul tahan huruf besar-kecil, typo, dan judul asli
+### K18 · Pencarian judul tahan huruf besar-kecil, typo, dan judul asli (lapis 1–2 direvisi di K30)
 - **Kelas:** tidak ada contoh pencarian judul.
 - **Kita:** `get_movie_details` mencocokkan judul dalam 4 lapis, dari yang paling ketat:
   1. **Normalisasi**: huruf kecil, aksen dihapus (`Amélie` → `amelie`), tanda baca jadi spasi (`WALL·E` → `wall e`), angka Romawi diseragamkan (`Part II` → `part 2`). Lalu dicari yang **persis sama**.
@@ -272,6 +272,35 @@ Jawaban langsung Pak Herman, yang menjadi dasar status 💬 di bawah.
 - **Perbaikan:** deskripsi parameter di docstring `search_movies` ditambah "Leave empty unless the user names a genre / a year or decade".
 - **Bukti (4 pertanyaan × 3 run):** genre tidak lagi ditebak (6/6 `None` untuk pertanyaan tanpa genre). Pertanyaan dengan genre tetap benar (Thriller + 1990–1999, Animation). Model kadang masih mengisi tahun 1920–2020. Ini dibiarkan karena tidak berbahaya: rentangnya mencakup seluruh dataset.
 - **Kenapa diperbaiki di docstring, bukan di system prompt:** aturan ini melekat pada parameter tool, dan docstring dibaca LLM tepat saat memilih argumen.
+- **Status:** ✅ Tidak ada arahan yang terkait
+
+### K28 · Semua tool mengembalikan JSON dengan kunci `"movies"`
+- **Kita:** `search_movies` → `{"movies": [...]}`. `get_movie_details` → `{"movies": [...], "not_found": [...], "hint": "..."}`. `rank_movies` → `{"matching_count", "average_rating", "movies": [...]}`.
+- **Alasan:** satu bentuk hasil membuat UI cukup punya satu fungsi pembaca (`tool_movies()`) untuk menampilkan judul hasil dan kartu poster, apa pun tool yang dipanggil. Tambahan per tool (`not_found`, `matching_count`) tetap bisa dibaca LLM.
+- **Status:** 🔁 Pengembangan dari K06
+
+### K29 · `rank_movies` tidak mengirim overview dan pemain
+- **Kita:** hasil `rank_movies` hanya berisi angka dan fakta singkat (judul, tahun, genre, rating, Metascore, votes, gross, durasi, sutradara).
+- **Alasan:** pertanyaan peringkat dijawab dengan angka. Overview adalah bagian terpanjang dari setiap film, dan hasil tool sudah menyumbang 55% token (K26). Kalau user ingin tahu ceritanya, agent memanggil `get_movie_details`.
+- **Status:** 🔁 Pengembangan dari K25
+
+### K30 · Seri film: judul persis tidak menghentikan pencarian, dan `rank_movies` punya filter judul
+- **Masalah (uji 23 Okt, 3 run per pertanyaan):**
+  1. "Star Wars mana yang ratingnya paling tinggi?" dijawab **salah** (Star Wars 1977, 8.6; yang benar Episode V, 8.7). Penyebabnya, lapis 1 menemukan judul persis "Star Wars", lalu langsung berhenti. Hal yang sama terjadi pada Toy Story.
+  2. "harry poter yang paling bagus" dijawab **salah** (Prisoner of Azkaban, 7.9; yang benar Deathly Hallows: Part 2, 8.1). Agent memakai `search_movies` (pencarian makna), sehingga tidak semua film Harry Potter terambil. Selain itu, batas hasil 5 lebih kecil dari jumlah film Harry Potter di dataset (6).
+- **Perbaikan:**
+  - Lapis 1 dan 2 dari K18 digabung. Semua judul yang memuat kata-kata query diambil, judul yang persis sama ditaruh paling atas dengan label `exact`, dan sisanya berlabel `partial`.
+  - `MAX_MATCHES` dinaikkan dari 5 menjadi 10.
+  - `rank_movies` mendapat parameter `title` yang memakai fungsi `find_title` yang sama, jadi juga tahan typo.
+  - Docstring `search_movies` sekarang menyebut: "Do not use it to find a movie or a movie series by title".
+- **Bukti:** Star Wars, Harry Potter (dengan typo), dan Toy Story masing-masing 3/3 benar lewat `rank_movies(title=...)`. Pertanyaan plot tetap memakai `search_movies` (3/3). Set uji 12 skenario: semuanya benar.
+- **Status:** 🔁 Revisi K18
+
+### K31 · System prompt v2: setiap fakta harus berasal dari tool call di giliran yang sama
+- **Masalah (uji e2e 23 Okt, prompt v1):** "Yang kedua siapa sutradaranya?" dijawab "Bryan Singer" **tanpa tool**. Jawabannya benar, tapi berasal dari pengetahuan model. Riwayat yang dikirim ke agent hanya berisi teks (K07), sehingga hasil tool dari giliran sebelumnya tidak ikut terkirim.
+- **Perbaikan (prompt v2):** aturan 2 menjadi "Every fact in your answer must come from a tool result in the current turn... for follow-up questions, call get_movie_details again". Prompt v2 juga berisi satu baris per tool yang menjelaskan kapan tool itu dipakai.
+- **Kenapa tidak mengirim hasil tool lama di riwayat:** hasil tool menyumbang 55% token per pertanyaan (K26). Kalau ikut dikirim, token bertambah di setiap giliran. Memanggil `get_movie_details` lagi hanya butuh sekitar 20 ms karena datanya lokal, tanpa Qdrant.
+- **Bukti:** "Yang kedua siapa sutradaranya?" → `get_movie_details(['The Usual Suspects'])` → Bryan Singer, dari data tool.
 - **Status:** ✅ Tidak ada arahan yang terkait
 
 ---
