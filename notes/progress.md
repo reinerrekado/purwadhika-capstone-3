@@ -54,7 +54,10 @@
 - [x] Fitur tambahan (K34–K38): tool `similar_movies`, feedback 👍/👎 → Langfuse score, sidebar (contoh, percakapan baru, token + biaya), link "Tonton di mana?" (JustWatch), jawaban streaming; prompt di-cache per teks, jadi versi baru terpakai tanpa restart (24 Okt)
 - [x] Masukan Reiner: biaya Rp + USD dengan kurs harian ECB; contoh di sidebar diganti tombol "Cari yang mirip" di bawah poster (24 Okt, K39–K40)
 - [x] Masukan Reiner: grid poster ala Netflix (2:3 di-crop, gelap + ikon saat disorot, klik → panel detail); "Cari yang mirip" pindah ke panel detail (24 Okt, K41)
-- [ ] **Anda:** coba grid poster + panel detail di app Cloud (hover, klik, Cari yang mirip)
+- [x] Sinopsis 1.000 film diterjemahkan offline + diperiksa (24 Okt, K42)
+- [x] Panel detail: Fakta menarik + chip sutradara/pemain (24 Okt, K43)
+- [x] Kartu film langsung di dalam jawaban, tanpa batas 5 film (24 Okt, K44)
+- [ ] **Anda:** coba kartu + panel detail di app Cloud (hover, klik, chip, Cari yang mirip)
 - [ ] **Anda:** buat prompt `movie-agent-system` **v4** di UI Langfuse, label production
 - [ ] Verifikasi v4 + coba fitur baru di app Cloud
 

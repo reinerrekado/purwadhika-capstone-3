@@ -383,8 +383,44 @@ Jawaban langsung Pak Herman, yang menjadi dasar status 💬 di bawah.
   - **Grid** (`app/poster_grid.py`, Streamlit Custom Components v2): rasio 2:3 tetap, `object-fit: cover` (di-crop, tidak gepeng), judul maksimal 2 baris dengan tinggi tetap supaya semua kartu sejajar. Saat disorot atau difokus keyboard, muncul lapisan gelap 35% dan ikon expand. Klik → `setTriggerValue("opened", id)` → Python menerima id film.
   - **Panel detail** (`st.dialog`): poster besar, genre, durasi, sertifikat, rating, Metascore, sutradara, pemain, sinopsis, tombol "📺 Tonton di mana?", dan **satu** tombol "🔁 Cari yang mirip".
 - **Kenapa komponen custom:** `st.image` tidak bisa diklik dan tidak bisa diberi efek hover. Komponen v2 cukup ditulis sebagai HTML, CSS, dan JS di dalam satu file Python, tanpa build tool. Warnanya memakai variabel tema Streamlit (`--st-text-color` dan lainnya), jadi tetap cocok di mode gelap maupun terang.
-- **Struktur:** file ketujuh di `app/`. Isinya murni tampilan, dipisah dari `streamlit_app.py` supaya file utama tetap terbaca.
+- **Struktur:** file ketujuh di `app/`. Isinya murni tampilan, dipisah dari `streamlit_app.py` supaya file utama tetap terbaca. Sejak K44 namanya `app/movie_cards.py`, karena kini punya dua tata letak.
 - **Status:** 🔁 Revisi K40
+
+### K42 · Sinopsis diterjemahkan sekali secara offline, hanya untuk tampilan
+- **Masalah:** panel detail menampilkan sinopsis bahasa Inggris (kolom `Overview` di dataset).
+- **Kita:** `scripts/translate_overviews.py` menerjemahkan 1.000 sinopsis ke `data/overview_id.csv`. Prosesnya: 40 batch × 25 sinopsis, gpt-4.1-mini, 5 berjalan paralel. Prompt `overview-translator` disimpan di Langfuse (dibuat lewat SDK, label production), jadi tidak ada teks prompt di kode. Skrip aman dijalankan ulang: film yang sudah diterjemahkan dilewati. `data.py` membaca file itu sebagai kolom `overview_id`, dan kembali ke sinopsis Inggris kalau file tidak ada.
+- **Yang tidak berubah:** embedding Qdrant dan hasil tool untuk LLM tetap berbahasa Inggris (K12, K26).
+- **Kenapa offline, bukan saat panel dibuka:** panel muncul seketika, biaya sekali saja (sekitar $0,15), hasilnya bisa diperiksa sebelum dipakai, dan panel tetap jalan kalau OpenRouter bermasalah.
+- **Pemeriksaan:**
+  - **Panjang:** rasio terjemahan/asli rata-rata 1,14× (min 0,79, maks 1,66), jadi tidak ada isi yang ditambah.
+  - **Nama:** cek otomatis versi pertama menandai 341 film. Hampir semuanya tanda palsu, karena kata seperti *World War*, *German*, *Earth* memang benar diterjemahkan. Setelah dipersempit (kata yang di film lain juga muncul berhuruf kecil atau berakhiran kebangsaan dianggap kata umum), tersisa 157. Semuanya dibaca manual dan isinya nama tempat yang wajar diterjemahkan (Rome → Roma) atau istilah. Nama tokoh tetap utuh (Ekdahl, Horcrux, Tuan Dashwood).
+  - **Sampel:** 20 sampel acak dibaca, dan terjemahannya natural.
+- **Status:** ✅ Tidak ada arahan yang terkait
+
+### K43 · Panel detail: "Fakta menarik" dari data + chip sutradara/pemain
+- **Fakta menarik** (`movie_facts()` di `data.py`), semuanya dihitung dari dataset dan tidak dikarang LLM:
+  - peringkat rating (hanya untuk 100 besar, karena rating dataset hanya 7,6–9,3 sehingga peringkat di bawahnya banyak yang seri)
+  - jumlah vote + persentil popularitas
+  - box office + peringkat terlaris
+  - kritikus vs penonton (selisih Metascore/10 dan rating ≥ 1)
+  - jumlah film sutradara di dataset
+
+  Fakta yang datanya kosong dilewati. Angka memakai format Indonesia ("$67,4 juta").
+- **Chip:** sutradara (🎬) dan 4 pemain (🎭) berupa tombol. Klik → "Film lain yang disutradarai/dibintangi X" → agent memakai `rank_movies(director=/star=)` yang sudah ada. Dipakai tombol, bukan `st.pills`, karena tombol tidak menyimpan pilihan, jadi chip tidak "nyangkut" saat panel dibuka lagi.
+- **Ditolak:** sinopsis lebih panjang dari LLM (melanggar aturan anti-halusinasi), API TMDB (lisensi), dan link Wikipedia (Reiner: tidak perlu).
+- **Status:** ✅ Tidak ada arahan yang terkait
+
+### K44 · Kartu film langsung di dalam jawaban
+- **Masukan Reiner:** poster di akhir jawaban terpisah dari alasannya. Kalimat "Mau info lebih detail tentang film mana?" juga mubazir kalau kartunya bisa diklik.
+- **Kita:**
+  - `split_answer()` memecah jawaban per baris. Baris yang **diawali** "Judul (tahun)" dan hanya menyebut satu film menjadi kartu: poster kecil di kiri, judul + tahun + rating + alasan di kanan, dan seluruh kartu bisa diklik.
+  - Baris lain tetap teks. Film yang disebut di tengah paragraf (misalnya "Inception (2010) dan Interstellar (2014)...") ditampilkan sebagai grid poster di bawah jawaban.
+  - Selama streaming, teks tampil biasa; begitu selesai, teks diganti tampilan berkartu.
+  - Batas 5 poster dihapus, jadi daftar 10 film tampil semua.
+- **Prompt v4 aturan 6:** "Put each movie on its own line as: Title (year) - one reason... Do not end by offering more details; the app shows a movie's details when the user clicks it."
+- **Bug yang ditemukan saat uji:** jawaban Parasite berupa paragraf ("Film Gisaengchung (2019) atau Parasite bercerita...") sempat dijadikan kartu, dan judulnya terpotong dari tengah kalimat. Perbaikannya: baris hanya menjadi kartu kalau **diawali** judul.
+- **Bukti (7 jawaban asli agent):** daftar 10 film DiCaprio → 10 kartu; thriller, Star Wars, film mirip → 3 kartu; Drishyam → 2 kartu (judul sama, id berbeda); perbandingan → teks + 2 kartu; paragraf → teks + grid.
+- **Status:** 🔁 Revisi K41
 
 ---
 

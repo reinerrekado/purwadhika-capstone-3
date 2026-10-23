@@ -448,8 +448,11 @@ Hanya **tampilan**. Semua logika ada di `app/agent.py` (arahan modular Pak Herma
 | `show_details()` | Poster + expander "🔧 tool call" + baris jumlah token + tombol 👍/👎 |
 | `save_feedback()` | Callback saat 👍/👎 diklik → `send_feedback` ke Langfuse |
 | `new_chat()` | Callback tombol "Percakapan baru": kosongkan chat, buat `session_id` baru |
-| `show_posters()` → `poster_grid()` | Grid poster ala Netflix dari `app/poster_grid.py`; mengembalikan id film yang baru diklik (K41) |
-| `movie_dialog()` | Panel detail (`@st.dialog`) saat poster diklik: info lengkap, "Tonton di mana?", "Cari yang mirip" (K40, K41) |
+| `split_answer()` | Pecah jawaban per baris: baris yang diawali "Judul (tahun)" → kartu, lainnya → teks (K44) |
+| `show_answer()` → `movie_cards()` | Gambar teks + kartu film (`app/movie_cards.py`), lalu grid untuk film di dalam paragraf; buka panel kalau ada yang diklik |
+| `card_data()` | Siapkan data kartu: judul, tahun, rating, alasan, poster (atau None kalau poster hilang) |
+| `movie_dialog()` | Panel detail (`@st.dialog`): sinopsis Indonesia, chip sutradara/pemain, "Tonton di mana?", "Cari yang mirip", Fakta menarik (K40–K43) |
+| `ask()` | Dipanggil dari panel: titipkan pertanyaan, lalu `st.rerun()` |
 | `usd_to_idr()` | Kurs USD→IDR harian dari ECB (Frankfurter), di-cache sehari; `None` kalau gagal (K39) |
 | `cost_usd()`, `rupiah()` | Hitung biaya dari token, lalu ubah ke format "Rp42" |
 | sidebar (atas) | Tombol percakapan baru |
@@ -508,13 +511,21 @@ st.feedback("thumbs", key=key, on_change=save_feedback, args=(key, trace_id))
 ```
 `key` unik per percakapan dan per posisi jawaban. Kalau hanya memakai `index`, pilihan 👍 di percakapan lama akan muncul lagi di jawaban pertama percakapan baru. `on_change` dipanggil Streamlit **sebelum** rerun, dan nilai widget dibaca dari `st.session_state[key]`.
 
-**Grid poster yang bisa diklik (K41, `app/poster_grid.py`):**
+**Kartu di dalam jawaban (K44):**
 ```python
-_POSTER_GRID = st.components.v2.component("poster_grid", html=..., css=..., js=...)
-card.onclick = () => setTriggerValue("opened", movie.id)        // JS: kirim id ke Python
-opened = poster_grid(cards, key=..., on_open=lambda: None)       # Python: id yang baru diklik, atau None
+if len(hits) == 1 and not prefix.strip(" \"'*"):   # baris DIAWALI satu "Judul (tahun)"
+    reason = line[match.end():]                      # sisanya = alasan
+```
+Untuk setiap baris jawaban, `split_answer()` mencari pola "Judul (tahun)" dari film yang ditemukan tool. Kalau baris itu **diawali** judul (setelah nomor daftar, tanda kutip, atau `**` dibuang), baris itu menjadi kartu. Kalau judulnya ada di tengah kalimat, baris tetap teks, karena memotong judul dari tengah kalimat merusak kalimatnya (bug Parasite saat uji). Selama jawaban mengalir, teks tampil biasa di `st.empty()`; setelah selesai, isinya dikosongkan dan diganti tampilan berkartu.
+
+**Kartu yang bisa diklik (K41, `app/movie_cards.py`):**
+```python
+_MOVIE_CARDS = st.components.v2.component("movie_cards", html=..., css=..., js=...)
+card.onclick = () => setTriggerValue("opened", movie.id)                      // JS: kirim id ke Python
+opened = movie_cards(cards, layout="list", key=..., on_open=lambda: None)     # Python: id yang diklik, atau None
 if opened is not None: movie_dialog(opened)
 ```
+Satu komponen dengan dua tata letak: `"list"` (kartu di dalam jawaban: poster kecil + alasan) dan `"grid"` (deretan poster untuk film yang disebut di paragraf).
 `st.image` tidak bisa diklik, jadi grid dibuat sebagai **custom component v2**: HTML, CSS, dan JS kecil di dalam file Python, tanpa build tool. Alurnya:
 1. Python mengirim daftar film lewat `data=`.
 2. JS menggambar kartu.

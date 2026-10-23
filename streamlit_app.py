@@ -10,8 +10,8 @@ import pandas as pd
 import streamlit as st
 
 from app.agent import send_feedback, stream_agent
-from app.data import load_movies
-from app.poster_grid import poster_grid
+from app.data import load_movies, movie_facts
+from app.movie_cards import movie_cards
 
 # Harga openai/gpt-4.1-mini di OpenRouter (USD per 1 juta token, Okt 2026). Hanya untuk perkiraan biaya.
 PRICE_INPUT, PRICE_OUTPUT = 0.40, 1.60
@@ -65,32 +65,8 @@ def tool_movies(content: str) -> list[dict]:
         return []
 
 
-def mentioned_ids(movies: list[dict], answer: str) -> list[int]:
-    """Id film yang judulnya disebut di jawaban, urut sesuai daftar di jawaban.
-
-    - Judul terpanjang dicocokkan dulu lalu ditutup, supaya "Star Wars" tidak ikut cocok
-      di dalam "Star Wars: Episode V - The Empire Strikes Back".
-    - Prompt mewajibkan format "Judul (tahun)" (aturan 3). Kalau format itu ada di jawaban, hanya
-      judul berformat itu yang dihitung, jadi "Tiga Star Wars terbaik..." tidak ikut.
-      Kalau tidak ada sama sekali, dipakai posisi judul biasa.
-    - Dikelompokkan per id, bukan per judul: "Drishyam" (2013) dan "Drishyam" (2015) dua film berbeda.
-    """
-    with_year, plain = {}, {}
-    for title in sorted({m["title"] for m in movies}, key=len, reverse=True):
-        if title not in answer:
-            continue
-        for movie in (m for m in movies if m["title"] == title):
-            match = re.search(rf"{re.escape(title)}\W{{0,3}}\({movie['year']}\)", answer)  # "Heat" (1995)
-            if match:
-                with_year[movie["id"]] = match.start()
-            plain[movie["id"]] = answer.find(title)
-        answer = answer.replace(title, "\0" * len(title))  # panjang tetap, posisi lain tidak bergeser
-    positions = with_year or plain
-    return sorted(positions, key=positions.get)
-
-
-def summarize_run(new_messages: list, answer: str) -> dict:
-    """Ambil tool call, film yang disebut di jawaban, dan pemakaian token dari satu run agent."""
+def summarize_run(new_messages: list) -> dict:
+    """Ambil tool call, film yang ditemukan tool, dan pemakaian token dari satu run agent."""
     ai_messages = [m for m in new_messages if m.type == "ai"]
     movies = {m.tool_call_id: tool_movies(m.content) for m in new_messages if m.type == "tool"}
     found = {movie["id"]: movie for result in movies.values() for movie in result}  # tanpa duplikat
@@ -100,10 +76,52 @@ def summarize_run(new_messages: list, answer: str) -> dict:
              "titles": [movie["title"] for movie in movies.get(call["id"], [])]}
             for m in ai_messages for call in m.tool_calls
         ],
-        "movie_ids": mentioned_ids(list(found.values()), answer)[:5],
+        "found": [{"id": m["id"], "title": m["title"], "year": m["year"]} for m in found.values()],
         "input_tokens": sum((m.usage_metadata or {}).get("input_tokens", 0) for m in ai_messages),
         "output_tokens": sum((m.usage_metadata or {}).get("output_tokens", 0) for m in ai_messages),
     }
+
+
+def title_pattern(movie: dict) -> str:
+    """Regex "Judul (tahun)" sesuai aturan 3 prompt. \\W{0,3} mengizinkan tanda kutip atau ** di antaranya."""
+    return rf"{re.escape(movie['title'])}\W{{0,3}}\({movie['year']}\)"
+
+
+def split_answer(answer: str, found: list[dict]) -> tuple[list[tuple[str, object]], list[int]]:
+    """Pecah jawaban menjadi blok teks dan blok kartu film (K44).
+
+    Baris yang DIAWALI "Judul (tahun)" dan hanya menyebut satu film menjadi kartu: poster di kiri,
+    sisa barisnya (alasan) di kanan. Baris lain tetap teks, karena memotong judul dari tengah kalimat
+    merusak kalimatnya. Film yang disebut di dalam teks dikembalikan untuk grid poster di bawah jawaban.
+    Judul terpanjang dicocokkan dulu, supaya "Star Wars" tidak cocok di dalam "Star Wars: Episode V".
+    """
+    by_length = sorted(found, key=lambda m: len(m["title"]), reverse=True)
+    blocks, carded, in_text = [], set(), []
+    for line in answer.split("\n"):
+        masked, hits = line, []
+        for movie in by_length:
+            if match := re.search(title_pattern(movie), masked):
+                hits.append((movie, match))
+                masked = masked[:match.start()] + "\0" * (match.end() - match.start()) + masked[match.end():]
+        prefix = re.sub(r"^\s*(\d+[.)]|[-*•])\s*", "", line[:hits[0][1].start()]) if hits else ""
+        if len(hits) == 1 and not prefix.strip(" \"'*") and hits[0][0]["id"] not in carded:
+            movie, match = hits[0]
+            reason = line[match.end():].replace("**", "").strip(" \"'*-–—:·")
+            carded.add(movie["id"])
+            if blocks and blocks[-1][0] == "cards":
+                blocks[-1][1].append((movie["id"], reason))
+            else:
+                blocks.append(("cards", [(movie["id"], reason)]))
+            continue
+        in_text += [movie["id"] for movie, _ in sorted(hits, key=lambda hit: hit[1].start())]
+        if not line.strip() and blocks and blocks[-1][0] == "cards":
+            continue  # baris kosong di antara kartu tidak perlu ditampilkan
+        if blocks and blocks[-1][0] == "text":
+            blocks[-1] = ("text", blocks[-1][1] + "\n" + line)
+        else:
+            blocks.append(("text", line))
+    leftover = list(dict.fromkeys(i for i in in_text if i not in carded))
+    return blocks, leftover
 
 
 @st.cache_data(ttl=86400, show_spinner=False)
@@ -115,38 +133,67 @@ def poster_available(url: str) -> bool:
         return False
 
 
+def card_data(items: list[tuple[int, str]]) -> list[dict]:
+    """Data kartu untuk komponen. Poster diambil dari data.py lewat id (K25); int/float supaya bisa jadi JSON."""
+    movies = load_movies().set_index("id")
+    return [{"id": int(movie_id), "title": movies.loc[movie_id, "title"], "year": int(movies.loc[movie_id, "year"]),
+             "rating": float(movies.loc[movie_id, "rating"]), "text": text,
+             "poster": movies.loc[movie_id, "poster"] if poster_available(movies.loc[movie_id, "poster"]) else None}
+            for movie_id, text in items]
+
+
+def ask(question: str) -> None:
+    """Titipkan pertanyaan dari panel detail, lalu jalankan ulang app; diproses seperti ketikan user."""
+    st.session_state.pending = question
+    st.rerun()
+
+
 @st.dialog("Detail film", width="large")
 def movie_dialog(movie_id: int) -> None:
-    """Panel detail saat poster diklik (K41): info lengkap, tempat menonton, dan cari film yang mirip (K40)."""
+    """Panel detail saat kartu diklik (K41, K43): info lengkap, fakta menarik, chip sutradara/pemain."""
     movie = load_movies().set_index("id").loc[movie_id]
     left, right = st.columns([1, 2])
     if poster_available(movie["poster"]):
         left.image(movie["poster"], width="stretch")
     else:
         left.caption("🎞️ Poster tidak tersedia")
-    right.subheader(f"{movie['title']} ({movie['year']})")
-    certificate, meta_score = ("–" if pd.isna(movie[c]) else movie[c] for c in ("certificate", "meta_score"))
-    right.caption(f"{', '.join(movie['genres'])} · {movie['runtime_min']} menit · {certificate}")
-    right.markdown(f"⭐ **{movie['rating']}** IMDB · Metascore **{meta_score}**  \n"
-                   f"**Sutradara:** {movie['director']}  \n**Pemain:** {', '.join(movie['stars'])}")
-    right.write(movie["overview"])
-    watch, similar = right.columns(2)
-    watch.link_button("📺 Tonton di mana?", width="stretch",
-                      url="https://www.justwatch.com/id/search?q=" + urllib.parse.quote(movie["title"]))  # K37
-    if similar.button("🔁 Cari yang mirip", width="stretch"):
-        st.session_state.pending = f"Film yang mirip {movie['title']}"  # diproses seperti ketikan user
-        st.rerun()
+    with right:
+        st.subheader(f"{movie['title']} ({movie['year']})")
+        certificate, meta_score = ("–" if pd.isna(movie[c]) else movie[c] for c in ("certificate", "meta_score"))
+        st.caption(f"{', '.join(movie['genres'])} · {movie['runtime_min']} menit · {certificate}")
+        st.markdown(f"⭐ **{movie['rating']}** IMDB · Metascore **{meta_score}**")
+        st.write(movie["overview_id"])  # terjemahan offline (K42)
+
+        with st.container(horizontal=True):  # chip: klik → cari film lain orang itu (K43)
+            if st.button(movie["director"], icon="🎬", type="tertiary"):
+                ask(f"Film lain yang disutradarai {movie['director']}")
+            for star in movie["stars"]:
+                if st.button(star, icon="🎭", type="tertiary"):
+                    ask(f"Film lain yang dibintangi {star}")
+
+        watch, similar = st.columns(2)
+        watch.link_button("📺 Tonton di mana?", width="stretch",
+                          url="https://www.justwatch.com/id/search?q=" + urllib.parse.quote(movie["title"]))  # K37
+        if similar.button("🔁 Cari yang mirip", width="stretch"):
+            ask(f"Film yang mirip {movie['title']}")
+
+    st.markdown("**💡 Fakta menarik**\n" + "\n".join(f"- {fact}" for fact in movie_facts(movie_id)))
 
 
-def show_posters(movie_ids: list[int], index: int) -> None:
-    """Grid poster film yang disebut di jawaban (K41). Poster diambil dari data.py lewat id (K25)."""
-    if not movie_ids:
-        return
-    rows = load_movies().set_index("id").loc[movie_ids]
-    cards = [{"id": int(movie_id), "title": row["title"], "year": int(row["year"]), "rating": float(row["rating"]),
-              "poster": row["poster"] if poster_available(row["poster"]) else None}  # int/float: harus bisa jadi JSON
-             for movie_id, row in rows.iterrows()]
-    opened = poster_grid(cards, key=f"posters_{st.session_state.session_id}_{index}", on_open=lambda: None)
+def show_answer(answer: str, details: dict, index: int) -> None:
+    """Jawaban dengan kartu film di tempatnya (K44), lalu grid untuk film yang disebut di dalam paragraf."""
+    blocks, leftover = split_answer(answer, details.get("found", []))
+    opened = None
+    for n, (kind, content) in enumerate(blocks):
+        key = f"cards_{st.session_state.session_id}_{index}_{n}"
+        if kind == "text":
+            st.markdown(content)
+        elif (clicked := movie_cards(card_data(content), layout="list", key=key, on_open=lambda: None)) is not None:
+            opened = clicked
+    if leftover:
+        key = f"grid_{st.session_state.session_id}_{index}"
+        clicked = movie_cards(card_data([(i, "") for i in leftover[:10]]), layout="grid", key=key, on_open=lambda: None)
+        opened = clicked if clicked is not None else opened
     if opened is not None:
         movie_dialog(opened)
 
@@ -158,8 +205,7 @@ def save_feedback(key: str, trace_id: str) -> None:
 
 
 def show_details(details: dict, index: int) -> None:
-    """Tampilkan poster, tool call (dalam expander), usage, dan tombol feedback di bawah jawaban."""
-    show_posters(details.get("movie_ids", []), index)
+    """Tampilkan tool call (dalam expander), usage, dan tombol feedback di bawah jawaban."""
     calls = details["tool_calls"]
     with st.expander(f"🔧 {len(calls)} tool call"):
         for call in calls:
@@ -176,9 +222,11 @@ def show_details(details: dict, index: int) -> None:
 
 for index, message in enumerate(st.session_state.chat):  # chat history
     with st.chat_message(message["role"]):
-        st.markdown(message["content"])
         if message.get("details"):
+            show_answer(message["content"], message["details"], index)
             show_details(message["details"], index)
+        else:
+            st.markdown(message["content"])
 
 question = st.chat_input("Misalnya: thriller tahun 90-an yang bikin tegang") or st.session_state.pop("pending", None)
 if question:
@@ -189,9 +237,12 @@ if question:
     history = [{"role": m["role"], "content": m["content"]} for m in st.session_state.chat]
     with st.chat_message("assistant"):
         run = {}  # diisi stream_agent setelah selesai: pesan baru + trace_id
-        with st.spinner("Mencari film..."):
+        streaming = st.empty()  # teks mengalir dulu, lalu diganti tampilan dengan kartu film
+        with streaming.container(), st.spinner("Mencari film..."):
             answer = st.write_stream(stream_agent(history, st.session_state.session_id, run))
-        details = summarize_run(run["messages"], answer) | {"trace_id": run["trace_id"]}
+        streaming.empty()
+        details = summarize_run(run["messages"]) | {"trace_id": run["trace_id"]}
+        show_answer(answer, details, len(st.session_state.chat))
         show_details(details, len(st.session_state.chat))
     st.session_state.chat.append({"role": "assistant", "content": answer, "details": details})
 
