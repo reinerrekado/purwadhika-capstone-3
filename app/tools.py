@@ -68,8 +68,10 @@ def search_movies(
 ) -> str:
     """Find movies by plot, theme, or mood among the IMDB top 1,000 movies (semantic search).
 
-    Use this when the user describes what they want to watch. Do not use it to find a movie
-    or a movie series by title; use get_movie_details for that.
+    Use this only when the user describes a plot, theme, or mood (e.g. "a horror movie about a haunted
+    house"). If the user only names a genre, year, or decade (e.g. "recommend me a horror movie"),
+    use rank_movies sorted by rating instead. Do not use it to find a movie or a movie series by
+    title; use get_movie_details for that.
 
     Args:
         query: One sentence in English (translate if the user writes in another language) describing the wanted plot or mood with the user's specific details (who, where, what happens).
@@ -195,8 +197,9 @@ def rank_movies(
 ) -> str:
     """Rank, filter, and count movies by numbers: best rated, most voted, highest grossing, longest, newest.
 
-    Use this for "top/best/most/how many" questions, to rank a movie series, or to list a
-    director's or actor's movies. Returns the matching count and average rating too.
+    Use this for "top/best/most/how many" questions, to rank a movie series, to list a director's
+    or actor's movies, and for recommendations that only name a genre, year, or decade without
+    describing a plot or mood. Returns the matching count and average rating too.
 
     Args:
         sort_by: rating = IMDB rating, meta_score = critics score (0-100), votes = popularity, gross_usd = box office.

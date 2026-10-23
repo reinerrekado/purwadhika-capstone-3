@@ -488,6 +488,14 @@ Jawaban langsung Pak Herman, yang menjadi dasar status 💬 di bawah.
 - **R&D:** halaman "Tema per genre" di artifact *Story Watchlist R&D*, berisi 11 story hasil Pillow asli dengan headline dari LLM. Tema otomatis tepat 11/11.
 - **Status:** 🔁 Pengembangan K46
 
+### K49 · Genre saja → rank_movies (urut rating); ada cerita/suasana → search_movies
+- **Pertanyaan Reiner:** "film horor terbaik" urut rating, tapi "rekomendasikan saya film horor" tidak. Kenapa?
+- **Penyebab:** dua tool sama-sama "boleh" untuk permintaan yang hanya menyebut genre, jadi agent ragu. Dengan kalimat yang sama, run 1 memakai `search_movies`, run 2 memakai `rank_movies`. `search_movies` mengurutkan berdasarkan **kemiripan makna** dengan query, dan karena user tidak mendeskripsikan cerita, agent **mengarang** query ("scary horror movies with intense atmosphere"). Urutannya jadi terlihat acak.
+- **Prinsip:** pencarian makna hanya berguna kalau ada makna yang dicari. Tanpa deskripsi, urutan yang paling masuk akal dan bisa dijelaskan adalah rating.
+- **Perbaikan (docstring, prompt Langfuse tidak berubah):** `search_movies` hanya untuk deskripsi cerita, tema, atau suasana; "genre/tahun saja → rank_movies sorted by rating". `rank_movies` juga disebut untuk "recommendations that only name a genre, year, or decade".
+- **Bukti (8 pertanyaan × 3 run, prompt v5):** 24/24 tool tepat. "Rekomendasikan saya film horor", "film komedi tahun 90-an", "mau nonton film animasi" → `rank_movies`. "Horor tentang rumah berhantu", "komedi yang bikin hati hangat", "pencuri masuk mimpi" → `search_movies`. "Mirip Inception" → `similar_movies`.
+- **Status:** 🔁 Revisi K27
+
 ---
 
 ## Pemilihan embedding

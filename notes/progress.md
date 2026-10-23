@@ -63,8 +63,9 @@
 - [x] Daftar lengkap (Nolan 8/8) + "Muat lebih banyak" untuk rank_movies; draf prompt v5 diuji (24 Okt, K47)
 - [x] Prompt v4 terpasang dan terverifikasi (24 Okt)
 - [x] Tema story per genre (10 tema + Campur pita warna-warni), otomatis + manual, kontras WCAG lolos; R&D 11 story di artifact (24 Okt, K48)
-- [ ] **Anda:** review halaman "Tema per genre" di artifact Story Watchlist R&D
-- [ ] **Anda:** pasang prompt `movie-agent-system` **v5** di Langfuse
+- [x] Review tema per genre: Reiner puas (24 Okt)
+- [x] Prompt v5 terpasang dan terverifikasi (24 Okt)
+- [x] Genre saja → rank_movies (urut rating), ada deskripsi → search_movies; 24/24 tepat (24 Okt, K49)
 - [ ] **Anda:** coba watchlist + Buat IG story di app Cloud, unduh PNG-nya
 - [ ] **Anda:** buat prompt `movie-agent-system` **v4** di UI Langfuse, label production
 - [ ] Verifikasi v4 + coba fitur baru di app Cloud
