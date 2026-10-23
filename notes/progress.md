@@ -42,6 +42,7 @@
 
 ## Fase 4 · Uji dan dokumentasi (30 Okt – 1 Nov)
 - [ ] Set uji 10 pertanyaan: semuanya lolos
+- [ ] Set uji memeriksa otomatis: setiap query `search_movies` berbahasa Inggris (K26)
 - [ ] Rapikan system prompt di Langfuse
 - [ ] README: diagram alur, install, env, cara run, contoh query
 - [ ] API key Qdrant **read-only** untuk penilai

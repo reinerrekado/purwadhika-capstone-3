@@ -255,6 +255,16 @@ Jawaban langsung Pak Herman, yang menjadi dasar status 💬 di bawah.
   3. **Token** (diukur 23 Okt dengan `tiktoken` o200k_base): Inggris 196 token, Indonesia 223 token (+14%). Selisih ini kecil dan tidak menentukan.
 - **Bahasa jawaban tidak terpengaruh**: semua uji (benchmark 6 model, uji ketepatan judul) menjawab dalam bahasa Indonesia.
 - **Kalau ingin diganti:** cukup buat version baru di Langfuse, lalu jalankan ulang set uji.
+- **User bertanya dalam bahasa Indonesia: konflik atau boros?** Diukur 23 Okt, satu pertanyaan "thriller tahun 90-an":
+
+  | Bagian input | Token | Porsi |
+  |---|---|---|
+  | Hasil tool (5 film JSON) | 619 | 55% |
+  | Skema tool | 292 | 26% |
+  | System prompt | 196 | 18% |
+  | Pertanyaan user | 11 | 1% |
+
+  Pertanyaan berbahasa Indonesia 11 token vs Inggris 9; jawaban Indonesia 75 vs Inggris 66 (±$0,000015 per jawaban). Tidak ada konflik: di semua uji, model menulis query bahasa Inggris, memetakan genre dengan benar ("animasi" → `Animation`), dan menjawab dalam bahasa Indonesia. Risiko satu-satunya adalah query yang lupa diterjemahkan, dan ini diperiksa otomatis di set uji. Penghematan, kalau suatu saat diperlukan, ada di hasil tool (55%) dan panjang riwayat, bukan di bahasa.
 - **Status:** ✅ Sama dengan contoh kelas
 
 ---
