@@ -611,3 +611,62 @@ Story adalah fitur tambahan, jadi apa pun yang gagal (jaringan, JSON rusak, form
 > 🎬 **Untuk video:** "Pengguna menambahkan sampai 4 film ke watchlist, lalu menekan Buat IG story. LLM menulis 3 pilihan headline dari genre filmnya, dengan prompt di Langfuse. Pillow menggambar story 1080×1920 dengan desain yang saya pilih dari 3 prototipe. Watermark di bawah membuat setiap story yang dibagikan menjadi promosi gratis."
 
 > 🎬 **Untuk video:** "Jawaban mengalir kata demi kata. Di bawahnya ada poster film yang disebut, link tempat menonton, tool apa yang dipanggil beserta argumennya, jumlah token, dan tombol 👍/👎 yang masuk ke Langfuse. Di sidebar ada contoh pertanyaan dan total biaya sesi. Riwayat chat dikirim utuh ke agent, jadi saya bisa bertanya lanjutan seperti 'yang kedua siapa sutradaranya?'."
+
+---
+
+## 10. Tampilan Rakfilm: tema, logo, tata letak (K50, K51)
+
+### File yang terlibat
+| File | Tugas |
+|---|---|
+| `.streamlit/config.toml` | Tema: warna mode terang dan gelap, font IBM Plex, sudut 6 px, `enableStaticServing` untuk folder `static/` |
+| `static/fonts/` | Anton (wordmark dan judul film) + IBM Plex Mono (story), lisensi OFL. Dipakai app **dan** story |
+| `scripts/make_logo.py` | Menggambar logo dengan Pillow → `static/rakfilm_mark.png` |
+| `app/movie_cards.py` | Komponen kartu (layout `list`, `grid`, `wall`, `rack`) + `movie_hero` (bagian atas panel detail) |
+| `streamlit_app.py` | Sidebar, tampilan awal, chat, panel detail, panel story |
+
+### Baris penting
+
+**Dua mode, satu file:**
+```toml
+[theme.light]
+primaryColor = "#C2410C"
+[theme.dark]
+primaryColor = "#D2430E"
+```
+Kalau `[theme.light]` dan `[theme.dark]` sama-sama diisi, Streamlit memunculkan pilihan terang/gelap di menu Settings. Oranye tombol berbeda per mode karena **teks tombol utama Streamlit selalu putih**: oranye logo `#F2531B` hanya 3,5:1 untuk teks putih, sedangkan batas keterbacaan 4,5:1.
+
+**Font sendiri dari `static/`:**
+```toml
+[[theme.fontFaces]]
+family = "Anton"
+url = "app/static/fonts/Anton-Regular.ttf"
+```
+Streamlit menyajikan isi folder `static/` di alamat `app/static/...`. Setelah didaftarkan, font Anton bisa dipakai di seluruh halaman, termasuk di dalam komponen kartu (shadow DOM tetap memakai font yang terdaftar di dokumen).
+
+**Logo sebagai kode:**
+```python
+draw.rounded_rectangle(box(3, 9, 42, 30), radius=6 * SCALE, fill=ORANGE)   # bingkai
+draw.rounded_rectangle(box(x, 12, 4, 3), radius=SCALE, fill=(0, 0, 0, 0))  # lubang transparan
+mark = mark.rotate(3, resample=Image.BICUBIC)                              # miring 3°
+```
+Logo digambar dari koordinat yang sama dengan SVG di mockup (grid 48×48, dikali 10 supaya tajam). Lubangnya transparan, jadi warna latar sidebar (gelap atau terang) yang terlihat melalui lubang itu.
+
+**Tampilan awal hanya saat chat kosong:**
+```python
+question = st.chat_input("Ceritakan film yang kamu cari…", height=92) or st.session_state.pop("pending", None)
+if not st.session_state.chat and not question:
+    st.title("Mau nonton apa?") ...
+```
+`st.chat_input` dipanggil **sebelum** isi halaman, karena kotak chat selalu menempel di bawah layar di mana pun dipanggil. Dengan begitu, saat contoh pertanyaan diklik, tampilan awal langsung hilang di rerun yang sama, tidak berkedip dulu.
+
+**Satu panel per rerun:**
+```python
+if (opened := rack_click if rack_click is not None else wall_click) is not None:
+    movie_dialog(opened)
+elif story_click:
+    story_dialog()
+```
+Streamlit hanya bisa membuka satu `st.dialog` dalam satu rerun. Klik dari rak, dinding poster, dan tombol story dikumpulkan dulu, lalu satu panel dibuka di akhir skrip.
+
+> 🎬 **Untuk video:** "Namanya Rakfilm. Tampilannya sengaja netral; warna datang dari poster filmnya, seperti Netflix atau Letterboxd. Tema terang dan gelap diatur di satu file config, logonya digambar dengan kode, dan semuanya memakai fitur resmi Streamlit, bukan CSS tempelan yang bisa rusak saat Streamlit di-update."

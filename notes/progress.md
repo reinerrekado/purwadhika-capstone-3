@@ -1,4 +1,4 @@
-# Progress Capstone 3: IMDB Movie Assistant
+﻿# Progress Capstone 3: IMDB Movie Assistant
 
 > Deadline: **Senin, 10 November 2026, 23:59 WIB**. Target submit: **9 November**.
 > Diperbarui setiap kali satu langkah selesai. Format tanggal: `(23 Okt)` = selesai tanggal itu.
@@ -66,6 +66,9 @@
 - [x] Review tema per genre: Reiner puas (24 Okt)
 - [x] Prompt v5 terpasang dan terverifikasi (24 Okt)
 - [x] Genre saja → rank_movies (urut rating), ada deskripsi → search_movies; 24/24 tepat (24 Okt, K49)
+- [x] Nama app **Rakfilm** + logo (24 Okt, K50)
+- [x] UI baru: mockup 8 layar di artifact, review anti-AI-generic, diterapkan (tema terang/gelap, sidebar Rak kamu, tampilan awal dinding poster, panel detail imersif, panel story) (24 Okt, K51)
+- [ ] **Anda:** coba UI baru di app Cloud (mode gelap dan terang, laptop dan HP)
 - [ ] **Anda:** coba watchlist + Buat IG story di app Cloud, unduh PNG-nya
 - [ ] **Anda:** buat prompt `movie-agent-system` **v4** di UI Langfuse, label production
 - [ ] Verifikasi v4 + coba fitur baru di app Cloud
@@ -92,3 +95,4 @@
 - [ ] App Streamlit diubah jadi **public** (Share → "public and searchable"); sebelumnya pasang credit limit di key OpenRouter
   - Sampai tahap ini app private. Kalau Pak Herman perlu melihat lebih awal: Share → Invite viewers → email beliau
 - [ ] Isi Google Form: repo, video, app Streamlit, akses Qdrant
+

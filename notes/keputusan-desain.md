@@ -505,7 +505,7 @@ Jawaban langsung Pak Herman, yang menjadi dasar status 💬 di bawah.
   Penyebabnya, sinopsis dataset hanya 1–2 kalimat inti cerita, jadi adegan tidak tercatat. Karena itu calon nama "Adegan" dan sambutan "Ingat adegannya, lupa judulnya?" **ditarik**, karena menjanjikan fitur yang tidak kuat.
 - **Keputusan Reiner:** **Rakfilm**, dikembangkan dari usulan "Rak". Nama ini menonjolkan fitur yang kuat dan unik (rak tontonan → IG story), terdengar seperti merek sungguhan, dan tidak menjanjikan kemampuan yang tidak ada. Subjudul "asisten film · IMDB Top 1000" menyebut sumber data, jadi penilai langsung paham.
 - **Turunannya:**
-  - sambutan "MAU NONTON APA?" + "Ceritakan ceritanya, sebut genrenya, atau cari yang mirip film favoritmu. Simpan ke rak, bagikan ke story."
+  - sambutan "Mau nonton apa?" + "Ceritakan ceritanya, sebut genrenya, atau cari yang mirip film favoritmu. Simpan ke rak, bagikan ke story."
   - logo bingkai film + "?" dibaca "nonton apa?"
   - watermark story "dibuat dengan Rakfilm"
 - **Status:** ✅ Tidak ada arahan yang terkait
@@ -531,3 +531,32 @@ Embedding dipakai dua kali: sekali saat ingest (1.000 overview), lalu setiap kal
 3. Kalau langkah 1 gagal: coba opsi B.
 
 Sumber: [OpenRouter Embeddings API](https://openrouter.ai/docs/api-reference/embeddings) (endpoint `/embeddings`, input teks atau list teks, contoh model `openai/text-embedding-3-small`).
+
+### K51 · UI "Bioskop malam" untuk Rakfilm: netral, poster yang memberi warna
+- **Proses:** mockup 8 layar di artifact "UI Asisten Film" (tampilan awal, percakapan gelap/terang/HP, panel detail, panel story, detail di HP, logo). Reiner meminta review jujur soal kesan "AI generic". Temuannya:
+  - kata berwarna di headline
+  - label mono kapital di mana-mana
+  - 4 kartu ide ala ChatGPT
+  - kartu angka besar
+  - semua elemen dikotakkan
+  - Anton di semua judul
+  - kalimat bertiga dan slogan
+  - gimik (pil mood)
+
+  Semua sudah dibuang. Prinsipnya: antarmuka hampir netral, warna datang dari poster (seperti Netflix/Letterboxd/MUBI).
+- **Tema (`.streamlit/config.toml`):**
+  - Mode terang dan gelap sama-sama tersedia (menu Settings); tampilan awal mengikuti setelan sistem pengguna (batasan Streamlit).
+  - Palet: hitam hangat `#0E0D0C` / kertas hangat `#F4F1EC`, satu aksen oranye.
+  - Font: IBM Plex Sans (teks) dan IBM Plex Mono (data), lewat Google Fonts. Anton disajikan dari `static/fonts/` (`enableStaticServing`) dan **hanya** dipakai untuk wordmark RAKFILM dan judul film di panel detail.
+  - Sudut 6 px.
+  - **Tombol utama Streamlit selalu berteks putih**, jadi oranye tombol dipilih yang lolos 4,5:1 untuk teks putih: `#D2430E` (gelap, 4,6:1) dan `#C2410C` (terang, 5,2:1). Logo tetap `#F2531B`, karena tidak ada teks di atasnya.
+- **Logo:** `scripts/make_logo.py` menggambar bingkai film oranye miring 3° dengan "?" (nonton apa?) memakai Pillow → `static/rakfilm_mark.png`. Dipakai untuk `st.logo` (sidebar + ikon saat sidebar terlipat di HP), ikon tab browser, dan avatar asisten.
+- **Tata letak:**
+  - **Sidebar:** wordmark + "Asisten film · IMDB Top 1000", "+ Percakapan baru", **Rak kamu** (poster mini 4 kolom + slot kosong bergaris putus-putus, bisa diklik), "Bikin IG story", ringkasan sesi (tanpa `st.metric`, yang termasuk pola kartu angka besar).
+  - **Tampilan awal** (hanya saat chat kosong): "Mau nonton apa?" + **dinding 10 poster acak** yang bisa diklik + "Coba:" 4 contoh pertanyaan sebagai tombol teks. Ini menggantikan 4 kartu ide.
+  - **Kotak chat** `st.chat_input(height=92)`: lebih tinggi supaya terlihat (permintaan Reiner).
+  - **Panel detail** `st.dialog(width="large")` (maksimal 1280 px, ukuran terbesar Streamlit): komponen `movie_hero` dengan latar poster yang diburamkan (CSS `blur`) + poster, judul Anton, info, skor, sinopsis. Di bawahnya: Sutradara/Pemain (tombol), "+ Tambah ke rak", "Cari yang mirip", "Tonton di mana ↗", lalu Fakta menarik sebagai kalimat biasa dua kolom.
+  - **Panel story** "Bikin IG story": ringkasan rak, headline, ajakan + tema berdampingan, "Unduh PNG", pratinjau besar.
+- **Bukan CSS paksaan:** semua lewat `config.toml`, parameter resmi (`height`, `width="large"`, `st.logo`, `avatar`), dan komponen custom v2 (shadow DOM, gaya terisolasi). Satu-satunya HTML adalah wordmark di sidebar.
+- **Uji (AppTest):** tampilan awal (10 poster, 4 contoh), klik "semua film Nolan" → 8 film + tampilan awal hilang, rak 3/4 → tombol story, panel detail Inception, panel story; semuanya tanpa error.
+- **Status:** ✅ Arahan kelas: UI rapi menambah nilai (Pak Herman dulu desainer grafis)

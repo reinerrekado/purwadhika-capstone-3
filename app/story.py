@@ -22,7 +22,7 @@ from app.data import load_movies
 
 PROMPT_NAME = "story-headline"  # dibuat sekali di Langfuse, label "production"
 MAX_FILMS = 4
-FONT_DIR = Path(__file__).resolve().parent.parent / "assets" / "fonts"  # Anton + IBM Plex Mono (lisensi OFL)
+FONT_DIR = Path(__file__).resolve().parent.parent / "static" / "fonts"  # Anton + IBM Plex Mono (lisensi OFL)
 W, H, PAD, TOP = 1080, 1920, 80, 110
 PAPER = "#FFF6EC"  # lubang sproket dan teks di dalam pil ajakan
 FRAME_W, FRAME_H, FRAME_GAP = 213, 320, 22  # poster 2:3 di dalam pita film
@@ -224,7 +224,7 @@ def render_story(movie_ids: list[int], headline: str, cta: str, theme_name: str 
     draw = ImageDraw.Draw(canvas)
     content_w = W - 2 * PAD
 
-    _spaced(draw, (PAD, TOP), "WATCHLIST MINGGU INI", _font("IBMPlexMono-Bold.ttf", 28), ink, 6)
+    _spaced(draw, (PAD, TOP), "RAK MINGGU INI", _font("IBMPlexMono-Bold.ttf", 28), ink, 6)
 
     font, lines = _fit_headline(headline, content_w)
     y = TOP + 28 + 22
@@ -268,7 +268,7 @@ def render_story(movie_ids: list[int], headline: str, cta: str, theme_name: str 
     draw.rounded_rectangle((PAD, pill_top, PAD + pill_w, pill_top + pill_h), radius=pill_h // 2, fill=ink)
     draw.text((PAD + 48, pill_top + pill_h // 2), cta_text, font=pill_font, fill=theme.ground, anchor="lm")
     small = _font("IBMPlexMono-Bold.ttf", 20)
-    draw.multiline_text((W - PAD, pill_top + pill_h // 2), "dibuat dengan\nAsisten Film IMDB", font=small,
+    draw.multiline_text((W - PAD, pill_top + pill_h // 2), "dibuat dengan\nRakfilm", font=small,
                         fill=ink, anchor="rm", align="right", spacing=8)
     _spaced(draw, (PAD, pill_top - 26 - 36), stats_line(movies), _font("IBMPlexMono-Bold.ttf", 30), ink, 2)
 

@@ -1,4 +1,4 @@
-"""Antarmuka chat. File ini hanya mengurus tampilan; logika agent ada di app/agent.py."""
+"""Antarmuka chat Rakfilm. File ini hanya mengurus tampilan; logika agent ada di app/agent.py."""
 
 import json
 import re
@@ -11,27 +11,38 @@ import streamlit as st
 
 from app.agent import send_feedback, stream_agent
 from app.data import load_movies, movie_facts
-from app.movie_cards import movie_cards
+from app.movie_cards import movie_cards, movie_hero
 from app.story import MAX_FILMS, THEME_BY_NAME, auto_theme, render_story, story_text, watchlist_movies
 from app.tools import PAGE_SIZE, PAGERS
 
 # Harga openai/gpt-4.1-mini di OpenRouter (USD per 1 juta token, Okt 2026). Hanya untuk perkiraan biaya.
 PRICE_INPUT, PRICE_OUTPUT = 0.40, 1.60
 FX_URL = "https://api.frankfurter.dev/v1/latest?base=USD&symbols=IDR"  # kurs referensi ECB, gratis, tanpa API key
+LOGO = "static/rakfilm_mark.png"  # dibuat scripts/make_logo.py (K51)
+SUGGESTIONS = {  # contoh pertanyaan di tampilan awal: teks tombol → pertanyaan yang dikirim
+    "pencuri yang masuk ke mimpi": "Film tentang pencuri yang masuk ke mimpi orang",
+    "horor tahun 80-an": "Film horor terbaik tahun 80-an",
+    "mirip Spirited Away": "Film yang mirip Spirited Away",
+    "semua film Nolan": "Semua film Christopher Nolan",
+}
 
-st.set_page_config(page_title="Asisten Film IMDB", page_icon="🎬")
-st.title("🎬 Asisten Film IMDB")
-st.caption("Ceritakan film yang ingin Anda tonton. Sumber: 1.000 film terbaik IMDB (1920–2020).")
+st.set_page_config(page_title="Rakfilm", page_icon=LOGO)
+st.logo(LOGO, size="large")
 
 st.session_state.setdefault("chat", [])  # [{"role", "content", "details"}]
 st.session_state.setdefault("session_id", uuid4().hex)  # satu percakapan = satu session Langfuse
-st.session_state.setdefault("watchlist", [])  # id film untuk IG story, maksimal 4, hanya selama sesi browser (K46)
+st.session_state.setdefault("watchlist", [])  # rak tontonan untuk IG story, maksimal 4, hanya selama sesi browser (K46)
 
 
 def new_chat() -> None:
     """Kosongkan percakapan dan mulai session Langfuse baru."""
     st.session_state.chat = []
     st.session_state.session_id = uuid4().hex
+
+
+def suggest(question: str) -> None:
+    """Callback contoh pertanyaan di tampilan awal: diproses seperti ketikan user."""
+    st.session_state.pending = question
 
 
 @st.cache_data(ttl=86400, show_spinner=False)
@@ -54,11 +65,6 @@ def rupiah(usd: float) -> str:
     """$0.0023 → "Rp42" (pemisah ribuan titik). Kosong kalau kurs tidak tersedia."""
     fx = usd_to_idr()
     return f"Rp{usd * fx[0]:,.0f}".replace(",", ".") if fx else ""
-
-
-with st.sidebar:
-    st.button("🗑️ Percakapan baru", on_click=new_chat, width="stretch", type="primary")
-    watchlist_box = st.container()  # diisi di akhir skrip, setelah story_dialog terdefinisi
 
 
 def tool_movies(content: str) -> list[dict]:
@@ -170,44 +176,45 @@ def ask(question: str) -> None:
 
 @st.dialog("Detail film", width="large")
 def movie_dialog(movie_id: int) -> None:
-    """Panel detail saat kartu diklik (K41, K43): info lengkap, fakta menarik, chip sutradara/pemain."""
+    """Panel detail saat kartu diklik (K41, K43, K51): latar poster buram, info, sutradara/pemain, rak, fakta."""
     movie = load_movies().set_index("id").loc[movie_id]
-    left, right = st.columns([1, 2])
-    if poster_available(movie["poster"]):
-        left.image(movie["poster"], width="stretch")
-    else:
-        left.caption("🎞️ Poster tidak tersedia")
-    with right:
-        st.subheader(f"{movie['title']} ({movie['year']})")
-        certificate, meta_score = ("–" if pd.isna(movie[c]) else movie[c] for c in ("certificate", "meta_score"))
-        st.caption(f"{', '.join(movie['genres'])} · {movie['runtime_min']} menit · {certificate}")
-        st.markdown(f"⭐ **{movie['rating']}** IMDB · Metascore **{meta_score}**")
-        st.write(movie["overview_id"])  # terjemahan offline (K42)
+    certificate, meta_score = ("–" if pd.isna(movie[c]) else movie[c] for c in ("certificate", "meta_score"))
+    movie_hero({
+        "title": movie["title"], "rating": f"{movie['rating']:.1f}", "metascore": str(meta_score),
+        "meta": f"{movie['year']} · {movie['runtime_min']} menit · {certificate} · {', '.join(movie['genres'])}",
+        "overview": movie["overview_id"],  # terjemahan offline (K42)
+        "poster": movie["poster"] if poster_available(movie["poster"]) else None,
+    }, key=f"hero_{movie_id}")
 
-        with st.container(horizontal=True):  # chip: klik → cari film lain orang itu (K43)
-            if st.button(movie["director"], icon="🎬", type="tertiary"):
-                ask(f"Film lain yang disutradarai {movie['director']}")
-            for star in movie["stars"]:
-                if st.button(star, icon="🎭", type="tertiary"):
-                    ask(f"Film lain yang dibintangi {star}")
+    with st.container(horizontal=True, vertical_alignment="center"):  # klik nama → film lain orang itu (K43)
+        st.caption("Sutradara")
+        if st.button(movie["director"], key=f"director_{movie_id}"):
+            ask(f"Film lain yang disutradarai {movie['director']}")
+    with st.container(horizontal=True, vertical_alignment="center"):
+        st.caption("Pemain")
+        for star in movie["stars"]:
+            if st.button(star, key=f"star_{movie_id}_{star}"):
+                ask(f"Film lain yang dibintangi {star}")
 
-        watch, similar = st.columns(2)
-        watch.link_button("📺 Tonton di mana?", width="stretch",
-                          url="https://www.justwatch.com/id/search?q=" + urllib.parse.quote(movie["title"]))  # K37
-        if similar.button("🔁 Cari yang mirip", width="stretch"):
-            ask(f"Film yang mirip {movie['title']}")
-
-        watchlist = st.session_state.watchlist
+    watchlist = st.session_state.watchlist
+    with st.container(horizontal=True):
         if movie_id in watchlist:
-            if st.button("✓ Ada di watchlist · hapus", width="stretch"):
+            if st.button("Di rak · hapus"):
                 watchlist.remove(movie_id)
                 st.rerun()
-        elif st.button(f"➕ Tambah ke watchlist ({len(watchlist)}/{MAX_FILMS})", width="stretch",
-                       disabled=len(watchlist) >= MAX_FILMS, type="primary"):
+        elif st.button(f"+ Tambah ke rak ({len(watchlist)}/{MAX_FILMS})", type="primary",
+                       disabled=len(watchlist) >= MAX_FILMS):
             watchlist.append(movie_id)
             st.rerun()
+        if st.button("Cari yang mirip"):
+            ask(f"Film yang mirip {movie['title']}")
+        st.link_button("Tonton di mana ↗",
+                       url="https://www.justwatch.com/id/search?q=" + urllib.parse.quote(movie["title"]))  # K37
 
-        st.markdown("**💡 Fakta menarik**\n" + "\n".join(f"- {fact}" for fact in movie_facts(movie_id)))
+    st.markdown("**Fakta menarik**")
+    columns = st.columns(2)
+    for n, fact in enumerate(movie_facts(movie_id)):
+        columns[n % 2].caption(fact)
 
 
 def shown_ids(index: int) -> set[int]:
@@ -256,7 +263,7 @@ def show_answer(answer: str, details: dict, index: int) -> None:
         clicks.append(movie_cards(card_data([(i, overview[i]) for i in extra]), layout="list", key=key,
                                   on_open=lambda: None))
     if (more := details.get("more")) and (more["queue"] or not more["done"]):
-        st.button(f"⬇️ Muat {PAGE_SIZE} film lagi", key=f"more_{st.session_state.session_id}_{index}",
+        st.button(f"Muat {PAGE_SIZE} film lagi", key=f"more_{st.session_state.session_id}_{index}",
                   on_click=load_more, args=(index,), type="tertiary")
     if (opened := next((c for c in clicks if c is not None), None)) is not None:
         movie_dialog(opened)
@@ -268,29 +275,33 @@ def story_png(movie_ids: tuple[int, ...], headline: str, cta: str, theme: str) -
     return render_story(list(movie_ids), headline, cta, theme)
 
 
-@st.dialog("Buat IG story", width="large")
+@st.dialog("Bikin IG story", width="large")
 def story_dialog() -> None:
-    """Pilih headline, lihat pratinjau, unduh PNG 1080x1920 (K46)."""
+    """Pilih headline, lihat pratinjau, unduh PNG 1080x1920 (K46, K48)."""
     ids = tuple(st.session_state.watchlist)
+    movies = watchlist_movies(list(ids))
     texts = st.session_state.setdefault("story_texts", {})
-    if ids not in texts:  # LLM dipanggil sekali per isi watchlist
+    if ids not in texts:  # LLM dipanggil sekali per isi rak
         with st.spinner("Menulis headline..."):
             texts[ids] = story_text(list(ids), st.session_state.session_id)
     text = texts[ids]
-    controls, preview = st.columns([1, 1])
+    controls, preview = st.columns([1.15, 1], gap="large")
     with controls:
+        minutes = sum(m["runtime_min"] for m in movies)
+        st.write(f"Dari rak kamu: {', '.join(m['title'] for m in movies)}.")
+        st.caption(f"{len(movies)} film · {minutes // 60}j {minutes % 60}m")
         headline = st.radio("Headline", text["headlines"] + ["Tulis sendiri"], key=f"headline_{ids}")
         if headline == "Tulis sendiri":
             headline = st.text_input("Headline kamu", max_chars=40, key=f"own_{ids}") or text["headlines"][0]
-        cta = st.text_input("Ajakan", value=text["cta"], max_chars=30, key=f"cta_{ids}")
-        auto = auto_theme(watchlist_movies(list(ids))).name  # tema otomatis dari genre (K48)
+        left, right = st.columns(2)
+        cta = left.text_input("Ajakan", value=text["cta"], max_chars=30, key=f"cta_{ids}")
+        auto = auto_theme(movies).name  # tema otomatis dari genre (K48)
         choices = [f"Otomatis ({auto})"] + list(THEME_BY_NAME)
-        theme = st.selectbox("Tema", choices, key=f"theme_{ids}")
-        st.caption("Headline ditulis AI dari genre, tahun, dan durasi watchlist."
-                   if text["source"] == "llm" else "Headline dari aturan cadangan (AI sedang tidak tersedia).")
+        theme = right.selectbox("Tema", choices, key=f"theme_{ids}")
+        st.caption("Headline ditulis AI dari genre dan durasi film di rak. Tema mengikuti genre yang paling sering "
+                   "muncul." if text["source"] == "llm" else "Headline dari aturan cadangan (AI sedang tidak tersedia).")
         png = story_png(ids, headline, cta, auto if theme == choices[0] else theme)
-        st.download_button("⬇️ Unduh story (PNG)", png, file_name="watchlist-minggu-ini.png", mime="image/png",
-                           width="stretch", type="primary")
+        st.download_button("Unduh PNG", png, file_name="rakfilm-minggu-ini.png", mime="image/png", type="primary")
     preview.image(png, width="stretch")
 
 
@@ -303,35 +314,82 @@ def save_feedback(key: str, trace_id: str) -> None:
 def show_details(details: dict, index: int) -> None:
     """Tampilkan tool call (dalam expander), usage, dan tombol feedback di bawah jawaban."""
     calls = details["tool_calls"]
-    with st.expander(f"🔧 {len(calls)} tool call"):
+    with st.expander(f"{len(calls)} tool call", icon=":material/build:"):
         for call in calls:
             args = ", ".join(f"{k}={v!r}" for k, v in call["args"].items() if v is not None)
             st.code(f"{call['name']}({args})", language="python")
             st.caption("Hasil: " + (", ".join(call["titles"]) or "tidak ada film yang cocok"))
     usd = cost_usd(details["input_tokens"], details["output_tokens"])
-    st.caption(f"Token: {details['input_tokens']:,} input · {details['output_tokens']:,} output · "
+    st.caption(f"{details['input_tokens']:,} input · {details['output_tokens']:,} output token · "
                f"≈ {rupiah(usd)} (${usd:.4f})")
     if trace_id := details.get("trace_id"):
         key = f"feedback_{st.session_state.session_id}_{index}"  # unik per percakapan dan per jawaban
         st.feedback("thumbs", key=key, on_change=save_feedback, args=(key, trace_id))
 
 
+def random_wall(count: int = 10) -> list[int]:
+    """Dinding poster tampilan awal: film acak yang posternya masih tersedia, dipilih sekali per sesi."""
+    picked = []
+    for movie_id, poster in load_movies().sample(frac=1)[["id", "poster"]].itertuples(index=False):
+        if poster_available(poster):
+            picked.append(int(movie_id))
+        if len(picked) == count:
+            return picked
+    return picked
+
+
+# ---- Sidebar: wordmark, rak tontonan, ringkasan sesi (K51) ----
+with st.sidebar:
+    st.markdown('<div style="font-family: Anton, Impact, sans-serif; font-size: 1.6rem; letter-spacing: 1px; '
+                'line-height: 1">RAKFILM</div>', unsafe_allow_html=True)
+    st.caption("Asisten film · IMDB Top 1000")
+    st.button("+ Percakapan baru", on_click=new_chat, type="tertiary")
+
+    watchlist = st.session_state.watchlist
+    name, count = st.columns([3, 1], vertical_alignment="bottom")
+    name.markdown("**Rak kamu**")
+    count.caption(f"{len(watchlist)}/{MAX_FILMS}")
+    rack_click = movie_cards(card_data([(i, "") for i in watchlist]), layout="rack", key="rack",
+                             on_open=lambda: None, empty=MAX_FILMS - len(watchlist))
+    if watchlist:
+        story_click = st.button("Bikin IG story", type="primary", width="stretch")
+    else:
+        story_click = False
+        st.caption("Buka detail film lalu tambahkan ke rak. Isi sampai 4 film untuk dijadikan IG story.")
+    session_box = st.container()  # diisi di akhir, supaya angkanya sudah termasuk jawaban terbaru
+
+# Kotak chat dipanggil sebelum isi halaman supaya tampilan awal tahu ada pertanyaan baru atau tidak.
+question = (st.chat_input("Ceritakan film yang kamu cari…", height=92)
+            or st.session_state.pop("pending", None))
+
+# ---- Tampilan awal: hanya saat chat masih kosong (K51) ----
+wall_click = None
+if not st.session_state.chat and not question:
+    st.title("Mau nonton apa?")
+    st.write("Ceritakan inti ceritanya atau sebut film yang kamu suka.")
+    wall = st.session_state.setdefault("wall", random_wall())
+    wall_click = movie_cards(card_data([(i, "") for i in wall]), layout="wall", key="wall", on_open=lambda: None)
+    st.caption("Acak dari 1.000 film terbaik IMDB. Klik poster untuk lihat detail.")
+    with st.container(horizontal=True, vertical_alignment="center", gap="small"):
+        st.caption("Coba:")
+        for label, text in SUGGESTIONS.items():
+            st.button(label, key=f"try_{label}", type="tertiary", on_click=suggest, args=(text,))
+
 for index, message in enumerate(st.session_state.chat):  # chat history
-    with st.chat_message(message["role"]):
+    with st.chat_message(message["role"], avatar=LOGO if message["role"] == "assistant" else None):
         if message.get("details"):
             show_answer(message["content"], message["details"], index)
             show_details(message["details"], index)
         else:
             st.markdown(message["content"])
 
-question = st.chat_input("Misalnya: thriller tahun 90-an yang bikin tegang") or st.session_state.pop("pending", None)
 if question:
     with st.chat_message("user"):
         st.markdown(question)
     st.session_state.chat.append({"role": "user", "content": question})
 
     history = [{"role": m["role"], "content": m["content"]} for m in st.session_state.chat]
-    with st.chat_message("assistant"):
+    with st.chat_message("assistant", avatar=LOGO):
         run = {}  # diisi stream_agent setelah selesai: pesan baru + trace_id
         streaming = st.empty()  # teks mengalir dulu, lalu diganti tampilan dengan kartu film
         with streaming.container(), st.spinner("Mencari film..."):
@@ -342,32 +400,20 @@ if question:
         show_details(details, len(st.session_state.chat))
     st.session_state.chat.append({"role": "assistant", "content": answer, "details": details})
 
-with watchlist_box:  # watchlist untuk IG story (K46)
-    movies = load_movies().set_index("id")
-    st.subheader(f"Watchlist ({len(st.session_state.watchlist)}/{MAX_FILMS})")
-    if not st.session_state.watchlist:
-        st.caption("Buka detail film, lalu klik ➕ Tambah ke watchlist. Dari 1–4 film, buat IG story.")
-    for movie_id in list(st.session_state.watchlist):
-        title, remove = st.columns([5, 1], vertical_alignment="center")
-        title.markdown(f"**{movies.loc[movie_id, 'title']}** ({movies.loc[movie_id, 'year']})")
-        if remove.button("✕", key=f"remove_{movie_id}", help="Hapus dari watchlist", type="tertiary"):
-            st.session_state.watchlist.remove(movie_id)
-            st.rerun()
-    if st.button("🎨 Buat IG story", width="stretch", disabled=not st.session_state.watchlist):
-        story_dialog()
+# Satu panel per rerun: dari rak di sidebar, dinding poster, atau tombol IG story.
+if (opened := rack_click if rack_click is not None else wall_click) is not None:
+    movie_dialog(opened)
+elif story_click:
+    story_dialog()
 
-with st.sidebar:  # ditulis terakhir supaya angkanya sudah termasuk jawaban yang baru selesai
+with session_box:
     runs = [m["details"] for m in st.session_state.chat if m.get("details")]
-    tokens_in = sum(d["input_tokens"] for d in runs)
-    tokens_out = sum(d["output_tokens"] for d in runs)
-    usd = cost_usd(tokens_in, tokens_out)
-    st.subheader("Sesi ini")
-    st.metric("Pertanyaan", len(runs))
-    st.metric("Token", f"{tokens_in + tokens_out:,}", help=f"{tokens_in:,} input · {tokens_out:,} output")
-    left, right = st.columns(2)
-    left.metric("Biaya (Rp)", rupiah(usd) or "–")
-    right.metric("Biaya (USD)", f"${usd:.4f}")
+    tokens = sum(d["input_tokens"] + d["output_tokens"] for d in runs)
+    usd = cost_usd(sum(d["input_tokens"] for d in runs), sum(d["output_tokens"] for d in runs))
+    st.divider()
+    st.caption("Sesi ini")
+    st.markdown(f"{len(runs)} pertanyaan · {tokens:,} token  \n{rupiah(usd) or '–'} · ${usd:.4f}".replace(",", "."))
     if fx := usd_to_idr():
         rate = f"{fx[0]:,.0f}".replace(",", ".")
-        st.caption(f"Kurs Rp{rate}/USD (ECB, {fx[1]}). Harga gpt-4.1-mini: "
-                   f"${PRICE_INPUT:.2f} input / ${PRICE_OUTPUT:.2f} output per 1 juta token.")
+        st.caption(f"Kurs Rp{rate}/USD, ECB {fx[1]}. Harga gpt-4.1-mini: ${PRICE_INPUT:.2f} input / "
+                   f"${PRICE_OUTPUT:.2f} output per 1 juta token.")
