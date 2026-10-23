@@ -42,9 +42,9 @@
 - [x] `rank_movies`: filter, urutkan, hitung, filter seri film (K29, K30) (23 Okt)
 - [x] UI: kartu poster untuk film yang disebut di jawaban (23 Okt)
 - [x] Uji draf prompt v2: 12 skenario + 4 pertanyaan × 3 run, semuanya benar; pertanyaan lanjutan sekarang memakai tool (K31) (23 Okt)
-- [ ] **Anda:** buat prompt `movie-agent-system` **v2** di UI Langfuse, label production
+- [x] Prompt `movie-agent-system` **v2** di UI Langfuse, label production (23 Okt)
 - [x] Fase 3 di-push, Streamlit Cloud update otomatis; poster + 3 tool dicoba di app Cloud, semuanya benar (23 Okt, masih prompt v1)
-- [ ] Verifikasi v2 terbaca dari Langfuse
+- [x] Verifikasi v2: teks dari Langfuse = draf teruji; uji e2e session `e2e-prompt-v2-23okt`, 2 pertanyaan lanjutan memakai `get_movie_details` (23 Okt)
 
 ## Fase 4 · Uji dan dokumentasi (30 Okt – 1 Nov)
 - [ ] Set uji 10 pertanyaan: semuanya lolos
