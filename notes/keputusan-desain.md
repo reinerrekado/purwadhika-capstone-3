@@ -19,6 +19,27 @@ Status yang dipakai:
 
 **Ringkasan per 22 Oktober 2026: tidak ada keputusan yang melawan arahan.**
 
+## Klarifikasi Pak Herman (22 Oktober 2026)
+
+Jawaban langsung Pak Herman, yang menjadi dasar status 💬 di bawah.
+
+| Topik | Jawaban Pak Herman | Keputusan |
+|---|---|---|
+| Qdrant lewat LangChain atau langsung | Bebas | `langchain_qdrant` (pola kelas) |
+| Filter metadata di pencarian | Boleh | Dipakai (K04) |
+| Akses Qdrant untuk penilaian | Intinya harus bisa dilihat Pak Herman | URL + API key read-only, dan dashboard ditunjukkan di video |
+| Langfuse versi berapa | Yang mana saja yang works, dijalankan di VS Code | v5 dengan pola Sesi 17 (K02, K20) |
+| Prompt apa saja di Langfuse | Cukup di Langfuse, yang praktis | Hanya system prompt (K03) |
+| Prompt dibuat lewat kode atau UI | Cukup UI | UI |
+| Trace per pertanyaan atau per session | Keduanya boleh | Per pertanyaan, dikelompokkan per session |
+| Chat history | Intinya tiap sesi | Agent ingat percakapan selama satu sesi (K07) |
+| Cara agent ingat | Yang ringan, tidak menyulitkan | Kirim seluruh riwayat, tanpa checkpointer |
+| Chat history, tool call, usage | **Wajib semua** | Ketiganya tampil di UI |
+| Deploy | **Wajib** Streamlit | Streamlit Community Cloud |
+| Chunking | Terserah | Tanpa chunking (K08) |
+| Dataset di repo publik | Publik saja | CSV ikut di-commit |
+| Kelas OpenRouter di LangChain | Terserah | `ChatOpenAI` + `base_url` (K10) |
+
 ---
 
 ## Daftar keputusan

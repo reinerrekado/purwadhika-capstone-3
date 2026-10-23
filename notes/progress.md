@@ -8,7 +8,7 @@
 - [x] EDA dataset: 1.000 baris, 16 kolom, masalah data dicatat (21 Okt)
 - [x] Artifact arsitektur [Anatomi Capstone 3](https://claude.ai/artifact/MaBHfUY4FEzu43LUUX5mzr) (21–22 Okt)
 - [x] Baca catatan Sesi 09–17, samakan pola kode dengan kelas (22 Okt)
-- [x] Klarifikasi ke Pak Herman, jawaban di `pertanyaan-pak-herman.md` (22 Okt)
+- [x] Klarifikasi ke Pak Herman, jawaban di `keputusan-desain.md` (22 Okt)
 - [x] Kritik diri rencana: 10 temuan, semuanya sudah diperbaiki (22 Okt)
 - [x] Log keputusan desain `keputusan-desain.md` (22 Okt, terus diperbarui)
 
@@ -57,5 +57,4 @@
 ## Fase 7 · Pengumpulan (9 Nov)
 - [ ] Cek riwayat git: tidak ada key yang pernah ter-commit
 - [ ] Repo GitHub diubah jadi **public**
-- [ ] Hapus atau rapikan `pertanyaan-pak-herman.md`
 - [ ] Isi Google Form: repo, video, app Streamlit, akses Qdrant
