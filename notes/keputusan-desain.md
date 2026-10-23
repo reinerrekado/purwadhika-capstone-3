@@ -470,6 +470,24 @@ Jawaban langsung Pak Herman, yang menjadi dasar status 💬 di bawah.
   - 0 dari 12 jawaban diakhiri pertanyaan
 - **Status:** 🔁 Revisi K44, K45
 
+### K48 · Tema story mengikuti genre (otomatis + manual)
+- **Ide Reiner:** tema berubah seiring genre. Keputusan:
+  - tema otomatis plus pilihan manual
+  - palet mengikuti usulan
+  - watchlist campuran memakai "Pita warna-warni"
+  - review lewat artifact
+- **Kita:** tata letak Pita Film tetap sama, yang berubah hanya palet (`Theme`: latar, teks, sorotan headline, pita, swatch). Ada 10 tema + Campur:
+  - Horor, Animasi, Musikal, Perang, Komedi, Romansa, Sci-Fi, Noir, Aksi (default oranye), Drama
+  - **Campur:** latar hitam, segmen pita di belakang tiap poster berwarna genre filmnya, dan chip genre di bawah judul.
+- **Aturan tema otomatis (`auto_theme`):**
+  1. Tema tiap film = tema berprioritas tertinggi yang genrenya dimiliki film (urutan Horor → Animasi → Musikal → Perang → Komedi → Romansa → Sci-Fi → Noir → Aksi → Drama). Yang spesifik menang: Taegukgi (Action, Drama, War) → Perang; Inception → Sci-Fi.
+  2. Drama paling akhir, karena ada di 72% film dataset; kalau tidak, hampir semua watchlist akan "Drama".
+  3. Dominan = tema yang muncul di ≥2 film (1 film: temanya sendiri) dan tidak seri. Selain itu → Campur.
+- **Keterbacaan (cek WCAG otomatis):** semua teks ≥5,4:1 dan sorotan headline ≥3,3:1. Oranye default digelapkan (`#FF5A24` → `#F2531B`), karena baris headline krem sebelumnya hanya 2,9:1. Teks pil ajakan memakai warna latar tema (di tema gelap, teks krem di atas pil terang tidak terbaca).
+- **Bug sekalian diperbaiki:** koma "SERU," menabrak baris berikutnya, jadi jarak baris headline dinaikkan dari 0,95 ke 1,02 × ukuran huruf.
+- **R&D:** halaman "Tema per genre" di artifact *Story Watchlist R&D*, berisi 11 story hasil Pillow asli dengan headline dari LLM. Tema otomatis tepat 11/11.
+- **Status:** 🔁 Pengembangan K46
+
 ---
 
 ## Pemilihan embedding

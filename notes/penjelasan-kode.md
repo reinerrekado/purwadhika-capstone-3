@@ -578,7 +578,10 @@ Membuat teks dan gambar story 1080×1920 dari 1–4 film di watchlist. Logikanya
 | `stats_line(movies)` | "4 FILM · 7J 38M · RATING 8,1", dihitung dari data |
 | `render_story(ids, headline, cta)` | Gambar PNG dengan Pillow, gaya Pita Film |
 | `_fit_headline()` | Cari ukuran huruf terbesar (≤200 px) yang membuat headline muat dalam ≤3 baris |
-| `_film_strip()` | Pita film: lubang sproket + poster crop 2:3, lalu dimiringkan 3° |
+| `_film_strip()` | Pita film: lubang sproket + poster crop 2:3, lalu dimiringkan 3°. Tema Campur: segmen warna per film |
+| `Theme`, `THEMES` | Palet per genre (K48): latar, teks, sorotan, pita, swatch. Urutan list = prioritas |
+| `film_theme(movie)` | Tema satu film: tema pertama di `THEMES` yang genrenya dimiliki film (`set & set` = irisan) |
+| `auto_theme(movies)` | Tema dominan (`Counter`): muncul di ≥2 film dan tidak seri, selain itu Campur |
 
 ### Baris penting
 

@@ -62,6 +62,8 @@
 - [x] IG story "Watchlist minggu ini": R&D 3 arah visual di artifact → Reiner pilih C (Pita Film) → Pillow + headline LLM/aturan (24 Okt, K46)
 - [x] Daftar lengkap (Nolan 8/8) + "Muat lebih banyak" untuk rank_movies; draf prompt v5 diuji (24 Okt, K47)
 - [x] Prompt v4 terpasang dan terverifikasi (24 Okt)
+- [x] Tema story per genre (10 tema + Campur pita warna-warni), otomatis + manual, kontras WCAG lolos; R&D 11 story di artifact (24 Okt, K48)
+- [ ] **Anda:** review halaman "Tema per genre" di artifact Story Watchlist R&D
 - [ ] **Anda:** pasang prompt `movie-agent-system` **v5** di Langfuse
 - [ ] **Anda:** coba watchlist + Buat IG story di app Cloud, unduh PNG-nya
 - [ ] **Anda:** buat prompt `movie-agent-system` **v4** di UI Langfuse, label production

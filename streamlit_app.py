@@ -12,7 +12,7 @@ import streamlit as st
 from app.agent import send_feedback, stream_agent
 from app.data import load_movies, movie_facts
 from app.movie_cards import movie_cards
-from app.story import MAX_FILMS, render_story, story_text
+from app.story import MAX_FILMS, THEME_BY_NAME, auto_theme, render_story, story_text, watchlist_movies
 from app.tools import PAGE_SIZE, PAGERS
 
 # Harga openai/gpt-4.1-mini di OpenRouter (USD per 1 juta token, Okt 2026). Hanya untuk perkiraan biaya.
@@ -263,9 +263,9 @@ def show_answer(answer: str, details: dict, index: int) -> None:
 
 
 @st.cache_data(show_spinner=False)
-def story_png(movie_ids: tuple[int, ...], headline: str, cta: str) -> bytes:
-    """Gambar story di-cache: ganti headline lalu kembali lagi tidak menggambar ulang."""
-    return render_story(list(movie_ids), headline, cta)
+def story_png(movie_ids: tuple[int, ...], headline: str, cta: str, theme: str) -> bytes:
+    """Gambar story di-cache: ganti headline atau tema lalu kembali lagi tidak menggambar ulang."""
+    return render_story(list(movie_ids), headline, cta, theme)
 
 
 @st.dialog("Buat IG story", width="large")
@@ -283,9 +283,12 @@ def story_dialog() -> None:
         if headline == "Tulis sendiri":
             headline = st.text_input("Headline kamu", max_chars=40, key=f"own_{ids}") or text["headlines"][0]
         cta = st.text_input("Ajakan", value=text["cta"], max_chars=30, key=f"cta_{ids}")
+        auto = auto_theme(watchlist_movies(list(ids))).name  # tema otomatis dari genre (K48)
+        choices = [f"Otomatis ({auto})"] + list(THEME_BY_NAME)
+        theme = st.selectbox("Tema", choices, key=f"theme_{ids}")
         st.caption("Headline ditulis AI dari genre, tahun, dan durasi watchlist."
                    if text["source"] == "llm" else "Headline dari aturan cadangan (AI sedang tidak tersedia).")
-        png = story_png(ids, headline, cta)
+        png = story_png(ids, headline, cta, auto if theme == choices[0] else theme)
         st.download_button("⬇️ Unduh story (PNG)", png, file_name="watchlist-minggu-ini.png", mime="image/png",
                            width="stretch", type="primary")
     preview.image(png, width="stretch")
