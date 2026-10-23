@@ -354,7 +354,23 @@ Jawaban langsung Pak Herman, yang menjadi dasar status 💬 di bawah.
 ### K38 · Jawaban mengalir (streaming) + sidebar
 - **Streaming:** `agent.stream(stream_mode=["messages", "updates"])`. Mode `messages` memberi potongan token untuk `st.write_stream`; hanya potongan dari node `model` yang ditampilkan. Mode `updates` memberi pesan utuh (AIMessage + ToolMessage), sehingga tool call dan usage tetap bisa dihitung seperti sebelumnya. `run_agent` diganti `stream_agent`. Hasil uji: token pertama sekitar 3 detik, teks yang di-stream sama persis dengan jawaban akhir.
 - **Sidebar:** 4 contoh pertanyaan yang bisa diklik, tombol "Percakapan baru" (kosongkan chat + session Langfuse baru), dan total pertanyaan, token, serta perkiraan biaya sesi (harga gpt-4.1-mini di OpenRouter: $0,40 input / $1,60 output per 1 juta token).
+- **Revisi 24 Okt (K40):** contoh pertanyaan di sidebar dihapus atas masukan Reiner ("aneh, saya tidak suka konsep coba tanya"). Sidebar sekarang hanya berisi tombol percakapan baru dan ringkasan biaya.
 - **Temuan sampingan:** `usage_metadata` menunjukkan `cache_read` sekitar 1.150 token. OpenAI otomatis meng-cache awalan prompt (system prompt + skema tool) yang sama, sehingga token itu ditagih lebih murah. Perkiraan biaya di sidebar belum memperhitungkan diskon ini, jadi angkanya sedikit di atas biaya sebenarnya.
+- **Status:** ✅ Tidak ada arahan yang terkait
+
+### K39 · Biaya ditampilkan dalam Rupiah dan USD, dengan kurs harian ECB
+- **Permintaan Reiner:** dua indikator supaya tidak bingung, dengan kurs terbaru.
+- **Kita:** Frankfurter API (`api.frankfurter.dev/v1`, kurs referensi resmi Bank Sentral Eropa). Gratis, tanpa API key, dan di-cache sehari dengan `st.cache_data(ttl=86400)`, jadi hanya 1 request per hari per server. Biaya tampil di setiap jawaban ("≈ Rp30 ($0.0016)") dan di sidebar (dua metrik berdampingan, plus sumber dan tanggal kurs).
+- **Alternatif:** open.er-api.com juga gratis tanpa key, tapi mewajibkan link atribusi. ECB lebih resmi.
+- **Jebakan yang ditemukan:** alamat lama `api.frankfurter.app` dialihkan ke `.dev/v1`, dan servernya menolak (403) request Python yang tidak membawa User-Agent. Alamat baru dipakai langsung, dengan header User-Agent.
+- **Kalau sumber kurs mati:** `usd_to_idr()` mengembalikan `None`, dan app tetap jalan dengan biaya USD saja ("–" untuk Rupiah).
+- **Status:** ✅ Tidak ada arahan yang terkait
+
+### K40 · "Cari yang mirip" di bawah setiap poster, bukan contoh pertanyaan di sidebar
+- **Masukan Reiner:** contoh "film yang mirip X" di sidebar terasa aneh. Lebih alami kalau ditawarkan tepat di bawah film yang baru muncul.
+- **Kita:** setiap kartu poster punya tombol "🔁 Cari yang mirip". Klik → `ask("Film yang mirip <judul>")` → diproses seperti ketikan user → `similar_movies`. Contoh pertanyaan di sidebar dihapus seluruhnya.
+- **Kenapa judul tanpa tahun:** `find_title("Drishyam (2013)")` tidak akan cocok karena "2013" tidak ada di judul. Judul kembar sangat jarang (1 kasus dari 1.000 film).
+- **Bukti:** jawaban Spirited Away → klik di poster Sen to Chihiro → `similar_movies('Sen to Chihiro no kamikakushi')` → Totoro, Howl's Moving Castle.
 - **Status:** ✅ Tidak ada arahan yang terkait
 
 ---

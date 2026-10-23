@@ -11,14 +11,9 @@ import streamlit as st
 from app.agent import send_feedback, stream_agent
 from app.data import load_movies
 
-# Harga openai/gpt-4.1-mini di OpenRouter (USD per 1 juta token, Okt 2026). Hanya untuk perkiraan biaya di sidebar.
+# Harga openai/gpt-4.1-mini di OpenRouter (USD per 1 juta token, Okt 2026). Hanya untuk perkiraan biaya.
 PRICE_INPUT, PRICE_OUTPUT = 0.40, 1.60
-EXAMPLES = [
-    "Film tentang pencuri yang masuk ke mimpi orang",
-    "Film yang mirip Spirited Away",
-    "Star Wars mana yang ratingnya paling tinggi?",
-    "Bandingkan Inception dan Interstellar",
-]
+FX_URL = "https://api.frankfurter.dev/v1/latest?base=USD&symbols=IDR"  # kurs referensi ECB, gratis, tanpa API key
 
 st.set_page_config(page_title="Asisten Film IMDB", page_icon="🎬")
 st.title("🎬 Asisten Film IMDB")
@@ -34,11 +29,34 @@ def new_chat() -> None:
     st.session_state.session_id = uuid4().hex
 
 
+def ask(question: str) -> None:
+    """Callback tombol "Cari yang mirip": pertanyaannya diproses seperti ketikan di kotak chat."""
+    st.session_state.pending = question
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def usd_to_idr() -> tuple[float, str] | None:
+    """Kurs USD→IDR dan tanggalnya, diambil sekali sehari (K39). None kalau sumber kurs sedang tidak bisa diakses."""
+    try:
+        request = urllib.request.Request(FX_URL, headers={"User-Agent": "imdb-movie-assistant"})  # tanpa UA: 403
+        with urllib.request.urlopen(request, timeout=3) as response:
+            data = json.load(response)
+        return data["rates"]["IDR"], data["date"]
+    except (OSError, ValueError, KeyError):
+        return None
+
+
+def cost_usd(input_tokens: int, output_tokens: int) -> float:
+    return (input_tokens * PRICE_INPUT + output_tokens * PRICE_OUTPUT) / 1e6
+
+
+def rupiah(usd: float) -> str:
+    """$0.0023 → "Rp42" (pemisah ribuan titik). Kosong kalau kurs tidak tersedia."""
+    fx = usd_to_idr()
+    return f"Rp{usd * fx[0]:,.0f}".replace(",", ".") if fx else ""
+
+
 with st.sidebar:
-    st.subheader("Coba tanya")
-    for example in EXAMPLES:
-        if st.button(example, width="stretch"):
-            st.session_state.pending = example  # diproses seperti ketikan di kotak chat, di bawah
     st.button("🗑️ Percakapan baru", on_click=new_chat, width="stretch", type="primary")
 
 
@@ -100,7 +118,7 @@ def poster_available(url: str) -> bool:
         return False
 
 
-def show_posters(movie_ids: list[int]) -> None:
+def show_posters(movie_ids: list[int], index: int) -> None:
     """Kartu poster film yang disebut di jawaban. Poster diambil dari data.py lewat id (K25)."""
     if not movie_ids:
         return
@@ -113,6 +131,8 @@ def show_posters(movie_ids: list[int]) -> None:
             column.container(border=True).caption("🎞️ Poster tidak tersedia")
         watch = "https://www.justwatch.com/id/search?q=" + urllib.parse.quote(movie["title"])  # K37
         column.caption(f"**{movie['title']}** ({movie['year']}) · ⭐ {movie['rating']} · [Tonton di mana?]({watch})")
+        column.button("🔁 Cari yang mirip", key=f"similar_{st.session_state.session_id}_{index}_{movie_id}",
+                      on_click=ask, args=(f"Film yang mirip {movie['title']}",), width="stretch")  # K40
 
 
 def save_feedback(key: str, trace_id: str) -> None:
@@ -123,14 +143,16 @@ def save_feedback(key: str, trace_id: str) -> None:
 
 def show_details(details: dict, index: int) -> None:
     """Tampilkan poster, tool call (dalam expander), usage, dan tombol feedback di bawah jawaban."""
-    show_posters(details.get("movie_ids", []))
+    show_posters(details.get("movie_ids", []), index)
     calls = details["tool_calls"]
     with st.expander(f"🔧 {len(calls)} tool call"):
         for call in calls:
             args = ", ".join(f"{k}={v!r}" for k, v in call["args"].items() if v is not None)
             st.code(f"{call['name']}({args})", language="python")
             st.caption("Hasil: " + (", ".join(call["titles"]) or "tidak ada film yang cocok"))
-    st.caption(f"Token: {details['input_tokens']:,} input · {details['output_tokens']:,} output")
+    usd = cost_usd(details["input_tokens"], details["output_tokens"])
+    st.caption(f"Token: {details['input_tokens']:,} input · {details['output_tokens']:,} output · "
+               f"≈ {rupiah(usd)} (${usd:.4f})")
     if trace_id := details.get("trace_id"):
         key = f"feedback_{st.session_state.session_id}_{index}"  # unik per percakapan dan per jawaban
         st.feedback("thumbs", key=key, on_change=save_feedback, args=(key, trace_id))
@@ -161,7 +183,14 @@ with st.sidebar:  # ditulis terakhir supaya angkanya sudah termasuk jawaban yang
     runs = [m["details"] for m in st.session_state.chat if m.get("details")]
     tokens_in = sum(d["input_tokens"] for d in runs)
     tokens_out = sum(d["output_tokens"] for d in runs)
+    usd = cost_usd(tokens_in, tokens_out)
     st.subheader("Sesi ini")
     st.metric("Pertanyaan", len(runs))
     st.metric("Token", f"{tokens_in + tokens_out:,}", help=f"{tokens_in:,} input · {tokens_out:,} output")
-    st.metric("Perkiraan biaya", f"${(tokens_in * PRICE_INPUT + tokens_out * PRICE_OUTPUT) / 1e6:.4f}")
+    left, right = st.columns(2)
+    left.metric("Biaya (Rp)", rupiah(usd) or "–")
+    right.metric("Biaya (USD)", f"${usd:.4f}")
+    if fx := usd_to_idr():
+        rate = f"{fx[0]:,.0f}".replace(",", ".")
+        st.caption(f"Kurs Rp{rate}/USD (ECB, {fx[1]}). Harga gpt-4.1-mini: "
+                   f"${PRICE_INPUT:.2f} input / ${PRICE_OUTPUT:.2f} output per 1 juta token.")

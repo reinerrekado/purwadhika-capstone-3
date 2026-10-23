@@ -448,8 +448,11 @@ Hanya **tampilan**. Semua logika ada di `app/agent.py` (arahan modular Pak Herma
 | `show_details()` | Poster + expander "🔧 tool call" + baris jumlah token + tombol 👍/👎 |
 | `save_feedback()` | Callback saat 👍/👎 diklik → `send_feedback` ke Langfuse |
 | `new_chat()` | Callback tombol "Percakapan baru": kosongkan chat, buat `session_id` baru |
-| sidebar (atas) | 4 contoh pertanyaan yang bisa diklik + tombol percakapan baru |
-| sidebar (bawah) | Total pertanyaan, token, dan perkiraan biaya sesi. Ditulis di akhir skrip supaya sudah termasuk jawaban terbaru |
+| `ask()` | Callback tombol "🔁 Cari yang mirip" di bawah poster: menitipkan pertanyaan "Film yang mirip <judul>" (K40) |
+| `usd_to_idr()` | Kurs USD→IDR harian dari ECB (Frankfurter), di-cache sehari; `None` kalau gagal (K39) |
+| `cost_usd()`, `rupiah()` | Hitung biaya dari token, lalu ubah ke format "Rp42" |
+| sidebar (atas) | Tombol percakapan baru |
+| sidebar (bawah) | Total pertanyaan, token, biaya dalam Rp dan USD, serta sumber kurs. Ditulis di akhir skrip supaya sudah termasuk jawaban terbaru |
 | loop `for index, message in ...` | Menggambar ulang chat history setiap rerun |
 | `st.chat_input(...) or pending` | Pertanyaan dari kotak ketik **atau** dari tombol contoh di sidebar |
 | `st.write_stream(stream_agent(...))` | Menampilkan jawaban potong demi potong, lalu mengembalikan teks lengkapnya |
@@ -504,12 +507,18 @@ st.feedback("thumbs", key=key, on_change=save_feedback, args=(key, trace_id))
 ```
 `key` unik per percakapan dan per posisi jawaban. Kalau hanya memakai `index`, pilihan 👍 di percakapan lama akan muncul lagi di jawaban pertama percakapan baru. `on_change` dipanggil Streamlit **sebelum** rerun, dan nilai widget dibaca dari `st.session_state[key]`.
 
-**Contoh pertanyaan di sidebar:**
+**Tombol "Cari yang mirip" di bawah poster (K40):**
 ```python
-if st.button(example): st.session_state.pending = example
+column.button("🔁 Cari yang mirip", key=..., on_click=ask, args=(f"Film yang mirip {movie['title']}",))
 question = st.chat_input(...) or st.session_state.pop("pending", None)
 ```
-Tombol hanya menitipkan teks contoh. Di bawahnya, teks itu diproses persis seperti ketikan user. `pop` mengambil sekaligus menghapusnya, jadi tidak terkirim dua kali.
+Tombol hanya menitipkan teks pertanyaan lewat `ask()`. Di bawahnya, teks itu diproses persis seperti ketikan user, lalu agent memilih `similar_movies`. `pop` mengambil sekaligus menghapusnya, jadi tidak terkirim dua kali. `key` memuat session, posisi jawaban, dan id film, karena Streamlit menolak dua tombol dengan key yang sama.
+
+**Biaya dalam Rupiah (K39):**
+```python
+request = urllib.request.Request(FX_URL, headers={"User-Agent": "imdb-movie-assistant"})
+```
+Kurs diambil dari ECB lewat Frankfurter, sekali sehari (`st.cache_data(ttl=86400)`). Header User-Agent wajib, karena server menolak (403) request Python tanpa header itu. Formatnya `f"{x:,.0f}".replace(",", ".")`: Python memakai koma sebagai pemisah ribuan, lalu diganti titik sesuai format Indonesia.
 
 ### Menjalankan
 ```

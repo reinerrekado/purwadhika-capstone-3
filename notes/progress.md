@@ -52,6 +52,7 @@
 - [x] Verifikasi v3: teks dari Langfuse = draf teruji (24 Okt)
 
 - [x] Fitur tambahan (K34–K38): tool `similar_movies`, feedback 👍/👎 → Langfuse score, sidebar (contoh, percakapan baru, token + biaya), link "Tonton di mana?" (JustWatch), jawaban streaming; prompt di-cache per teks, jadi versi baru terpakai tanpa restart (24 Okt)
+- [x] Masukan Reiner: biaya Rp + USD dengan kurs harian ECB; contoh di sidebar diganti tombol "Cari yang mirip" di bawah poster (24 Okt, K39–K40)
 - [ ] **Anda:** buat prompt `movie-agent-system` **v4** di UI Langfuse, label production
 - [ ] Verifikasi v4 + coba fitur baru di app Cloud
 
