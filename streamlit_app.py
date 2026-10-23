@@ -26,7 +26,7 @@ def tool_movies(content: str) -> list[dict]:
         return []
 
 
-def mentioned_ids(found: dict[str, dict], answer: str) -> list[int]:
+def mentioned_ids(movies: list[dict], answer: str) -> list[int]:
     """Id film yang judulnya disebut di jawaban, urut sesuai daftar di jawaban.
 
     - Judul terpanjang dicocokkan dulu lalu ditutup, supaya "Star Wars" tidak ikut cocok
@@ -34,32 +34,34 @@ def mentioned_ids(found: dict[str, dict], answer: str) -> list[int]:
     - Prompt mewajibkan format "Judul (tahun)" (aturan 3). Kalau format itu ada di jawaban, hanya
       judul berformat itu yang dihitung, jadi "Tiga Star Wars terbaik..." tidak ikut.
       Kalau tidak ada sama sekali, dipakai posisi judul biasa.
+    - Dikelompokkan per id, bukan per judul: "Drishyam" (2013) dan "Drishyam" (2015) dua film berbeda.
     """
     with_year, plain = {}, {}
-    for title in sorted(found, key=len, reverse=True):
+    for title in sorted({m["title"] for m in movies}, key=len, reverse=True):
         if title not in answer:
             continue
-        match = re.search(rf"{re.escape(title)}\W{{0,3}}\({found[title]['year']}\)", answer)  # "Heat" (1995)
-        if match:
-            with_year[title] = match.start()
-        plain[title] = answer.find(title)
+        for movie in (m for m in movies if m["title"] == title):
+            match = re.search(rf"{re.escape(title)}\W{{0,3}}\({movie['year']}\)", answer)  # "Heat" (1995)
+            if match:
+                with_year[movie["id"]] = match.start()
+            plain[movie["id"]] = answer.find(title)
         answer = answer.replace(title, "\0" * len(title))  # panjang tetap, posisi lain tidak bergeser
     positions = with_year or plain
-    return [found[title]["id"] for title in sorted(positions, key=positions.get)]
+    return sorted(positions, key=positions.get)
 
 
 def summarize_run(new_messages: list, answer: str) -> dict:
     """Ambil tool call, film yang disebut di jawaban, dan pemakaian token dari satu run agent."""
     ai_messages = [m for m in new_messages if m.type == "ai"]
     movies = {m.tool_call_id: tool_movies(m.content) for m in new_messages if m.type == "tool"}
-    found = {movie["title"]: movie for result in movies.values() for movie in result}
+    found = {movie["id"]: movie for result in movies.values() for movie in result}  # tanpa duplikat
     return {
         "tool_calls": [
             {"name": call["name"], "args": call["args"],
              "titles": [movie["title"] for movie in movies.get(call["id"], [])]}
             for m in ai_messages for call in m.tool_calls
         ],
-        "movie_ids": mentioned_ids(found, answer)[:5],
+        "movie_ids": mentioned_ids(list(found.values()), answer)[:5],
         "input_tokens": sum((m.usage_metadata or {}).get("input_tokens", 0) for m in ai_messages),
         "output_tokens": sum((m.usage_metadata or {}).get("output_tokens", 0) for m in ai_messages),
     }

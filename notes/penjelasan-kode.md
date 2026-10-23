@@ -452,6 +452,7 @@ Tool bisa mengembalikan 5–10 film, tapi jawaban mungkin hanya menyebut 3. Hany
 1. **Judul di dalam judul.** "Star Wars" ada di dalam "Star Wars: Episode V - ...". Karena itu judul terpanjang dicocokkan dulu, lalu ditutup dengan karakter `\0` sepanjang judulnya. Panjang teks tetap sama, jadi posisi judul lain tidak bergeser.
 2. **Frasa umum.** Kalimat "Tiga **Star Wars** dengan rating tertinggi..." bukan penyebutan film Star Wars (1977). Prompt mewajibkan format `Judul (tahun)` (aturan 3), jadi posisi dicari dengan regex judul + tahun. `\W{0,3}` mengizinkan tanda kutip atau `**` di antaranya, misalnya `"Heat" (1995)` atau `**Heat** (1995)`.
 3. **Jawaban tanpa tahun.** Kalau tidak ada satu pun judul berformat `Judul (tahun)`, dipakai posisi judul biasa (`plain`). `with_year or plain` berarti: pakai `with_year` kalau tidak kosong, selain itu `plain`.
+4. **Judul kembar (uji 24 Okt).** "Drishyam" (2013) dan "Drishyam" (2015) adalah dua film berbeda. Awalnya film dikelompokkan per judul, jadi hanya satu poster yang tampil. Sekarang film dikelompokkan per `id`, dan tahun di regex membedakan keduanya.
 
 **Poster yang sudah dihapus (K33):**
 ```python
