@@ -21,7 +21,7 @@
 - [x] `app/config.py` versi awal: `env()` + `get_embeddings()` (23 Okt)
 - [x] `scripts/ingest.py`: 1.000 film masuk ke Qdrant, 1536 dimensi, Cosine, ±39 detik (23 Okt)
 - [x] Uji pencarian: Inception urutan 1; filter Thriller 90-an 5/5 tepat (23 Okt)
-- [ ] Lihat sendiri collection `imdb_movies` di dashboard Qdrant (untuk video)
+- [x] Lihat sendiri collection `imdb_movies` di dashboard Qdrant (23 Okt)
 
 ## Fase 2 · Kerangka berjalan (24–25 Okt)
 - [x] `app/config.py`: tambah `get_llm()` (23 Okt)
