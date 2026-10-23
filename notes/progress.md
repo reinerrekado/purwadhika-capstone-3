@@ -58,7 +58,7 @@
 - [x] Panel detail: Fakta menarik + chip sutradara/pemain (24 Okt, K43)
 - [x] Kartu film langsung di dalam jawaban, tanpa batas 5 film (24 Okt, K44)
 - [x] "Muat 5 film lagi" langsung dari UI dengan offset Qdrant, tanpa LLM (24 Okt, K45)
-- [ ] **Anda:** coba kartu + panel detail + Muat lebih banyak di app Cloud
+- [x] **Anda:** coba kartu + panel detail + Muat lebih banyak di app Cloud
 - [x] IG story "Watchlist minggu ini": R&D 3 arah visual di artifact → Reiner pilih C (Pita Film) → Pillow + headline LLM/aturan (24 Okt, K46)
 - [x] Daftar lengkap (Nolan 8/8) + "Muat lebih banyak" untuk rank_movies; draf prompt v5 diuji (24 Okt, K47)
 - [x] Prompt v4 terpasang dan terverifikasi (24 Okt)
@@ -72,9 +72,9 @@
 - [x] Logo Rakfilm di IG story, satu warna mengikuti tema (24 Okt, K53)
 - [x] Latar kaca jadi efek hover di semua kartu hasil (ide latar halaman dibatalkan karena butuh CSS internal Streamlit) (24 Okt, K54)
 - [ ] **Anda:** coba UI baru di app Cloud (mode gelap dan terang, laptop dan HP)
-- [ ] **Anda:** coba watchlist + Buat IG story di app Cloud, unduh PNG-nya
-- [ ] **Anda:** buat prompt `movie-agent-system` **v4** di UI Langfuse, label production
-- [ ] Verifikasi v4 + coba fitur baru di app Cloud
+- [x] **Anda:** coba watchlist + Buat IG story di app Cloud, unduh PNG-nya
+- [x] **Anda:** buat prompt `movie-agent-system` **v4** di UI Langfuse, label production
+- [x] Verifikasi v4 + coba fitur baru di app Cloud
 
 ## Fase 4 · Uji dan dokumentasi (30 Okt – 1 Nov)
 - [ ] Set uji 10 pertanyaan: semuanya lolos
