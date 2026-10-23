@@ -59,7 +59,11 @@
 - [x] Kartu film langsung di dalam jawaban, tanpa batas 5 film (24 Okt, K44)
 - [x] "Muat 5 film lagi" langsung dari UI dengan offset Qdrant, tanpa LLM (24 Okt, K45)
 - [ ] **Anda:** coba kartu + panel detail + Muat lebih banyak di app Cloud
-- [ ] IG story "Watchlist minggu ini": R&D 3 arah visual di artifact → Reiner pilih → Pillow + headline LLM/aturan
+- [x] IG story "Watchlist minggu ini": R&D 3 arah visual di artifact → Reiner pilih C (Pita Film) → Pillow + headline LLM/aturan (24 Okt, K46)
+- [x] Daftar lengkap (Nolan 8/8) + "Muat lebih banyak" untuk rank_movies; draf prompt v5 diuji (24 Okt, K47)
+- [x] Prompt v4 terpasang dan terverifikasi (24 Okt)
+- [ ] **Anda:** pasang prompt `movie-agent-system` **v5** di Langfuse
+- [ ] **Anda:** coba watchlist + Buat IG story di app Cloud, unduh PNG-nya
 - [ ] **Anda:** buat prompt `movie-agent-system` **v4** di UI Langfuse, label production
 - [ ] Verifikasi v4 + coba fitur baru di app Cloud
 

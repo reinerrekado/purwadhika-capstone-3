@@ -12,6 +12,7 @@ import streamlit as st
 from app.agent import send_feedback, stream_agent
 from app.data import load_movies, movie_facts
 from app.movie_cards import movie_cards
+from app.story import MAX_FILMS, render_story, story_text
 from app.tools import PAGE_SIZE, PAGERS
 
 # Harga openai/gpt-4.1-mini di OpenRouter (USD per 1 juta token, Okt 2026). Hanya untuk perkiraan biaya.
@@ -24,6 +25,7 @@ st.caption("Ceritakan film yang ingin Anda tonton. Sumber: 1.000 film terbaik IM
 
 st.session_state.setdefault("chat", [])  # [{"role", "content", "details"}]
 st.session_state.setdefault("session_id", uuid4().hex)  # satu percakapan = satu session Langfuse
+st.session_state.setdefault("watchlist", [])  # id film untuk IG story, maksimal 4, hanya selama sesi browser (K46)
 
 
 def new_chat() -> None:
@@ -56,6 +58,7 @@ def rupiah(usd: float) -> str:
 
 with st.sidebar:
     st.button("🗑️ Percakapan baru", on_click=new_chat, width="stretch", type="primary")
+    watchlist_box = st.container()  # diisi di akhir skrip, setelah story_dialog terdefinisi
 
 
 def tool_movies(content: str) -> list[dict]:
@@ -66,20 +69,32 @@ def tool_movies(content: str) -> list[dict]:
         return []
 
 
+def tool_total(content: str) -> int | None:
+    """Jumlah total hasil kalau tool menyebutkannya (rank_movies: matching_count)."""
+    try:
+        return json.loads(content).get("matching_count")
+    except json.JSONDecodeError:
+        return None
+
+
 def summarize_run(new_messages: list) -> dict:
     """Ambil tool call, film yang ditemukan tool, dan pemakaian token dari satu run agent."""
     ai_messages = [m for m in new_messages if m.type == "ai"]
     movies = {m.tool_call_id: tool_movies(m.content) for m in new_messages if m.type == "tool"}
     found = {movie["id"]: movie for result in movies.values() for movie in result}  # tanpa duplikat
+    totals = {m.tool_call_id: tool_total(m.content) for m in new_messages if m.type == "tool"}
     tool_calls = [{"name": call["name"], "args": call["args"],
                    "titles": [movie["title"] for movie in movies.get(call["id"], [])],
-                   "ids": [movie["id"] for movie in movies.get(call["id"], [])]}
+                   "ids": [movie["id"] for movie in movies.get(call["id"], [])],
+                   "total": totals.get(call["id"])}
                   for m in ai_messages for call in m.tool_calls]
-    # Pencarian terakhir yang hasilnya penuh (5 film) bisa dilanjutkan dengan "Muat lebih banyak" (K45).
-    pageable = [c for c in tool_calls if c["name"] in PAGERS and len(c["ids"]) == PAGE_SIZE]
+    # Pencarian terakhir yang masih punya hasil lanjutan bisa diteruskan dengan "Muat lebih banyak" (K45, K47):
+    # rank_movies tahu jumlah totalnya (matching_count); search/similar dianggap berlanjut kalau halamannya penuh.
+    pageable = [c for c in tool_calls if c["name"] in PAGERS and c["ids"]
+                and (c["total"] > len(c["ids"]) if c["total"] is not None else len(c["ids"]) == PAGE_SIZE)]
     return {
         "tool_calls": tool_calls,
-        "more": {"tool": pageable[-1]["name"], "args": pageable[-1]["args"], "offset": PAGE_SIZE,
+        "more": {"tool": pageable[-1]["name"], "args": pageable[-1]["args"], "offset": len(pageable[-1]["ids"]),
                  "queue": pageable[-1]["ids"], "done": False} if pageable else None,
         "found": [{"id": m["id"], "title": m["title"], "year": m["year"]} for m in found.values()],
         "input_tokens": sum((m.usage_metadata or {}).get("input_tokens", 0) for m in ai_messages),
@@ -182,6 +197,16 @@ def movie_dialog(movie_id: int) -> None:
         if similar.button("🔁 Cari yang mirip", width="stretch"):
             ask(f"Film yang mirip {movie['title']}")
 
+        watchlist = st.session_state.watchlist
+        if movie_id in watchlist:
+            if st.button("✓ Ada di watchlist · hapus", width="stretch"):
+                watchlist.remove(movie_id)
+                st.rerun()
+        elif st.button(f"➕ Tambah ke watchlist ({len(watchlist)}/{MAX_FILMS})", width="stretch",
+                       disabled=len(watchlist) >= MAX_FILMS, type="primary"):
+            watchlist.append(movie_id)
+            st.rerun()
+
         st.markdown("**💡 Fakta menarik**\n" + "\n".join(f"- {fact}" for fact in movie_facts(movie_id)))
 
 
@@ -202,7 +227,8 @@ def load_more(index: int) -> None:
     more, shown = details["more"], shown_ids(index)
     queue = [movie_id for movie_id in more["queue"] if movie_id not in shown]
     while len(queue) < PAGE_SIZE and not more["done"]:
-        page = PAGERS[more["tool"]](**more["args"], offset=more["offset"])
+        args = more["args"] | ({"limit": PAGE_SIZE} if "limit" in more["args"] else {})  # rank: halaman 5 film
+        page = PAGERS[more["tool"]](**args, offset=more["offset"])
         more["offset"] += PAGE_SIZE
         more["done"] = len(page) < PAGE_SIZE  # halaman tidak penuh = hasil sudah habis
         queue += [m["id"] for m in page if m["id"] not in shown and m["id"] not in queue]
@@ -234,6 +260,35 @@ def show_answer(answer: str, details: dict, index: int) -> None:
                   on_click=load_more, args=(index,), type="tertiary")
     if (opened := next((c for c in clicks if c is not None), None)) is not None:
         movie_dialog(opened)
+
+
+@st.cache_data(show_spinner=False)
+def story_png(movie_ids: tuple[int, ...], headline: str, cta: str) -> bytes:
+    """Gambar story di-cache: ganti headline lalu kembali lagi tidak menggambar ulang."""
+    return render_story(list(movie_ids), headline, cta)
+
+
+@st.dialog("Buat IG story", width="large")
+def story_dialog() -> None:
+    """Pilih headline, lihat pratinjau, unduh PNG 1080x1920 (K46)."""
+    ids = tuple(st.session_state.watchlist)
+    texts = st.session_state.setdefault("story_texts", {})
+    if ids not in texts:  # LLM dipanggil sekali per isi watchlist
+        with st.spinner("Menulis headline..."):
+            texts[ids] = story_text(list(ids), st.session_state.session_id)
+    text = texts[ids]
+    controls, preview = st.columns([1, 1])
+    with controls:
+        headline = st.radio("Headline", text["headlines"] + ["Tulis sendiri"], key=f"headline_{ids}")
+        if headline == "Tulis sendiri":
+            headline = st.text_input("Headline kamu", max_chars=40, key=f"own_{ids}") or text["headlines"][0]
+        cta = st.text_input("Ajakan", value=text["cta"], max_chars=30, key=f"cta_{ids}")
+        st.caption("Headline ditulis AI dari genre, tahun, dan durasi watchlist."
+                   if text["source"] == "llm" else "Headline dari aturan cadangan (AI sedang tidak tersedia).")
+        png = story_png(ids, headline, cta)
+        st.download_button("⬇️ Unduh story (PNG)", png, file_name="watchlist-minggu-ini.png", mime="image/png",
+                           width="stretch", type="primary")
+    preview.image(png, width="stretch")
 
 
 def save_feedback(key: str, trace_id: str) -> None:
@@ -283,6 +338,20 @@ if question:
         show_answer(answer, details, len(st.session_state.chat))
         show_details(details, len(st.session_state.chat))
     st.session_state.chat.append({"role": "assistant", "content": answer, "details": details})
+
+with watchlist_box:  # watchlist untuk IG story (K46)
+    movies = load_movies().set_index("id")
+    st.subheader(f"Watchlist ({len(st.session_state.watchlist)}/{MAX_FILMS})")
+    if not st.session_state.watchlist:
+        st.caption("Buka detail film, lalu klik ➕ Tambah ke watchlist. Dari 1–4 film, buat IG story.")
+    for movie_id in list(st.session_state.watchlist):
+        title, remove = st.columns([5, 1], vertical_alignment="center")
+        title.markdown(f"**{movies.loc[movie_id, 'title']}** ({movies.loc[movie_id, 'year']})")
+        if remove.button("✕", key=f"remove_{movie_id}", help="Hapus dari watchlist", type="tertiary"):
+            st.session_state.watchlist.remove(movie_id)
+            st.rerun()
+    if st.button("🎨 Buat IG story", width="stretch", disabled=not st.session_state.watchlist):
+        story_dialog()
 
 with st.sidebar:  # ditulis terakhir supaya angkanya sudah termasuk jawaban yang baru selesai
     runs = [m["details"] for m in st.session_state.chat if m.get("details")]

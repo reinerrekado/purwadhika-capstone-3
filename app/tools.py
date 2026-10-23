@@ -209,6 +209,24 @@ def rank_movies(
         star: Part of an actor's name, e.g. DiCaprio.
         limit: Number of movies to return, 1 to 10.
     """
+    df = _ranked(sort_by, order, title, genre, year_from, year_to, director, star)
+    return json.dumps({
+        "matching_count": len(df),
+        "average_rating": round(float(df["rating"].mean()), 2) if len(df) else None,
+        "movies": to_records(df.head(max(1, min(limit, 10)))[RANK_FIELDS]),
+    }, ensure_ascii=False)
+
+
+def rank_page(sort_by: str = "rating", order: str = "highest", title: str | None = None, genre: str | None = None,
+              year_from: int | None = None, year_to: int | None = None, director: str | None = None,
+              star: str | None = None, limit: int = PAGE_SIZE, offset: int = 0) -> list[dict]:
+    """Satu halaman hasil rank_movies untuk tombol "Muat lebih banyak" di UI (K45, K47)."""
+    df = _ranked(sort_by, order, title, genre, year_from, year_to, director, star)
+    return to_records(df.iloc[offset:offset + limit][RANK_FIELDS])
+
+
+def _ranked(sort_by, order, title, genre, year_from, year_to, director, star):
+    """Filter lalu urutkan. Dipakai rank_movies (untuk LLM) dan rank_page (untuk UI)."""
     df = load_movies().dropna(subset=[sort_by])  # gross_usd/meta_score kosong untuk sebagian film
     if title:
         df = df[df["id"].isin(find_title(title))]
@@ -223,13 +241,9 @@ def rank_movies(
     if star:
         df = df[df["stars"].map(lambda stars: any(normalize(star) in normalize(s) for s in stars))]
 
-    top = df.sort_values(sort_by, ascending=(order == "lowest")).head(max(1, min(limit, 10)))
-    return json.dumps({
-        "matching_count": len(df),
-        "average_rating": round(float(df["rating"].mean()), 2) if len(df) else None,
-        "movies": to_records(top[RANK_FIELDS]),
-    }, ensure_ascii=False)
+    return df.sort_values(sort_by, ascending=(order == "lowest"))
 
 
 TOOLS = [search_movies, similar_movies, get_movie_details, rank_movies]
-PAGERS = {"search_movies": search_page, "similar_movies": similar_page}  # tool yang punya "Muat lebih banyak" (K45)
+# Tool yang punya "Muat lebih banyak" (K45, K47): nama tool → fungsi satu halaman dengan offset.
+PAGERS = {"search_movies": search_page, "similar_movies": similar_page, "rank_movies": rank_page}

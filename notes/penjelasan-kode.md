@@ -562,4 +562,49 @@ Kurs diambil dari ECB lewat Frankfurter, sekali sehari (`st.cache_data(ttl=86400
 streamlit run streamlit_app.py
 ```
 
+---
+
+## 9. `app/story.py`: IG Story "Watchlist minggu ini" (K46)
+
+### Tugasnya
+Membuat teks dan gambar story 1080×1920 dari 1–4 film di watchlist. Logikanya murni, tanpa Streamlit, jadi bisa diuji sendiri. `streamlit_app.py` hanya memanggil `story_text()` dan `render_story()`.
+
+### Fungsi-fungsinya
+
+| Fungsi | Tugas |
+|---|---|
+| `story_text(ids, session_id)` | 3 headline + 1 ajakan dari LLM (prompt `story-headline` di Langfuse, JSON mode). Gagal atau tidak valid → `fallback_text()` |
+| `fallback_text(movies)` | Aturan cadangan: headline dari genre yang paling sering muncul (`Counter`) |
+| `stats_line(movies)` | "4 FILM · 7J 38M · RATING 8,1", dihitung dari data |
+| `render_story(ids, headline, cta)` | Gambar PNG dengan Pillow, gaya Pita Film |
+| `_fit_headline()` | Cari ukuran huruf terbesar (≤200 px) yang membuat headline muat dalam ≤3 baris |
+| `_film_strip()` | Pita film: lubang sproket + poster crop 2:3, lalu dimiringkan 3° |
+
+### Baris penting
+
+**Headline otomatis mengecil:**
+```python
+for size in range(200, 99, -6):            # coba 200 px, 194 px, ... sampai 100 px
+    ... bungkus kata per baris selama lebarnya muat ...
+    if len(lines) <= 3: return font, lines
+```
+Headline pendek ("Aksi seru nonstop.") tampil 200 px dalam 2 baris. Headline panjang otomatis mengecil sampai muat dalam 3 baris.
+
+**Pita film miring:**
+```python
+strip.rotate(3, resample=Image.BICUBIC, expand=True)
+canvas.paste(strip, (x, y), strip)
+```
+Pita digambar lurus di gambar terpisah (RGBA, latarnya transparan), lalu diputar 3° berlawanan arah jarum jam, sama dengan `rotate(-3deg)` di CSS desain R&D. `expand=True` memperbesar kanvas supaya sudutnya tidak terpotong. Argumen ketiga `paste` adalah mask transparansi, jadi sudut kosongnya tidak menutupi latar oranye.
+
+**Teks AI dengan cadangan:**
+```python
+try:   ... LLM → json.loads → validasi (≥2 headline, ≤6 kata, ada ajakan) ...
+except Exception: pass
+return fallback_text(movies)
+```
+Story adalah fitur tambahan, jadi apa pun yang gagal (jaringan, JSON rusak, format salah), pengguna tetap bisa membuat story dari aturan cadangan.
+
+> 🎬 **Untuk video:** "Pengguna menambahkan sampai 4 film ke watchlist, lalu menekan Buat IG story. LLM menulis 3 pilihan headline dari genre filmnya, dengan prompt di Langfuse. Pillow menggambar story 1080×1920 dengan desain yang saya pilih dari 3 prototipe. Watermark di bawah membuat setiap story yang dibagikan menjadi promosi gratis."
+
 > 🎬 **Untuk video:** "Jawaban mengalir kata demi kata. Di bawahnya ada poster film yang disebut, link tempat menonton, tool apa yang dipanggil beserta argumennya, jumlah token, dan tombol 👍/👎 yang masuk ke Langfuse. Di sidebar ada contoh pertanyaan dan total biaya sesi. Riwayat chat dikirim utuh ke agent, jadi saya bisa bertanya lanjutan seperti 'yang kedua siapa sutradaranya?'."

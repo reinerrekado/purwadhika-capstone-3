@@ -441,6 +441,35 @@ Jawaban langsung Pak Herman, yang menjadi dasar status 💬 di bawah.
 - **Bukti:** "film tentang anak yang tersesat": jawaban 3 film → klik 1: E.T., Stand by Me (sisa hasil pertama) + 3 baru → klik 2: 5 lagi. 13 film, 0 duplikat, 0 panggilan LLM.
 - **Status:** 🔁 Pengembangan dari K05
 
+### K46 · IG Story "Watchlist minggu ini" (ide Reiner)
+- **Alur:** panel detail → "➕ Tambah ke watchlist" (maks 4, disimpan di `st.session_state` selama sesi browser; tanpa akun, sesuai batas app) → sidebar "Watchlist (n/4)" → "🎨 Buat IG story" → pilih 1 dari 3 headline (atau tulis sendiri) + ubah ajakan → pratinjau → "⬇️ Unduh story (PNG)".
+- **Desain:** dipilih Reiner dari 3 arah visual di artifact R&D ("Story Watchlist R&D"): **C · Pita Film**. Latar oranye, headline Anton raksasa dengan baris terakhir berwarna terang, poster dalam pita film hitam miring 3°, daftar judul, statistik, ajakan berbentuk pil, dan watermark "dibuat dengan Asisten Film IMDB" (setiap story yang dibagikan menjadi promosi gratis).
+- **Gambar:** `app/story.py` menggambar dengan **Pillow** (sudah ikut terpasang bersama Streamlit, kini ditulis eksplisit di `requirements.txt`). Font Anton + IBM Plex Mono (lisensi OFL, beserta file lisensinya) disimpan di `assets/fonts/`. 1080×1920, ±0,7 detik, ±500 KB. Headline otomatis mengecil sampai muat dalam maksimal 3 baris. Pita film dan judul ditaruh di tengah ruang sisa, jadi tidak ada ruang kosong besar. Poster yang hilang (K33) diganti kotak berisi judul.
+- **Teks:** gabungan (pilihan Reiner). LLM dengan prompt `story-headline` di Langfuse (dibuat lewat SDK, label production) membuat 3 headline ≤4 kata + 1 ajakan dari genre, tahun, durasi, dan rating watchlist (JSON mode, di-trace dengan tag `story`). Hasil divalidasi; kalau gagal atau tidak valid, dipakai **aturan cadangan** berdasarkan genre dominan. LLM dipanggil sekali per isi watchlist (disimpan di `session_state`), dan gambar di-cache per kombinasi headline + ajakan.
+- **Temuan saat uji:**
+  - simbol ★ tampil sebagai kotak kosong karena IBM Plex Mono tidak punya glyph-nya, jadi diganti "RATING 8,1"
+  - ruang kosong besar saat headline 2 baris, jadi isi tengah diposisikan di tengah ruang sisa
+  - LLM sesekali menulis "seru!.", jadi tanda baca ganda dibersihkan otomatis
+- **Catatan hak cipta:** poster film milik studionya. Membagikannya untuk keperluan pribadi di media sosial lazim, tapi tidak untuk produk komersial.
+- **Status:** ✅ Tidak ada arahan yang terkait
+
+### K47 · Daftar ditampilkan lengkap + "Muat lebih banyak" untuk rank_movies (prompt v5)
+- **Masalah (uji Reiner):** "film film besutan christoper nolan" hanya menampilkan 3 dari 8 film Nolan, ditutup "Apakah Anda ingin rekomendasi film Nolan lainnya?", dan tidak ada cara melihat sisanya.
+- **Penyebab:**
+  1. Aturan 6 v4 ("2-3 best matches unless the user asks for more"): "film-film X" tidak dianggap permintaan daftar.
+  2. "Muat lebih banyak" baru ada untuk `search_movies`/`similar_movies`.
+  3. Aturan v4 hanya melarang tawaran *detail*, bukan pertanyaan penutup secara umum.
+- **Perbaikan:**
+  - **Prompt v5 aturan 6:** rekomendasi terbuka → 2–3 film; permintaan **daftar** (film sutradara/aktor, seri, top list, "film-film ...") → semua film dari tool. "Never end with a question or an offer."
+  - **`rank_page`:** logika filter dan urutan dipisah ke `_ranked()`, dipakai `rank_movies` (untuk LLM) dan `rank_page` (untuk UI). `rank_movies` memberi `matching_count`, jadi UI tahu persis masih ada sisa atau tidak.
+- **Bukti (draf v5, 6 pertanyaan × 2 run):**
+  - Nolan: 8/8 film tampil (sebelumnya 3)
+  - Tom Hanks: 10 kartu + tombol untuk 4 sisanya
+  - Harry Potter: 6 kartu
+  - rekomendasi dan perbandingan tetap ringkas
+  - 0 dari 12 jawaban diakhiri pertanyaan
+- **Status:** 🔁 Revisi K44, K45
+
 ---
 
 ## Pemilihan embedding
