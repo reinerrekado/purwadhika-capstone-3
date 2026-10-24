@@ -82,7 +82,9 @@
 - [ ] Set uji 10 pertanyaan: semuanya lolos
 - [ ] Set uji memeriksa otomatis: setiap query `search_movies` berbahasa Inggris (K26)
 - [ ] Rapikan system prompt di Langfuse
-- [ ] README: diagram alur, install, env, cara run, contoh query
+- [x] README: diagram alur, install, env, cara run, contoh query (24 Okt, K56)
+- [ ] README: tambahkan 2-3 screenshot Rakfilm (dari pengguna)
+- [x] Repo dirapikan: `docs/anatomi-capstone-3.html` dan `Dataset Description.docx` dihapus, isinya pindah ke README (24 Okt, K56)
 - [ ] API key Qdrant **read-only** untuk penilai
 
 ## Fase 5 · Cadangan (2–5 Nov, Module 4 masih berjalan)

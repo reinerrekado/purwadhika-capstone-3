@@ -606,3 +606,13 @@ Sumber: [OpenRouter Embeddings API](https://openrouter.ai/docs/api-reference/emb
   - **Adegan spesifik dijawab terlalu yakin.** "Pria menari di tangga" dijawab All That Jazz dan Billy Elliot dengan kalimat "film dengan adegan…". Datanya hanya sinopsis singkat (K50), jadi v6 mewajibkan agent menyebutnya "paling mendekati dari sinopsis".
   - **Filter tahun 1920-2020 diisi sendiri oleh agent** di `rank_movies`. Hasilnya tidak salah, tapi tidak perlu. Larangan mengisi filter tanpa diminta sekarang berlaku untuk semua tool.
 - **Status:** 🔁 Revisi prompt v5
+
+### K56 · Repo dirapikan sebelum video: README jadi satu-satunya dokumen untuk penilai
+- **`docs/anatomi-capstone-3.html` dihapus:** isinya rancangan awal (sebelum Rakfilm, sebelum K28–K55), sehingga sebagian sudah tidak sesuai kode. README wajib berisi diagram alur. Dua dokumen arsitektur pasti tidak sinkron, jadi yang dipertahankan hanya README. Versi artifact-nya masih ada di claude.ai kalau perlu dilihat lagi.
+- **`data/Dataset Description.docx` dihapus:** isinya (sumber Kaggle + arti 14 kolom) dipindah ke README sebagai tabel. Penilai tidak perlu membuka Word, dan nama file tanpa spasi lebih aman di terminal.
+- **README ditulis ulang:**
+  - Isi wajib: diagram alur (Mermaid, tampil langsung di GitHub), instalasi, variabel lingkungan, cara menjalankan, contoh pertanyaan.
+  - Tambahan: fitur, struktur repo, tabel dataset, dan daftar prompt Langfuse beserta mana yang wajib.
+- **Uji contoh pertanyaan:** ke-10 contoh pertanyaan di README sudah dicoba ke agent sungguhan. Semuanya memanggil tool yang tertulis di tabel dan jawabannya benar.
+- **Waktunya sekarang, bukan di akhir:** video (Fase 6) memperlihatkan repo, jadi strukturnya harus final dulu. Yang ditunda ke Fase 7 hanya langkah sekali jalan: cek riwayat git, ubah repo dan app jadi public.
+- **Status:** ➕ Tambahan
