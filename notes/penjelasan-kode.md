@@ -762,7 +762,7 @@ Jawaban LLM berbeda sedikit tiap kali, jadi yang diperiksa: tool yang benar dipa
 **Pemeriksaan bahasa query (K26):**
 ```python
 INDONESIAN_WORDS = {"yang", "dengan", "tentang", ...}  # di app/tools.py, dipakai juga oleh eval
-not (set(re.findall(r"[a-z]+", q.lower())) & INDONESIAN)
+not (set(re.findall(r"[a-z]+", q.lower())) & INDONESIAN_WORDS)
 ```
 `&` pada `set` adalah irisan: kalau query memuat satu kata Indonesia saja, pemeriksaan gagal. Ini heuristik, bukan pendeteksi bahasa yang sempurna: query Indonesia yang tidak memuat satu pun kata di daftar akan lolos.
 
