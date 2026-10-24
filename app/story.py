@@ -15,6 +15,7 @@ from pathlib import Path
 
 from langfuse import get_client
 from langfuse.langchain import CallbackHandler
+from langchain_core.runnables import RunnablePassthrough
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 from app.config import get_llm
@@ -117,11 +118,13 @@ def story_text(movie_ids: list[int], session_id: str) -> dict:
                       f"rating {m['rating']}" for m in movies)
     try:
         prompt = get_client().get_prompt(PROMPT_NAME)
-        reply = get_llm().invoke(
-            prompt.compile(films=films), response_format={"type": "json_object"},
+        # Langfuse hanya menautkan prompt ke LLM yang berada di dalam sebuah chain, bukan panggilan LLM langsung (K73)
+        chain = RunnablePassthrough() | get_llm().bind(response_format={"type": "json_object"})
+        reply = chain.invoke(
+            prompt.compile(films=films),
             config={"callbacks": [CallbackHandler()],
                     "metadata": {"langfuse_session_id": session_id, "langfuse_tags": ["story"],
-                                 "langfuse_prompt": prompt}},  # tautkan ke prompt story-headline (K73)
+                                 "langfuse_prompt": prompt}},
         )
         data = json.loads(reply.content)
         headlines = [re.sub(r"[.!?]+$", lambda end: end.group(0)[0], h.strip())  # "seru!." → "seru!"
