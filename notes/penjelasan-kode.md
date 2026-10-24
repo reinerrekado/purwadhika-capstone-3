@@ -314,6 +314,15 @@ Pencarian vektor membandingkan **satu vektor per dokumen** (bi-encoder): cepat, 
 - Skor reranker tidak seragam untuk semua jenis pertanyaan. Pertanyaan suasana yang samar ("bikin menangis") skornya rendah semua (maks 0,02) padahal hasilnya wajar. Jadi skor ditampilkan sebagai informasi, bukan batas keras. Yang konsisten hanya: kalau **semua** skor 0,00 (pertanyaan adegan atau kutipan), memang tidak ada yang cocok.
 - Model: `qwen/qwen3-reranker-8b`. Model Cohere dan Voyage ditolak akun karena setelan Zero Data Retention di OpenRouter.
 
+**Pertanyaan adegan atau kutipan (K59):**
+```python
+describes_scene: bool | None = None   # parameter tool: "true kalau pengguna menanyakan satu adegan, momen, atau kutipan"
+if movies and (describes_scene or all(m["rerank_score"] is not None and m["rerank_score"] <= WEAK_MATCH for m in movies)):
+    result["note"] = SCENE_NOTE
+```
+Dataset hanya punya sinopsis singkat, jadi film tidak boleh diklaim "memiliki adegan X". Aturan itu sudah ada di system prompt, tapi `gpt-4.1-mini` sering mengabaikannya. Yang dipatuhi model adalah **skema tool**: parameter `describes_scene` ikut terkirim sebagai bagian dari deskripsi tool (docstring `Args:`), jadi model mengisinya sendiri. Kalau `true`, hasil tool membawa `note` berisi perintah membuka jawaban dengan "dicocokkan hanya dari sinopsis, tidak bisa memastikan ada adegannya". Perintah di hasil tool jauh lebih dipatuhi daripada aturan di prompt, karena ada tepat di depan model saat ia menulis jawaban.
+Skor reranker sempat dicoba sebagai pemicu, tapi gagal: skornya bergantung kata-kata query ("man dancing on stairs" 0,00 vs "a scene with a man dancing on stairs" 0,08 untuk hasil yang sama-sama salah). Skor itu hanya dipakai sebagai cadangan di `WEAK_MATCH` (semua skor ≤ 0,01).
+
 **Filter bersama (`_qdrant_filter`):** filter genre dan tahun dipakai oleh `search_movies` dan `similar_movies`, jadi kodenya ditulis sekali saja.
 
 **Normalisasi judul (`normalize`):**

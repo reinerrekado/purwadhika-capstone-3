@@ -33,6 +33,10 @@ ROMAN = {"ii": "2", "iii": "3", "iv": "4", "v": "5", "vi": "6", "vii": "7", "vii
 MAX_MATCHES = 10  # cukup untuk satu seri penuh, misalnya 6 film Harry Potter
 PAGE_SIZE = 5  # film per pencarian Qdrant (K05): hemat token dan relevansi turun setelah 5 besar
 RERANK_CANDIDATES = PAGE_SIZE * 3  # kandidat yang diambil dari Qdrant sebelum reranker memilih PAGE_SIZE terbaik (K58)
+WEAK_MATCH = 0.01  # semua skor reranker segini atau lebih rendah = jelas tidak ada sinopsis yang cocok (K59)
+SCENE_NOTE = ("The dataset only has short plot summaries, not scenes or quotes. Start your answer by telling the user, "
+              "in their language, that these movies are matched on plot summaries only, so you cannot confirm that any "
+              "of them contains the scene or quote. Never say that a movie contains it.")
 NOT_FOUND_HINT = ("Do not tell the user the movie is missing yet. Non-English movies use their original "
                   "title (e.g. Parasite = Gisaengchung), so call the same tool again with the original "
                   "title if you know it. Otherwise try rank_movies with the director or year, or "
@@ -67,6 +71,7 @@ def search_movies(
     genre: Genre | None = None,
     year_from: int | None = None,
     year_to: int | None = None,
+    describes_scene: bool | None = None,
 ) -> str:
     """Find movies by plot, theme, or mood among the IMDB top 1,000 movies (semantic search).
 
@@ -80,13 +85,23 @@ def search_movies(
         genre: Only return movies that have this genre. Leave empty unless the user names a genre.
         year_from: Earliest release year, inclusive. Leave empty unless the user names a year or decade.
         year_to: Latest release year, inclusive. Leave empty unless the user names a year or decade.
+        describes_scene: Set true when the user describes one specific scene, moment, or quote (e.g. "the scene where a man dances on stairs", "the movie with the line I'll be back") instead of the overall plot, theme, or mood.
     """
-    return json.dumps({"movies": search_page(query, genre, year_from, year_to)}, ensure_ascii=False)
+    movies = search_page(query, genre, year_from, year_to)
+    result = {"movies": movies}
+    if movies and (describes_scene or all(m["rerank_score"] is not None and m["rerank_score"] <= WEAK_MATCH
+                                          for m in movies)):
+        result["note"] = SCENE_NOTE  # model patuh pada catatan di hasil tool, tidak pada aturan panjang di prompt (K59)
+    return json.dumps(result, ensure_ascii=False)
 
 
 def search_page(query: str, genre: str | None = None, year_from: int | None = None, year_to: int | None = None,
-                offset: int = 0) -> list[dict]:
-    """Satu halaman (5 film) hasil search_movies. offset dipakai tombol "Muat lebih banyak" di UI (K45)."""
+                offset: int = 0, describes_scene: bool | None = None) -> list[dict]:
+    """Satu halaman (5 film) hasil search_movies. offset dipakai tombol "Muat lebih banyak" di UI (K45).
+
+    describes_scene tidak berpengaruh di sini: parameter itu hanya mengatur catatan di hasil tool, tapi ikut
+    tersimpan di argumen yang dipakai ulang oleh "Muat lebih banyak".
+    """
     hits = _vector_store().similarity_search_with_score(query, k=RERANK_CANDIDATES, offset=offset,
                                                         filter=_qdrant_filter(genre, year_from, year_to))
     if not hits:

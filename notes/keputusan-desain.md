@@ -648,3 +648,15 @@ Sumber: [OpenRouter Embeddings API](https://openrouter.ai/docs/api-reference/emb
   - `httpx==0.28.1` dipin di `requirements.txt` (sebelumnya hanya ikut terpasang lewat `openai`).
   - Hasil tool mendapat kunci `rerank_score`, dan UI menampilkannya di expander tool call.
 - **Status:** ➕ Tambahan (bonus penilaian)
+
+### K59 · Pertanyaan adegan/kutipan: penegakan dipindah dari prompt ke tool
+- **Masalah:** `gpt-4.1-mini` menjawab "adegan pria menari di tangga" dengan "Berikut film dengan adegan…", walau prompt v6 dan v7 sudah menyuruh jujur. Model tidak patuh pada aturan panjang di system prompt. Filter `genre='Sci-Fi'` untuk "pencuri masuk mimpi" juga muncul lagi walau aturan 5 melarangnya.
+- **Percobaan 1, ambang skor reranker (gagal):** catatan peringatan diberikan kalau semua skor reranker ≤ 0,01. Skornya ternyata bergantung kata-kata query: "a man dancing on stairs" bernilai 0,00, tapi "a scene with a man dancing on stairs" bernilai 0,08 untuk hasil yang sama-sama salah. Sementara query sah seperti "emotional" hanya 0,05. Tidak ada ambang yang memisahkan keduanya, jadi skor reranker **tidak dipakai sebagai detektor** (hanya sebagai informasi di UI).
+- **Percobaan 2, parameter tool (berhasil):** `search_movies` mendapat parameter `describes_scene` ("true kalau pengguna menanyakan satu adegan, momen, atau kutipan"). Kalau `true`, hasil tool membawa `note` yang menyuruh agent membuka jawaban dengan "dicocokkan hanya dari sinopsis, tidak bisa memastikan ada adegannya". Model lebih patuh mengisi parameter dan membaca catatan di hasil tool daripada menaati aturan di prompt.
+- **Hasil uji (7 pertanyaan):**
+  - 3 pertanyaan adegan/kutipan (tangga, "I will be back", kapal tenggelam): semuanya terbuka dengan peringatan, tanpa mengklaim adegannya ada.
+  - 4 pertanyaan kontrol (pencuri mimpi, menangis, astronot, robot): `describes_scene=False`, jawaban normal. Filter genre kosong.
+- **Kompatibilitas:** `search_page` menerima `describes_scene` dan mengabaikannya, karena tombol "Muat lebih banyak" memakai ulang argumen tool yang sama.
+- **Prompt v7:** aturan 7 tetap dipakai apa adanya. Sebagian isinya kini diulang oleh catatan di hasil tool, tidak berbahaya, jadi tidak perlu v8.
+- **Pelajaran untuk video:** aturan yang kritis sebaiknya ditegakkan di kode atau di skema tool, bukan hanya di prompt.
+- **Status:** 🔁 Revisi K55 (prompt v6/v7)
