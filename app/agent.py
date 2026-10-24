@@ -28,6 +28,26 @@ def reply_language(text: str) -> str:
     return "English" if english > indonesian else "Indonesian"
 
 
+# Kalimat penutup berupa tawaran ("Jika Anda ingin ...", "Let me know ..."). Prompt v5 dan v8 melarangnya, tapi
+# gpt-4.1-mini kadang tetap menulisnya, jadi ditegakkan di kode (K74). Hanya kalimat PALING AKHIR yang dipotong.
+OFFER = re.compile(
+    r"^(jika|kalau|bila)\s+(anda|kamu|kau)\s+(ingin|mau|berminat|butuh|perlu)\b|"
+    r"^(apakah|apa)\s+(anda|kamu)\s+(ingin|mau)\b|^(mau|ingin)\s+(saya|aku)\b|^silakan\s+(beri tahu|tanya|kabari)|"
+    r"^saya\s+(bisa|dapat|siap)\s+(memberikan|membantu|menjelaskan|mencarikan)|"
+    r"^(if you(?:'d| would)? (?:like|want)|let me know|would you like|do you want|feel free)\b",
+    re.IGNORECASE)
+
+
+def trim_offer(answer: str) -> str:
+    """Buang kalimat penutup yang hanya menawarkan bantuan lanjutan. Teks lain tidak disentuh."""
+    paragraphs = answer.rstrip().split("\n\n")
+    sentences = re.split(r"(?<=[.!?])\s+", paragraphs[-1])
+    while sentences and OFFER.match(sentences[-1].strip()):
+        sentences.pop()
+    kept = paragraphs[:-1] + ([" ".join(sentences)] if sentences else [])
+    return "\n\n".join(kept) if kept else answer  # jangan pernah mengosongkan jawaban
+
+
 @lru_cache(maxsize=4)
 def _build_agent(system_prompt: str):
     """Satu agent per teks prompt. Rerun Streamlit memakai agent yang sama selama prompt tidak berubah."""

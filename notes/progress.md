@@ -93,6 +93,7 @@
 - [x] System prompt di Langfuse dirapikan sampai v8 (aturan 7 adegan, aturan 8 di luar topik) (25 Okt)
 - [x] Prompt `story-headline` kini tertaut ke generation: LLM dibungkus chain (25 Okt, K73 susulan)
 - [x] Skrip terjemahan sinopsis dan bio ikut terpantau; diuji 20+20 item tanpa mengubah CSV (25 Okt, K73 susulan 2)
+- [x] `trim_offer`: kalimat penutup berupa tawaran dipotong di kode, 7 kasus uji (25 Okt, K74)
 - [x] README: diagram alur, install, env, cara run, contoh query (24 Okt, K56)
 - [x] Expander tool call menampilkan dokumen yang di-retrieve + skor kemiripan (syarat wajib: tool call dan dokumen yang dipakai) (24 Okt, K57)
 - [x] Reranker (qwen3-reranker-8b via OpenRouter) untuk `search_movies`: 15 kandidat → 5 terbaik, bonus poin (24 Okt, K58)

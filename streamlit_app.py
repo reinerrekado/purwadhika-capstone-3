@@ -11,7 +11,7 @@ import pandas as pd
 import streamlit as st
 
 from app import quota
-from app.agent import send_feedback, stream_agent
+from app.agent import send_feedback, stream_agent, trim_offer
 from app.data import load_movies, movie_facts, person_profile
 from app.movie_cards import movie_cards, movie_hero, person_hero
 from app.story import MAX_FILMS, THEME_BY_NAME, auto_theme, render_story, story_text, watchlist_movies
@@ -484,6 +484,7 @@ elif question:
             with streaming.container(), st.spinner("Mencari film..."):
                 answer = st.write_stream(stream_agent(history, st.session_state.session_id, run))
             streaming.empty()
+            answer = trim_offer(answer)  # tawaran penutup dibuang di kode, bukan diharapkan dari prompt (K74)
             details = summarize_run(run["messages"]) | {"trace_id": run["trace_id"]}
             show_answer(answer, details, len(st.session_state.chat))
             show_details(details, len(st.session_state.chat))

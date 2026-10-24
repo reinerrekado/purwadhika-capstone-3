@@ -921,3 +921,24 @@ J: Wikipedia, diambil sekali secara offline (bagian 12). Setiap panel menyebut s
 J: Tool mengembalikan "tidak ketemu" dan petunjuk untuk tidak menjelaskan orang itu dari ingatan model. Uji "siapa Gal Gadot?" menjawab jujur.
 
 > 🎬 **Untuk video:** "Dataset hanya punya nama. Saya menambah tool kelima, get_person_info, yang menjawab dari bio Wikipedia yang saya ambil offline, plus panel orang di UI. Saya menemukan model salah mengirim judul film ke tool ini, jadi tool-nya sendiri meneruskan ke pencarian film. Hasilnya benar walau model memilih tool yang salah."
+
+
+## 14. `trim_offer`: memotong tawaran penutup (K74)
+
+**Masalahnya.** Prompt melarang jawaban ditutup dengan tawaran ("Jika Anda ingin, saya bisa..."), tapi model kadang tetap menulisnya. Aturan di prompt hanya permintaan; aturan di kode pasti.
+
+**Kodenya** (`app/agent.py`):
+1. `OFFER` adalah satu regex berisi pembuka kalimat tawaran dalam bahasa Indonesia dan Inggris.
+2. `trim_offer(answer)` memecah jawaban jadi paragraf, lalu paragraf terakhir jadi kalimat. Selama kalimat **terakhir** cocok `OFFER`, kalimat itu dibuang. Berhenti begitu ketemu kalimat biasa.
+3. Kalau seluruh jawaban ternyata tawaran, jawaban dikembalikan apa adanya (tidak pernah kosong).
+
+**Dipakai di** `streamlit_app.py`, tepat setelah `st.write_stream` selesai dan sebelum `show_answer` dan penyimpanan ke riwayat.
+
+### Pertanyaan yang mungkin ditanyakan
+**T: Kenapa tidak diperbaiki di prompt saja?**
+J: Sudah dicoba dua kali (v5 dan v8). Model ini sering mengabaikan aturan panjang. Aturan yang dipakai berulang di proyek ini: yang penting ditegakkan di kode, lalu diuji.
+
+**T: Apakah bisa salah memotong?**
+J: Hanya kalimat paling akhir yang cocok pola tawaran. Pertanyaan klarifikasi ("film mana yang kamu maksud?") dan kalimat di tengah tidak disentuh. Ada 7 kasus uji untuk batas ini.
+
+> 🎬 **Untuk video:** "Di screenshot saya sendiri jawaban ditutup tawaran, padahal prompt melarang. Daripada menambah aturan di prompt, saya potong di kode dengan satu fungsi kecil."
