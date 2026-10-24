@@ -135,7 +135,7 @@
 - [ ] **LICENSE:** belum dipikirkan, putuskan nanti (MIT satu file, atau biarkan; lisensi dataset Kaggle juga belum dipastikan). **Reiner: tidak perlu sekarang, ingatkan saat menjelang pengumpulan (sebelum 8 Nov).**
 - [ ] Link **Google Form** belum diterima dari operasional; cek isian selain repo, video, app, akses Qdrant
 - [ ] Top-up OpenRouter kalau mepet: key punya batas $5 (sisa ±$2,8), saldo akun ±$6
-- [ ] Opsional: ambil ulang `docs/img/jawaban-tool-call.png` (gabungan dua tangkapan: kotak input ganda, kartu ketiga terpotong, tombol Manage app terlihat)
+- [x] `docs/img/jawaban-tool-call.png` diganti dengan tangkapan skor reranker (25 Okt); dua tombol Manage app di tengah dihapus. Sisa: kotak input ganda dari scroll-capture
 - [ ] Video ditunda sampai Reiner selesai menjelajah app
 
 - [ ] **Perbarui artefak "Anatomi Capstone 3"** (link sama): Pak Herman sudah menerimanya lewat WA (25 Okt) sebagai "Penjelasan arsitektur & stack", padahal isinya masih 3 tool, tanpa reranker, prompt v2, dan app/repo "private". Jangan dihapus
