@@ -10,7 +10,9 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 
 import pandas as pd
+from langchain_core.runnables import RunnablePassthrough
 from langfuse import get_client
+from langfuse.langchain import CallbackHandler
 
 from app.config import get_llm
 from app.data import OVERVIEW_ID_PATH, load_movies
@@ -21,8 +23,11 @@ BATCH_SIZE = 25
 
 def translate_batch(prompt, llm, batch: dict[int, str]) -> dict[int, str]:
     """Satu panggilan LLM untuk 25 sinopsis. Model diminta mengembalikan JSON {id: terjemahan}."""
-    text = prompt.compile(overviews=json.dumps(batch, ensure_ascii=False))
-    reply = llm.invoke(text, response_format={"type": "json_object"})
+    chain = RunnablePassthrough() | llm.bind(response_format={"type": "json_object"})
+    reply = chain.invoke(  # di dalam chain supaya prompt Langfuse tertaut ke generation (K73)
+        prompt.compile(overviews=json.dumps(batch, ensure_ascii=False)),
+        config={"callbacks": [CallbackHandler()], "metadata": {"langfuse_tags": ["offline"], "langfuse_prompt": prompt}},
+    )
     return {int(movie_id): translation for movie_id, translation in json.loads(reply.content).items()}
 
 
@@ -60,6 +65,7 @@ def main() -> None:
                         if movie_id in todo.index], columns=["id", "overview_id"])
     all_rows = pd.concat([done, new]).drop_duplicates("id").sort_values("id")
     all_rows.to_csv(OVERVIEW_ID_PATH, index=False)
+    get_client().flush()  # kirim trace sebelum skrip berhenti
 
     common_words = set(re.findall(r"\b[a-z]+\b", " ".join(movies)))
     flagged = {row.id: check(movies[row.id], row.overview_id, common_words) for row in all_rows.itertuples()}

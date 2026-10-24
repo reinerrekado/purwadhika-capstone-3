@@ -11,7 +11,9 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 
 import pandas as pd
+from langchain_core.runnables import RunnablePassthrough
 from langfuse import get_client
+from langfuse.langchain import CallbackHandler
 
 from app.config import get_llm
 from app.data import PEOPLE_PATH
@@ -71,7 +73,11 @@ def get_prompt():
 
 def translate_batch(prompt, llm, batch: dict[str, str]) -> dict[str, str]:
     """Satu panggilan LLM untuk 25 bio. Model diminta mengembalikan JSON {nama: terjemahan}."""
-    reply = llm.invoke(prompt.compile(bios=json.dumps(batch, ensure_ascii=False)), response_format={"type": "json_object"})
+    chain = RunnablePassthrough() | llm.bind(response_format={"type": "json_object"})
+    reply = chain.invoke(  # di dalam chain supaya prompt Langfuse tertaut ke generation (K73)
+        prompt.compile(bios=json.dumps(batch, ensure_ascii=False)),
+        config={"callbacks": [CallbackHandler()], "metadata": {"langfuse_tags": ["offline"], "langfuse_prompt": prompt}},
+    )
     return json.loads(reply.content)
 
 
@@ -111,6 +117,7 @@ def main() -> None:
     people.to_csv(PEOPLE_PATH, index=False)
     done = (people["extract_id"] != "").sum()
     print(f"Tersimpan: {done} dari {(people['extract'] != '').sum()} bio punya terjemahan.")
+    get_client().flush()  # kirim trace sebelum skrip berhenti
     for name in rejected:
         print(f"  ditolak (tidak menyebut orangnya): {name}")
     for key in (k for k in ids if not people.loc[int(k), "extract_id"]):
