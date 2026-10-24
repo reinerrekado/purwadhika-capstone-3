@@ -97,7 +97,7 @@
 - [x] Pertanyaan adegan/kutipan: parameter `describes_scene` + catatan di hasil tool, agent jujur "hanya cocok dari sinopsis" (24 Okt, K59)
 - [x] Prompt `movie-agent-system` **v7** terpasang (24 Okt)
 - [x] README dirapikan setelah dilihat di GitHub: diagram dipecah dua, struktur repo + bagian Pengujian dilengkapi (24 Okt, K63)
-- [ ] README: tambahkan 2-3 screenshot Rakfilm (dari pengguna), setelah perbaikan UI
+- [x] README: bagian Tampilan dengan 5 screenshot di `docs/img/` (25 Okt)
 - [x] Repo dirapikan: `docs/anatomi-capstone-3.html` dan `Dataset Description.docx` dihapus, isinya pindah ke README (24 Okt, K56)
 - [x] API key Qdrant **read-only** untuk penilai: dibuat dan diuji, baca berhasil dan tulis ditolak 403 (24 Okt, K62). Tinggal dimasukkan di Google Form saat pengumpulan
 
@@ -133,7 +133,7 @@
 - [ ] **LICENSE:** belum dipikirkan, putuskan nanti (MIT satu file, atau biarkan; lisensi dataset Kaggle juga belum dipastikan)
 - [ ] Link **Google Form** belum diterima dari operasional; cek isian selain repo, video, app, akses Qdrant
 - [ ] Top-up OpenRouter kalau mepet: key punya batas $5 (sisa ±$2,8), saldo akun ±$6
-- [ ] Screenshot untuk README (nanti)
+- [ ] Opsional: ambil ulang `docs/img/jawaban-tool-call.png` (gabungan dua tangkapan: kotak input ganda, kartu ketiga terpotong, tombol Manage app terlihat)
 - [ ] Video ditunda sampai Reiner selesai menjelajah app
 
 - [ ] **Perbarui artefak "Anatomi Capstone 3"** (link sama): Pak Herman sudah menerimanya lewat WA (25 Okt) sebagai "Penjelasan arsitektur & stack", padahal isinya masih 3 tool, tanpa reranker, prompt v2, dan app/repo "private". Jangan dihapus

@@ -10,6 +10,17 @@ Capstone Module 3, Purwadhika JCAIEH.
 - **LLM:** `openai/gpt-4.1-mini` lewat OpenRouter · **Embedding:** `openai/text-embedding-3-small` (1536 dimensi)
 - **Agent:** LangChain `create_agent` (loop ReAct)
 
+## Tampilan
+
+| | |
+|---|---|
+| ![Beranda: dinding poster acak dan rak](docs/img/beranda.png) **Beranda.** Dinding poster acak dari 1.000 film, contoh pertanyaan, dan rak di sidebar. | ![Jawaban dengan kartu poster dan dokumen yang dipakai](docs/img/jawaban-tool-call.png) **Jawaban.** Kartu poster, lalu dokumen yang di-retrieve beserta skor kemiripan vektor, dan usage per jawaban. |
+| ![Panel film](docs/img/panel-film.png) **Panel film.** Sinopsis berbahasa Indonesia, sutradara dan pemain yang bisa diklik, dan fakta dari dataset. | ![Panel orang](docs/img/panel-orang.png) **Panel orang.** Foto dan bio dari Wikipedia (terjemahan, teks asli bisa dilihat), serta semua filmnya di Top 1000. |
+
+![Bikin IG story dari rak](docs/img/ig-story.png)
+
+**IG story.** Dari rak sampai 4 film, headline ditulis LLM (prompt di Langfuse) dan tema warna mengikuti genre.
+
 ## Fitur
 
 - **Chat dengan ingatan sesi:** pertanyaan lanjutan ("yang paling lama durasinya?") memahami jawaban sebelumnya.
