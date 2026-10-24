@@ -92,7 +92,18 @@
 - [ ] API key Qdrant **read-only** untuk penilai
 
 ## Fase 5 · Cadangan (2–5 Nov, Module 4 masih berjalan)
-- [ ] Perbaikan dari hasil uji, kalau ada
+- [ ] Perbaikan dari hasil uji, kalau ada. **Catatan UI untuk dikerjakan nanti** (dari uji PDF 24 Okt, dicatat saja, belum diubah):
+  - [ ] Tombol "Muat lebih banyak" / "Muat N film lagi" dibuat lebih jelas bisa diklik (permintaan Reiner): sekarang hanya teks polos tanpa tanda tombol
+  - [ ] Kartu tunggal di tata letak grid terlalu sempit: judul terpotong ("Interstell", "Star Wars:…") dan "2014 · ★ 8.6" terpecah dua baris. Kolom grid perlu lebar minimum
+  - [ ] Argumen tool call terpotong di kanan expander (`search_movies(query='film tentang…`), padahal argumen informasi terpenting. Pakai `st.code(..., wrap_lines=True)`
+  - [ ] Jawaban tanpa tool (di luar topik) menampilkan expander "0 tool call" kosong. Sembunyikan atau beri teks "Tidak ada tool yang dipanggil"
+  - [ ] Jawaban tanpa kartu kalau judul tidak ditulis persis "Judul (tahun)": "Parasite (judul asli Gisaengchung, 2019)" tidak cocok dengan pola `Gisaengchung (2019)`, jadi tidak ada poster sama sekali. Perlu cadangan: kalau tidak ada judul yang cocok, tampilkan film hasil tool sebagai grid
+  - [ ] Label "Muat 5 film lagi" muncul setelah pertanyaan superlatif tunggal ("yang mana paling lama?"), kurang relevan
+  - [ ] Cek sekali di layar (bukan PDF): kartu The Dark Knight Rises tampak menimpa kalimat penutup di PDF. Kemungkinan hanya artefak cetak
+  - Bukan UI, ditangani lewat set uji `scripts/eval.py`:
+    - Query `search_movies` masih berbahasa Indonesia di uji pertama ("film tentang pencuri…"), melanggar K26
+    - Pertanyaan adegan tangga masih dijawab "Film dengan adegan pria menari di tangga yang terkenal adalah All That Jazz". Cek apakah K59 sudah ter-deploy (reboot app), lalu ulang
+    - Jawaban penolakan ditutup dengan pertanyaan ("Ada hal lain…?"), melanggar aturan 6 prompt
 
 ## Fase 6 · Video (6–8 Nov)
 - [ ] Naskah dari `penjelasan-kode.md` + set uji
