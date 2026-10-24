@@ -700,3 +700,14 @@ Sumber: [OpenRouter Embeddings API](https://openrouter.ai/docs/api-reference/emb
 - **Cara penilai melihat data:** buka `<URL cluster>/dashboard`, masukkan key, lalu pilih collection `imdb_movies`.
 - **Keterbatasan:** tanggal kedaluwarsa hanya bisa dilihat di konsol Cloud, bukan lewat skrip. Kalau key hilang, buat ulang, karena Qdrant hanya menampilkannya sekali.
 - **Status:** ➕ Tambahan
+
+### K63 · README: diagram dipecah dua, struktur dan pengujian dilengkapi
+- **Temuan:** tangkapan README di GitHub (Reiner, 24 Okt) menunjukkan diagram satu-blok terlalu tinggi. Qdrant berada di kotak "Offline", sehingga tiga panah dari tool pencarian turun menyeberangi seluruh diagram dan teksnya baru terbaca kalau di-zoom.
+- **Perbaikan:**
+  - Diagram dipecah dua: (1) persiapan data sekali jalan, kiri ke kanan (`flowchart LR`); (2) saat pengguna bertanya, atas ke bawah. Qdrant muncul di kedua diagram sebagai node sendiri, jadi tidak ada panah panjang.
+  - Reranker digambar sebagai cabang dari `search_movies`, bukan putaran Qdrant → Reranker → tool.
+  - Struktur repo melengkapi `scripts/eval.py` dan `scripts/check_readonly_key.py`.
+  - Bagian baru "Pengujian" menjelaskan set uji dan menautkan `notes/hasil-uji.md`.
+  - Tabel variabel lingkungan mencatat `QDRANT_READONLY_API_KEY` (opsional).
+- **Belum:** screenshot app (menunggu perbaikan UI supaya tampilannya final).
+- **Status:** 🔁 Revisi K56

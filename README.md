@@ -23,33 +23,35 @@ Capstone Module 3, Purwadhika JCAIEH.
 
 ## Cara kerja
 
+**1. Persiapan data (sekali jalan)**
+
+```mermaid
+flowchart LR
+    CSV[("imdb_top_1000.csv<br/>1.000 film")] --> ING["scripts/ingest.py<br/>1 film = 1 dokumen:<br/>judul + genre + sinopsis"]
+    ING -->|embedding| EMB["text-embedding-3-small<br/>(OpenRouter)"]
+    EMB -->|upsert vektor + metadata| QD[("Qdrant Cloud<br/>imdb_movies")]
+```
+
+**2. Saat pengguna bertanya**
+
 ```mermaid
 flowchart TD
-    subgraph offline["Offline, sekali jalan"]
-        CSV[("data/imdb_top_1000.csv<br/>1.000 film")] --> ING["scripts/ingest.py<br/>1 film = 1 dokumen:<br/>judul + genre + sinopsis"]
-        ING -->|embedding| EMB["text-embedding-3-small<br/>(OpenRouter)"]
-        EMB -->|upsert vektor + metadata| QD[("Qdrant Cloud<br/>collection imdb_movies")]
-    end
-
-    subgraph online["Saat pengguna bertanya"]
-        U(["Pengguna"]) -->|pertanyaan + riwayat sesi| UI["streamlit_app.py"]
-        UI --> AG["app/agent.py<br/>create_agent (ReAct)"]
-        LF[("Langfuse")] -->|system prompt<br/>movie-agent-system| AG
-        AG <-->|memilih tool| LLM["gpt-4.1-mini<br/>(OpenRouter)"]
-        AG --> T1["search_movies<br/>cari dari cerita/tema"]
-        AG --> T2["similar_movies<br/>film yang mirip"]
-        AG --> T3["get_movie_details<br/>detail judul"]
-        AG --> T4["rank_movies<br/>peringkat, sutradara, aktor"]
-        T1 -->|15 kandidat: similarity search + filter| QD
-        QD -->|kandidat| RR["Reranker<br/>qwen3-reranker-8b (OpenRouter)"]
-        RR -->|5 terbaik + skor| T1
-        T2 -->|cari pakai vektor film itu| QD
-        T3 --> DF[("pandas DataFrame<br/>dari CSV")]
-        T4 --> DF
-        AG -->|jawaban + tool call + usage| UI
-        AG -.->|trace per pertanyaan, per sesi| LF
-        UI -.->|feedback 👍/👎| LF
-    end
+    U(["Pengguna"]) -->|pertanyaan + riwayat sesi| UI["streamlit_app.py"]
+    UI --> AG["app/agent.py<br/>create_agent (ReAct)"]
+    AG -->|jawaban + tool call + usage| UI
+    AG <-->|memilih tool| LLM["gpt-4.1-mini<br/>(OpenRouter)"]
+    LF[("Langfuse")] -->|system prompt| AG
+    AG -.->|trace per sesi| LF
+    UI -.->|feedback 👍/👎| LF
+    AG --> T1["search_movies<br/>cari dari cerita"]
+    AG --> T2["similar_movies<br/>film yang mirip"]
+    AG --> T3["get_movie_details<br/>detail judul"]
+    AG --> T4["rank_movies<br/>peringkat, sutradara, aktor"]
+    T1 -->|15 kandidat| QD[("Qdrant Cloud")]
+    T1 -->|diurutkan ulang| RR["Reranker<br/>qwen3-reranker-8b"]
+    T2 -->|vektor film itu| QD
+    T3 --> DF[("pandas<br/>dari CSV")]
+    T4 --> DF
 ```
 
 **Kenapa empat tool, dua jenis sumber:**
@@ -75,12 +77,14 @@ scripts/
   ingest.py                 CSV -> embedding -> Qdrant
   translate_overviews.py    terjemahkan 1.000 sinopsis ke bahasa Indonesia (sekali saja)
   make_logo.py              gambar logo Rakfilm
+  eval.py                   set uji 10 pertanyaan otomatis -> notes/hasil-uji.md
+  check_readonly_key.py     uji key Qdrant read-only: baca berhasil, tulis ditolak
 data/
   imdb_top_1000.csv         dataset
   overview_id.csv           sinopsis bahasa Indonesia, hasil translate_overviews.py
 static/                     font (lisensi OFL) dan logo
 .streamlit/config.toml      tema terang/gelap
-notes/                      log keputusan desain, progres, penjelasan kode
+notes/                      log keputusan desain, progres, penjelasan kode, hasil uji
 ```
 
 ## Dataset
@@ -131,6 +135,7 @@ Salin `.env.example` menjadi `.env`, lalu isi. File `.env` tidak pernah di-commi
 | `QDRANT_API_KEY` | API key Qdrant |
 | `QDRANT_COLLECTION` | `imdb_movies` |
 | `RERANK_MODEL` | Opsional. Bawaan: `qwen/qwen3-reranker-8b` |
+| `QDRANT_READONLY_API_KEY` | Opsional. Hanya untuk `scripts/check_readonly_key.py` |
 | `LANGFUSE_PUBLIC_KEY` | Public key project Langfuse |
 | `LANGFUSE_SECRET_KEY` | Secret key project Langfuse |
 | `LANGFUSE_HOST` | `https://cloud.langfuse.com` |
@@ -153,10 +158,16 @@ Prompt diambil ulang setiap 60 detik, jadi versi baru di Langfuse langsung terpa
 python scripts/check_connections.py   # 1. pastikan ketiga layanan terhubung
 python -m scripts.ingest              # 2. isi Qdrant (cukup sekali)
 streamlit run streamlit_app.py        # 3. buka http://localhost:8501
+python -m scripts.eval              # 4. (opsional) uji 10 pertanyaan otomatis
 ```
 
 Langkah 2 aman diulang: collection dibuat ulang dari nol, jadi data tidak tergandakan.
 
+## Pengujian
+
+`python -m scripts.eval` menjalankan agent sungguhan pada 10 pertanyaan yang mewakili tiap jenis kasus (cari dari cerita, film mirip, judul asli, peringkat per genre, typo sutradara, pertanyaan lanjutan, seri film, adegan, di luar topik). Setiap pertanyaan diperiksa otomatis: tool yang dipanggil, argumennya, film kunci di jawaban, query `search_movies` berbahasa Inggris, dan jawaban yang jujur untuk pertanyaan adegan. Laporan terbaru ada di [notes/hasil-uji.md](notes/hasil-uji.md).
+
+Jawaban LLM tidak persis sama setiap kali, jadi yang diperiksa adalah perilaku, bukan kata per kata.
 ## Contoh pertanyaan
 
 | Pertanyaan | Tool yang dipakai agent |
