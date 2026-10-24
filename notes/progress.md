@@ -72,8 +72,8 @@
 - [x] Logo Rakfilm di IG story, satu warna mengikuti tema (24 Okt, K53)
 - [x] Latar kaca jadi efek hover di semua kartu hasil (ide latar halaman dibatalkan karena butuh CSS internal Streamlit) (24 Okt, K54)
 - [x] Audit: 9 jenis pertanyaan lolos, koneksi + prompt + riwayat git aman; `.devcontainer/` dihapus (24 Okt, K55)
-- [ ] **Anda:** pasang prompt `movie-agent-system` **v6** di UI Langfuse, label production (K55)
-- [ ] **Anda:** coba UI baru di app Cloud (mode gelap dan terang, laptop dan HP)
+- [x] Prompt `movie-agent-system` v6 sampai **v8** terpasang di Langfuse (v8 dipakai sekarang) (25 Okt)
+- [x] UI baru dicoba di app Cloud: tampilan, panel film, panel orang (25 Okt). Mode terang dan HP belum dikonfirmasi
 - [x] **Anda:** coba watchlist + Buat IG story di app Cloud, unduh PNG-nya
 - [x] **Anda:** buat prompt `movie-agent-system` **v4** di UI Langfuse, label production
 - [x] Verifikasi v4 + coba fitur baru di app Cloud
@@ -90,7 +90,7 @@
 - [x] Tool kelima get_person_info + panel orang di Streamlit (nama di panel film membuka panel orang) + set uji 17 pertanyaan (25 Okt, K71)
 - [x] **Anda:** panel orang dicek di app Cloud: foto dan inisial tampil benar setelah perbaikan CSS (25 Okt). Sisa langkah di daftar cek (Tanya Rakfilm, Teks asli, klik poster, kartu Parasite) belum dikonfirmasi satu per satu
 - [x] Set uji memeriksa otomatis: setiap query `search_movies` berbahasa Inggris (K26) (24 Okt, K60)
-- [ ] Rapikan system prompt di Langfuse
+- [x] System prompt di Langfuse dirapikan sampai v8 (aturan 7 adegan, aturan 8 di luar topik) (25 Okt)
 - [x] README: diagram alur, install, env, cara run, contoh query (24 Okt, K56)
 - [x] Expander tool call menampilkan dokumen yang di-retrieve + skor kemiripan (syarat wajib: tool call dan dokumen yang dipakai) (24 Okt, K57)
 - [x] Reranker (qwen3-reranker-8b via OpenRouter) untuk `search_movies`: 15 kandidat → 5 terbaik, bonus poin (24 Okt, K58)
