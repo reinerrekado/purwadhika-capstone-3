@@ -119,6 +119,8 @@ notes/                      log keputusan desain, progres, penjelasan kode, hasi
 
 Yang di-embed per film: `judul. genre. sinopsis`. Semua kolom lain disimpan sebagai metadata di Qdrant dan dipakai untuk filter genre dan tahun. Dataset hanya berisi sinopsis singkat, jadi agent bisa menemukan film dari premis ceritanya, tapi tidak dari adegan atau kutipan spesifik.
 
+**Chunking tidak dipakai.** Teks yang di-embed per film rata-rata 185 karakter (terpendek 71, terpanjang 353). Dengan ukuran potongan 500 karakter, 0 dari 1.000 film terpecah (dengan 300 karakter, hanya 7), jadi memecah hanya akan menghasilkan indeks yang sama. Satu film = satu dokumen.
+
 ## Sumber data
 
 - **Film:** [IMDB Dataset of Top 1000 Movies and TV Shows](https://www.kaggle.com/datasets/harshitshankhdhar/imdb-dataset-of-top-1000-movies-and-tv-shows) (Kaggle).

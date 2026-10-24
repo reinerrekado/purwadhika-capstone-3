@@ -65,7 +65,7 @@ def run_turn(history: list[dict], question: str, session_id: str) -> Result:
     final = next((m.content for m in reversed(new) if m.type == "ai" and m.content), answer)
     ai = [m for m in new if m.type == "ai"]
     return Result(question, final, calls, sum((m.usage_metadata or {}).get("input_tokens", 0) for m in ai),
-                  sum((m.usage_metadata or {}).get("output_tokens", 0) for m in ai), seconds, get_agent()[1])
+                  sum((m.usage_metadata or {}).get("output_tokens", 0) for m in ai), seconds, get_agent()[1].version)
 
 
 # ---- Pemeriksaan: tiap fungsi membuat satu Check ----

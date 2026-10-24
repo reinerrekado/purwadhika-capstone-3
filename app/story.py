@@ -120,7 +120,8 @@ def story_text(movie_ids: list[int], session_id: str) -> dict:
         reply = get_llm().invoke(
             prompt.compile(films=films), response_format={"type": "json_object"},
             config={"callbacks": [CallbackHandler()],
-                    "metadata": {"langfuse_session_id": session_id, "langfuse_tags": ["story"]}},
+                    "metadata": {"langfuse_session_id": session_id, "langfuse_tags": ["story"],
+                                 "langfuse_prompt": prompt}},  # tautkan ke prompt story-headline (K73)
         )
         data = json.loads(reply.content)
         headlines = [re.sub(r"[.!?]+$", lambda end: end.group(0)[0], h.strip())  # "seru!." → "seru!"

@@ -124,7 +124,22 @@
 ## Fase 7 · Pengumpulan (9 Nov)
 - [x] Cek riwayat git: tidak ada key yang pernah ter-commit (nilai asli enam rahasia dicari di seluruh riwayat, 0 temuan) (24 Okt, K67)
 - [x] Repo GitHub diubah jadi **public** (24 Okt, K67)
-- [ ] App Streamlit diubah jadi **public** (Share → "public and searchable"); sebelumnya pasang credit limit di key OpenRouter
+- [x] App Streamlit **publik** (dikonfirmasi pemilik dan dicek dengan mengikuti pengalihan seperti browser: HTTP 200, tanpa login) (25 Okt)
   - Sampai tahap ini app private. Kalau Pak Herman perlu melihat lebih awal: Share → Invite viewers → email beliau
 - [ ] Isi Google Form: repo, video, app Streamlit, akses Qdrant
 
+## Menunggu keputusan atau tindakan Reiner (dicatat 25 Okt)
+- [ ] Pindahkan teks instruksi LLM di kode (`SCENE_NOTE`, `ENGLISH_ONLY`, `NOT_FOUND_HINT`, petunjuk tool orang, "(Reply in English.)") ke satu prompt Langfuse `tool-notes`: Reiner condong ke pilihan B, menunggu penjelasan kekurangannya
+- [ ] **LICENSE:** belum dipikirkan, putuskan nanti (MIT satu file, atau biarkan; lisensi dataset Kaggle juga belum dipastikan)
+- [ ] Link **Google Form** belum diterima dari operasional; cek isian selain repo, video, app, akses Qdrant
+- [ ] Top-up OpenRouter kalau mepet: key punya batas $5 (sisa ±$2,8), saldo akun ±$6
+- [ ] Screenshot untuk README (nanti)
+- [ ] Video ditunda sampai Reiner selesai menjelajah app
+
+## Pengingat untuk hari merekam dan mengumpulkan
+- Buka **Langfuse** saat merekam: tampilkan trace per sesi, versi prompt v1 sampai v8 dengan metrik per versi, dan skor feedback. Demo 2 sampai 3 pertanyaan saja supaya token tidak habis (permintaan Pak Herman).
+- **Bangunkan app Streamlit** sebelum merekam dan sebelum mengumpulkan (app tidur setelah ±12 jam tanpa pengunjung), lalu uji sekali lewat jendela incognito.
+- **Cek cluster Qdrant** masih aktif di dashboard, dan tunjukkan `imdb_movies` (1.000 point) di video.
+- Siapkan **key Qdrant read-only** dan URL cluster untuk Google Form (jangan ditulis di README).
+- Sebut alasan **tanpa chunking** (185 karakter per film) dan **tiga bug** yang ditemukan lewat uji sebagai bukti proses.
+- Kumpulkan **sebelum 10 Nov pukul 23:59** (target 8 Nov); telat 1 detik sampai 24 jam dikurangi 10 poin.

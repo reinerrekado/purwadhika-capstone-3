@@ -851,3 +851,13 @@ Sumber: [OpenRouter Embeddings API](https://openrouter.ai/docs/api-reference/emb
   - README: diagram, instalasi, variabel, cara menjalankan, contoh. Ketinggalan: baris prompt `bio-translator` (sudah ditambahkan) dan screenshot (menunggu).
 - **Yang diputuskan Reiner (belum):** (1) teks instruksi LLM di kode (`SCENE_NOTE`, `ENGLISH_ONLY`, `NOT_FOUND_HINT`, petunjuk tool orang, "(Reply in English.)") apakah dipindah ke Langfuse atau dibiarkan; (2) `LICENSE`; (3) menaikkan batas key OpenRouter menjelang rekaman video dan penilaian.
 - **Status:** ➕ Tambahan
+
+### K73 · Prompt tertaut ke generation di Langfuse
+- **Temuan (tangkapan layar Reiner, 25 Okt):** di daftar Prompts Langfuse, kolom "Number of Observations (7d)" bernilai 0 untuk keempat prompt, termasuk `movie-agent-system` yang dipakai tiap pertanyaan.
+- **Penyebab (dibuktikan):** agent memang memakai prompt dari Langfuse (`get_prompt(...).compile()`), tapi `CallbackHandler` tidak diberi tahu bahwa teks itu berasal dari prompt tertentu. Generation di Langfuse punya `prompt_name` kosong, sehingga tidak ada observasi dan tidak ada metrik per versi.
+- **Perbaikan:** `"langfuse_prompt": prompt` ditambahkan ke `metadata` config di `stream_agent` dan `story_text`. `get_agent()` sekarang mengembalikan objek prompt (bukan hanya nomor versi). Uji sebelum-sesudah: tanpa metadata `prompt_name` kosong; dengan metadata kedua generation tertaut ke `movie-agent-system` versi 8. Diverifikasi lewat jalur app yang sebenarnya (`stream_agent`).
+- **Manfaat:** tab Metrics tiap versi prompt (latensi, token, biaya, skor feedback per versi v1 sampai v8) terisi dari pertanyaan baru, sesuai slide 37-38 Sesi 17. Pertanyaan lama (sebelum perbaikan) tetap tidak tertaut.
+- **Belum:** prompt penerjemah (`overview-translator`, `bio-translator`) dipakai skrip offline tanpa pelacakan, jadi tetap 0 observasi. Wajar untuk skrip sekali jalan.
+- **Chunking:** keputusan "tanpa chunking" (K08) kini didukung angka: teks per film rata-rata 185 karakter, terpanjang 353; dengan potongan 500 karakter 0 dari 1.000 film terpecah. Ditulis di README.
+- **Koreksi atas klaim saya sendiri:** audit sebelumnya menyebut app belum publik. Itu salah: pengecekan berhenti di pengalihan pertama (HTTP 303), yang ternyata jabat tangan cookie biasa. Dengan mengikuti pengalihan seperti browser hasilnya HTTP 200 di alamat app, tanpa halaman login.
+- **Status:** 🔁 Revisi K35

@@ -35,9 +35,9 @@ def _build_agent(system_prompt: str):
 
 
 def get_agent():
-    """Agent + nomor versi prompt. SDK Langfuse menyimpan prompt 60 detik, jadi versi baru terpakai tanpa restart (K35)."""
+    """Agent + objek prompt Langfuse-nya. SDK Langfuse menyimpan prompt 60 detik, jadi versi baru terpakai tanpa restart (K35)."""
     prompt = get_client().get_prompt(PROMPT_NAME)
-    return _build_agent(prompt.compile()), prompt.version
+    return _build_agent(prompt.compile()), prompt
 
 
 def stream_agent(messages: list[dict], session_id: str, run: dict) -> Iterator[str]:
@@ -46,13 +46,14 @@ def stream_agent(messages: list[dict], session_id: str, run: dict) -> Iterator[s
     messages: [{"role": "user" | "assistant", "content": "..."}], pesan terakhir = pertanyaan baru.
     run: diisi setelah selesai, berisi "messages" (pesan baru dari run ini) dan "trace_id" (untuk feedback).
     """
-    agent, prompt_version = get_agent()
+    agent, prompt = get_agent()
     if reply_language(messages[-1]["content"]) == "English":  # model mengabaikan aturan bahasa di prompt, jadi ditegakkan di sini (K65)
         messages = messages[:-1] + [{**messages[-1], "content": messages[-1]["content"] + "\n\n(Reply in English.)"}]
     handler = CallbackHandler()  # trace ke Langfuse (Sesi 17)
     config = {"callbacks": [handler], "metadata": {
         "langfuse_session_id": session_id,  # satu percakapan = satu session
-        "langfuse_tags": [f"prompt-v{prompt_version}"],  # feedback bisa dibandingkan per versi prompt
+        "langfuse_tags": [f"prompt-v{prompt.version}"],  # feedback bisa dibandingkan per versi prompt
+        "langfuse_prompt": prompt,  # menautkan generation ke prompt: metrik per versi di Langfuse terisi (K73)
     }}
     new_messages = []
     for mode, data in agent.stream({"messages": messages}, config=config, stream_mode=["messages", "updates"]):
