@@ -88,7 +88,7 @@
 - [x] Bio diterjemahkan ke Indonesia penuh (2.964, ±Rp10.000 dari batas Rp15.000), dengan pemeriksaan nama otomatis (24 Okt, K70)
 - [x] Mockup panel orang digabung ke kanvas utama "Rakfilm" (4 halaman, Story R&D ikut) (25 Okt)
 - [x] Tool kelima get_person_info + panel orang di Streamlit (nama di panel film membuka panel orang) + set uji 17 pertanyaan (25 Okt, K71)
-- [ ] **Anda:** coba di app Cloud: klik nama sutradara/pemain di panel film, panel orang, tombol "Tanya Rakfilm", "Teks asli", klik poster di panel orang
+- [x] **Anda:** panel orang dicek di app Cloud: foto dan inisial tampil benar setelah perbaikan CSS (25 Okt). Sisa langkah di daftar cek (Tanya Rakfilm, Teks asli, klik poster, kartu Parasite) belum dikonfirmasi satu per satu
 - [x] Set uji memeriksa otomatis: setiap query `search_movies` berbahasa Inggris (K26) (24 Okt, K60)
 - [ ] Rapikan system prompt di Langfuse
 - [x] README: diagram alur, install, env, cara run, contoh query (24 Okt, K56)
