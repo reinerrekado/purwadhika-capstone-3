@@ -12,6 +12,7 @@ import pandas as pd
 
 DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "imdb_top_1000.csv"
 OVERVIEW_ID_PATH = DATA_PATH.with_name("overview_id.csv")  # terjemahan sinopsis, dibuat translate_overviews.py
+PEOPLE_PATH = DATA_PATH.with_name("people.csv")  # bio dan foto sutradara/pemain dari Wikipedia, dibuat fetch_people.py (K69)
 
 
 def _poster_300px(url: str) -> str:

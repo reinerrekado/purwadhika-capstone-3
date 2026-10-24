@@ -84,6 +84,9 @@
 - [x] Dua bahasa: jawaban mengikuti bahasa pertanyaan, ditegakkan di kode (24 Okt, K65)
 - [x] Bug `rank_movies`: nama sutradara di kolom judul membuat hasil kosong, diperbaiki (24 Okt, K66)
 - [x] Pembatas pemakaian (30 per sesi, 150 per jam) dan catatan privasi untuk app publik (24 Okt, K68)
+- [x] Data orang film: bio + foto 3.202 sutradara/pemain dari Wikipedia (bio 92,6%, foto 84,6%), data/people.csv (24 Okt, K69)
+- [x] Bio diterjemahkan ke Indonesia penuh (2.964, ±Rp10.000 dari batas Rp15.000), dengan pemeriksaan nama otomatis (24 Okt, K70)
+- [ ] Mockup panel orang di artefak (data asli, gaya Rakfilm yang sama), lalu tool get_person_info + panel di Streamlit + tes di set uji
 - [x] Set uji memeriksa otomatis: setiap query `search_movies` berbahasa Inggris (K26) (24 Okt, K60)
 - [ ] Rapikan system prompt di Langfuse
 - [x] README: diagram alur, install, env, cara run, contoh query (24 Okt, K56)

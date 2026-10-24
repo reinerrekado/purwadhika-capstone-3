@@ -758,7 +758,7 @@ Sumber: [OpenRouter Embeddings API](https://openrouter.ai/docs/api-reference/emb
 - **Setelah public:** halaman repo dapat dibuka tanpa login, `.env.example` terbaca, dan `.env` mengembalikan 404.
 - **Perlindungan uang (OpenRouter):** key OpenRouter punya batas $5 sendiri (terpakai ±$1,48, sisa ±$3,52, tanpa reset). Kerugian maksimal lewat key ini tinggal sisa itu, bukan saldo akun. Perlu dicatat bahwa kalau batasnya habis, app berhenti menjawab, sehingga penilaian bisa terganggu.
 - **Yang perlu diketahui:**
-  - Email penulis commit (`reinerrekado@gmail.com`) terlihat di riwayat commit publik. Itu data pribadi, bukan rahasia finansial. Commit berikutnya bisa memakai alamat noreply GitHub (`git config user.email`).
+  - Alamat email gmail pribadi terlihat sebagai penulis di riwayat commit publik. Itu data pribadi, bukan rahasia finansial. Commit berikutnya bisa memakai alamat noreply GitHub (`git config user.email`).
   - App Streamlit tetap private (README menautkannya). Pengunjung repo melihat halaman login Streamlit sampai app dibuat public di Fase 7.
   - Prompt Langfuse tidak ada di repo (sesuai aturan semua prompt di Langfuse), jadi penilai melihatnya lewat video.
 - **Status:** ➕ Tambahan (mempercepat Fase 7)
@@ -776,4 +776,42 @@ Sumber: [OpenRouter Embeddings API](https://openrouter.ai/docs/api-reference/emb
   - Batas per jam bisa dipenuhi satu bot dan menghalangi penilai sesaat. Itu pertukaran yang disengaja: lebih baik tertunda beberapa menit daripada kuota habis.
 - **Privasi:** sidebar mencantumkan "Pertanyaanmu dicatat (Langfuse) untuk menilai kualitas jawaban." Trace Langfuse memuat teks pertanyaan pengunjung dan hanya terlihat oleh pemilik akun.
 - **Diuji:** logika kuota (batas sesi, batas per jam, catatan lama kedaluwarsa), dan di dalam app: sesi yang sudah mencapai batas ditolak tanpa memanggil agent, pertanyaan normal menambah penghitung.
+- **Status:** ➕ Tambahan
+
+### K69 · Bio dan foto sutradara/pemain dari Wikipedia (sumber luar, disetujui Pak Herman)
+- **Dasar:** Pak Herman menyetujui pemakaian sumber luar untuk informasi sutradara dan pemain. Dataset hanya memuat nama, tanpa bio dan foto.
+- **Sumber:** Wikipedia Inggris (REST API `page/summary`, tanpa kunci), diambil **sekali secara offline** ke `data/people.csv` oleh `scripts/fetch_people.py`. Tidak ada panggilan jaringan saat app berjalan dan tidak ada secret baru.
+- **Sumber lain dipertimbangkan:**
+  - Wikipedia Indonesia: 0 dari 9 nama sulit, tidak berguna sebagai cadangan.
+  - Wikidata: deskripsi satu baris tanpa bio dan ada risiko salah orang (Ivan Bobrov cocok dengan atlet Soviet).
+  - TMDB: cakupan terbaik tapi perlu akun dan kunci API. Ditunda lalu **tidak dipakai** setelah cakupan terukur memadai.
+- **Hasil akhir (3.202 nama):** bio 92,6%, foto 84,6%.
+
+  | Kelompok | Bio | Foto |
+  |---|---|---|
+  | Sutradara | 97,4% | 90,3% |
+  | Pemain urutan 1 dan 2 | 96,5% / 96,7% | 90,9% / 92,0% |
+  | Tampil di 2 film atau lebih | 99,5% | 98,0% |
+  | Tampil di 3 film atau lebih | 100% | 99,7% |
+  | Hanya 1 film | 90,1% | 79,7% |
+
+  Yang tidak punya bio terutama pemain kecil di satu film. Tampilannya nanti lingkaran inisial plus daftar filmnya dari dataset.
+- **Tiga bug ditemukan dan diperbaiki saat mengambil data (pelajaran untuk video):**
+  1. **Pembatasan kecepatan dicatat sebagai "tidak ketemu".** Percobaan pertama hanya menemukan 28% bio (padahal sampel 90%). HTTP 429 dianggap halaman tidak ada. Perbaikan: 404 saja yang berarti "tidak ada"; 429 dan 5xx ditunggu lalu diulang, dan kalau tetap gagal namanya tidak disimpan sehingga bisa diulang.
+  2. **Pencarian nama mengambil orang yang salah.** Kemiripan huruf 85% menukar Michelle La dengan Michelle Law (penulis), Frantz Turner dengan Frank Turner (penyanyi), Jerry Nelson dengan Jerry Belson, dan lain-lain. Persentase huruf tidak bisa membedakan "La/Law" dari "Aleksey/Aleksei". Perbaikan: bandingkan **kata per kata**, tiap kata ≥88% mirip (y dan j disamakan dengan i). Sembilan kasus salah orang hilang, dan 87 pasangan nama-judul yang tersisa diaudit satu per satu.
+  3. **Saringan profesi terlalu sempit.** Gene Kelly ("American entertainer") ditolak. Kata "entertainer", "dancer", "performer", dan sejenisnya ditambahkan.
+- **Alias manual:** dua nama penting yang ejaannya berbeda dari Wikipedia: Tony Chiu-Wai Leung → Tony Leung Chiu-wai, Kar-Wai Wong → Wong Kar-wai.
+- **Pembersihan:** spasi ganda dan baris kosong dibuang. Satu bio rusak dari sumbernya (Bárbara Lennie, isinya hanya "dʒ") dikosongkan.
+- **Lisensi:** teks Wikipedia berlisensi CC BY-SA. Tiap baris menyimpan tautan sumber, dan README mencantumkan atribusinya. Foto dipakai langsung dari Wikimedia (hotlink).
+- **Status:** ➕ Tambahan
+
+### K70 · Terjemahan bio ke bahasa Indonesia (penuh, sekali jalan)
+- **Keputusan Reiner:** semua bio diterjemahkan penuh, toleransi biaya Rp15.000.
+- **Cara:** `scripts/translate_people.py`, gpt-4.1-mini, 25 bio per panggilan, prompt `bio-translator` di Langfuse (dibuat otomatis, aturan semua prompt di Langfuse). Hasil di kolom `extract_id`.
+- **Pengaman biaya:** skrip menghitung perkiraan sebelum memanggil LLM dan berhenti sendiri kalau melewati $0,83 (±Rp15.000).
+- **Biaya:** perkiraan $0,63. **Sebenarnya ±$0,55 (±Rp10.000)**, dihitung dari selisih pemakaian key OpenRouter.
+- **Masalah ditemukan lewat pemeriksaan mutu:** model melewatkan dua bio dalam satu kelompok, dan jawabannya bergeser ke baris tetangga (Susanne Lothar berisi bio Sō Yamamura, Takeshi Aono berisi bio Takeshi Kaneshiro). Satu terjemahan juga rusak ("dʒ", berasal dari bio sumber yang rusak).
+- **Pengaman yang dipasang:** terjemahan harus menyebut **nama belakang** orangnya, atau nama dari kalimat pembuka bio aslinya (supaya nama lahir seperti "Knut Gunnar Johanson" untuk Gunnar Björnstrand tidak ditolak). Yang gagal dibuang dan diulang. Skrip memeriksa seluruh terjemahan lama setiap dijalankan.
+- **Hasil:** 2.964 bio, semuanya punya terjemahan. Pemeriksaan kata-kata yang hilang yang saya coba lebih dulu terlalu naif (menandai "Amerika" sebagai nama hilang), jadi diganti pemeriksaan nama belakang.
+- **Keterbatasan jujur:** terjemahan tidak diperiksa satu per satu oleh manusia. Sampel acak (10 bio) terbaca natural, tapi tidak ada jaminan sempurna. Teks Inggris asli tetap ada di kolom `extract` sebagai cadangan.
 - **Status:** ➕ Tambahan

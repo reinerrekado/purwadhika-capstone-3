@@ -80,11 +80,14 @@ scripts/
   ingest.py                 CSV -> embedding -> Qdrant
   translate_overviews.py    terjemahkan 1.000 sinopsis ke bahasa Indonesia (sekali saja)
   make_logo.py              gambar logo Rakfilm
+  fetch_people.py           ambil bio dan foto sutradara/pemain dari Wikipedia (sekali saja)
+  translate_people.py       terjemahkan bio ke bahasa Indonesia (sekali saja)
   eval.py                   set uji 14 pertanyaan otomatis -> notes/hasil-uji.md
   check_readonly_key.py     uji key Qdrant read-only: baca berhasil, tulis ditolak
 data/
   imdb_top_1000.csv         dataset
   overview_id.csv           sinopsis bahasa Indonesia, hasil translate_overviews.py
+  people.csv                bio, foto, dan tautan Wikipedia untuk 3.202 sutradara/pemain
 static/                     font (lisensi OFL) dan logo
 .streamlit/config.toml      tema terang/gelap
 notes/                      log keputusan desain, progres, penjelasan kode, hasil uji
@@ -111,6 +114,11 @@ notes/                      log keputusan desain, progres, penjelasan kode, hasi
 | `Gross` | Pendapatan kotor (USD) |
 
 Yang di-embed per film: `judul. genre. sinopsis`. Semua kolom lain disimpan sebagai metadata di Qdrant dan dipakai untuk filter genre dan tahun. Dataset hanya berisi sinopsis singkat, jadi agent bisa menemukan film dari premis ceritanya, tapi tidak dari adegan atau kutipan spesifik.
+
+## Sumber data
+
+- **Film:** [IMDB Dataset of Top 1000 Movies and TV Shows](https://www.kaggle.com/datasets/harshitshankhdhar/imdb-dataset-of-top-1000-movies-and-tv-shows) (Kaggle).
+- **Bio dan foto sutradara/pemain:** [Wikipedia](https://en.wikipedia.org) (teks berlisensi [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/), foto dari Wikimedia). Diambil sekali oleh `scripts/fetch_people.py` dan disimpan di `data/people.csv` bersama tautan halaman sumber tiap orang. Bio berbahasa Indonesia adalah terjemahan otomatis dari teks Inggris tersebut. Cakupan: bio 92,6% dan foto 84,6% dari 3.202 orang; untuk yang tidak punya, ditampilkan inisial dan daftar filmnya dari dataset.
 
 ## Instalasi
 

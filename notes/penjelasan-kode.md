@@ -14,6 +14,7 @@
 7. [`app/agent.py`](#7-appagentpy)
 8. [`streamlit_app.py`](#8-streamlit_apppy)
 11. [`scripts/eval.py`: set uji](#11-scriptsevalpy-set-uji-14-pertanyaan-k60)
+12. [`scripts/fetch_people.py` dan `translate_people.py`: data orang film](#12-data-orang-film-k69-k70)
 
 ---
 
@@ -805,3 +806,58 @@ return "English" if english > indonesian else "Indonesian"
 Bahasa dideteksi dengan menghitung kata penanda, tanpa panggilan API. Hasil seri (termasuk pertanyaan satu kata seperti "Inception") dianggap Indonesia.
 
 > 🎬 **Untuk video:** "Saya menemukan model sering mengabaikan aturan di prompt, jadi saya memindahkan aturan penting ke kode: tool menolak query yang bukan Inggris, tool menandai pertanyaan adegan, dan kode memastikan bahasa jawaban sesuai pertanyaan. Set uji 14 pertanyaan membuktikannya, tiga putaran berturut-turut lolos semua."
+
+---
+
+## 12. Data orang film: `fetch_people.py` dan `translate_people.py` (K69, K70)
+
+### Tugasnya
+Dataset hanya memuat nama sutradara dan pemain. Dua skrip offline menambah bio dan foto dari Wikipedia lalu menerjemahkan bionya, hasilnya `data/people.csv` (3.202 baris). App hanya membaca file itu, jadi tanpa jaringan dan tanpa kunci baru saat berjalan.
+
+### Fungsi-fungsinya
+| Fungsi | Tugas |
+|---|---|
+| `fetch_json(url)` | Ambil JSON. 404 = None ("memang tidak ada"). 429 dan 5xx ditunggu lalu diulang (`Retry-After`, jeda 1, 2, 4... detik). Kalau tetap gagal, lempar error |
+| `find_page(name)` | Coba judul persis, lalu variasi "(actor)", "(actress)", "(director)", lalu pencarian judul sebagai cadangan |
+| `same_name(a, b)` | Dua nama dianggap orang yang sama kalau tiap kata hampir identik (≥88%, urutan bebas) |
+| `is_person(page)` | Artikel biasa dengan deskripsi profesi orang film (actor, director, entertainer, dan lain-lain) |
+| `lookup(name)` | Satu baris `people.csv`, atau None kalau gagal sementara (tidak disimpan) |
+| `subject_named(row, text)` | (translate) Terjemahan harus menyebut nama belakang orangnya, atau nama dari kalimat pembuka bio aslinya |
+| `estimate_cost(texts)` | (translate) Perkiraan biaya sebelum memanggil LLM |
+
+### Baris penting
+**404 tidak sama dengan gagal:**
+```python
+except urllib.error.HTTPError as error:
+    if error.code == 404: return None
+    wait = float(error.headers.get("Retry-After") or 0) if error.code == 429 else 0
+    time.sleep(max(wait, 2 ** attempt))
+```
+Percobaan pertama mencatat semua error HTTP sebagai "tidak ketemu" dan hanya 28% bio yang terkumpul. Sekarang hanya 404 yang berarti "tidak ada".
+
+**Mencegah salah orang, per kata:**
+```python
+words_a, words_b = (sorted(re.sub(r"[yj]", "i", w) for w in plain(n).split()) for n in (a, b))
+return len(words_a) == len(words_b) and all(SequenceMatcher(None, x, y).ratio() >= 0.88 for x, y in zip(words_a, words_b))
+```
+Kemiripan huruf seluruh nama tidak bisa membedakan "Michelle La/Law" (96%, orang berbeda) dari "Anatoliy/Anatoly" (97%, orang sama). Per kata: "La" vs "Law" hanya 80% sehingga ditolak. `sorted` membuat urutan bebas ("Kar-Wai Wong" = "Wong Kar-wai"), dan y dan j disamakan dengan i untuk transliterasi Rusia dan Turki.
+
+**Pengaman biaya terjemahan:**
+```python
+if cost > MAX_COST_USD: raise SystemExit("Perkiraan melewati batas, tidak ada yang dikirim.")
+```
+Perkiraan $0,63, batas $0,83 (±Rp15.000), sebenarnya ±$0,55.
+
+**Deteksi hasil model yang tertukar:** model melewatkan dua bio dalam satu kelompok dan jawabannya bergeser ke baris tetangga. `subject_named` memeriksa bahwa terjemahan menyebut orangnya. Yang gagal dibuang dan diulang.
+
+### Pertanyaan yang mungkin ditanyakan
+**T: Kenapa data diambil offline, bukan saat pengguna membuka?**
+J: Tanpa jaringan saat berjalan, tidak ada yang bisa gagal karena Wikipedia sedang lambat, tidak ada tambahan waktu tunggu, dan tidak ada kunci baru di app publik. Pengambilan sekali jalan ±8 menit.
+
+**T: Kenapa tidak TMDB?**
+J: Cakupan Wikipedia sudah 100% untuk orang yang muncul di 3 film atau lebih dan ±97% untuk sutradara. Yang kosong hanya pemain kecil. TMDB butuh akun dan kunci baru dan syarat atribusi tambahan.
+
+**T: Bagaimana kamu tahu datanya benar?**
+J: Tiga pemeriksaan: audit pasangan nama-judul yang berbeda (87 baris dibaca satu per satu), pembuangan pencocokan salah orang, dan pemeriksaan bahwa terjemahan menyebut orangnya.
+
+> 🎬 **Untuk video:** "Dataset tidak punya bio atau foto, jadi saya mengambilnya dari Wikipedia sekali secara offline. Percobaan pertama hanya menemukan 28% karena pembatasan kecepatan saya catat sebagai 'tidak ada'. Itu saya perbaiki. Lalu pencocokan nama menukar beberapa orang, jadi saya ganti dengan pembandingan kata per kata dan memeriksa hasilnya satu per satu. Hasil akhirnya bio untuk 92,6% orang, dan 100% untuk yang muncul di tiga film atau lebih."
