@@ -151,6 +151,9 @@ def split_answer(answer: str, found: list[dict]) -> tuple[list[tuple[str, object
         else:
             blocks.append(("text", line))
     leftover = list(dict.fromkeys(i for i in in_text if i not in carded))
+    for movie in by_length[::-1]:  # cadangan (K64): judul disebut tanpa pola "Judul (tahun)", mis. "Parasite (judul asli Gisaengchung, 2019)"
+        if movie["id"] not in carded and movie["id"] not in leftover and re.search(re.escape(movie["title"]), answer):
+            leftover.append(movie["id"])
     return blocks, leftover
 
 
@@ -272,8 +275,8 @@ def show_answer(answer: str, details: dict, index: int) -> None:
         left = more["total"] - len(shown) if more.get("total") is not None else None
         if left is None or left > 0:
             label = "Muat lebih banyak" if left is None else f"Muat {min(PAGE_SIZE, left)} film lagi"
-            st.button(label, key=f"more_{st.session_state.session_id}_{index}",
-                      on_click=load_more, args=(index,), type="tertiary")
+            st.button(label, key=f"more_{st.session_state.session_id}_{index}", on_click=load_more, args=(index,),
+                      icon=":material/expand_more:", type="secondary")  # tombol bergaris + ikon: jelas bisa diklik (K64)
     if (opened := next((c for c in clicks if c is not None), None)) is not None:
         movie_dialog(opened)
 
@@ -322,21 +325,21 @@ def save_feedback(key: str, trace_id: str) -> None:
 
 def show_details(details: dict, index: int) -> None:
     """Tampilkan tool call (dalam expander), usage, dan tombol feedback di bawah jawaban."""
-    calls = details["tool_calls"]
-    with st.expander(f"{len(calls)} tool call", icon=":material/build:"):
-        for call in calls:
-            args = ", ".join(f"{k}={v!r}" for k, v in call["args"].items() if v is not None)
-            st.code(f"{call['name']}({args})", language="python")
-            if not call.get("docs"):  # rank_movies: hasil dihitung dari tabel, tidak ada dokumen
-                st.caption("Hasil: " + (", ".join(call["titles"]) or "tidak ada film yang cocok"))
-                continue
-            reranked = any(doc.get("rerank_score") is not None for doc in call["docs"])
-            st.caption("Dokumen yang dipakai" + (" (15 kandidat Qdrant, diurutkan ulang reranker):" if reranked else ":"))
-            for doc in call["docs"]:
-                score = f" · kemiripan vektor {doc['score']:.3f}" if doc["score"] is not None else ""
-                score += f" · skor reranker {doc['rerank_score']:.2f}" if doc.get("rerank_score") is not None else ""
-                st.markdown(f"**{doc['title']} ({doc['year']})**{score}")
-                st.caption(doc["overview"])
+    if calls := details["tool_calls"]:  # jawaban tanpa tool (di luar topik) tidak diberi expander kosong (K64)
+        with st.expander(f"{len(calls)} tool call", icon=":material/build:"):
+            for call in calls:
+                args = ", ".join(f"{k}={v!r}" for k, v in call["args"].items() if v is not None)
+                st.code(f"{call['name']}({args})", language="python", wrap_lines=True)  # dibungkus: argumen tidak terpotong
+                if not call.get("docs"):  # rank_movies: hasil dihitung dari tabel, tidak ada dokumen
+                    st.caption("Hasil: " + (", ".join(call["titles"]) or "tidak ada film yang cocok"))
+                    continue
+                reranked = any(doc.get("rerank_score") is not None for doc in call["docs"])
+                st.caption("Dokumen yang dipakai" + (" (15 kandidat Qdrant, diurutkan ulang reranker):" if reranked else ":"))
+                for doc in call["docs"]:
+                    score = f" · kemiripan vektor {doc['score']:.3f}" if doc["score"] is not None else ""
+                    score += f" · skor reranker {doc['rerank_score']:.2f}" if doc.get("rerank_score") is not None else ""
+                    st.markdown(f"**{doc['title']} ({doc['year']})**{score}")
+                    st.caption(doc["overview"])
     usd = cost_usd(details["input_tokens"], details["output_tokens"])
     st.caption(f"{details['input_tokens']:,} input · {details['output_tokens']:,} output token · "
                f"≈ {rupiah(usd)} (${usd:.4f})")

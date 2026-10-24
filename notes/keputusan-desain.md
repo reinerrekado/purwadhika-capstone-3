@@ -711,3 +711,20 @@ Sumber: [OpenRouter Embeddings API](https://openrouter.ai/docs/api-reference/emb
   - Tabel variabel lingkungan mencatat `QDRANT_READONLY_API_KEY` (opsional).
 - **Belum:** screenshot app (menunggu perbaikan UI supaya tampilannya final).
 - **Status:** 🔁 Revisi K56
+
+### K64 · Perbaikan UI dari uji PDF
+- **Sumber:** uji manual Reiner di app Cloud (PDF, 24 Okt).
+- **Yang diperbaiki:**
+  - **Kartu hilang untuk judul "Parasite (judul asli Gisaengchung, 2019)":**
+    - `split_answer` hanya mengenali pola "Judul (tahun)". Sekarang ada cadangan: film hasil tool yang judulnya disebut di jawaban tanpa pola itu ditampilkan sebagai kartu grid di bawah jawaban.
+    - Hanya film yang benar-benar disebut yang muncul, bukan semua hasil tool.
+  - **Grid satu kartu terlalu sempit:**
+    - Kolom grid memakai `repeat(auto-fill, minmax(7rem, 1fr))`, bukan lima kolom tetap. Judul tidak lagi terpotong ("Interstell").
+    - Teks "2014 · ★ 8.6" diberi `nowrap`.
+    - Dinding poster di tampilan awal tetap lima kolom.
+  - **Argumen tool call terpotong:** `st.code(..., wrap_lines=True)`.
+  - **Expander "0 tool call" kosong:** tidak ditampilkan lagi kalau tidak ada tool yang dipanggil.
+  - **Tombol "Muat ...":** dari teks polos (`tertiary`) menjadi tombol bergaris dengan ikon panah bawah (`secondary` + `:material/expand_more:`). Permintaan Reiner agar lebih jelas bisa diklik.
+- **Tidak diubah:** label "Muat 5 film lagi" setelah pertanyaan superlatif tunggal ("yang mana paling lama?"). Secara teknis benar dan prioritasnya rendah.
+- **Keterbatasan verifikasi:** kode dan alur diuji (AppTest: tanpa error, tidak ada expander untuk pertanyaan rendang, label tombol benar, `split_answer` untuk kasus Parasite). **CSS belum dilihat di browser**, jadi tampilan grid dan tombol perlu dicek langsung di app.
+- **Status:** 🔁 Revisi K44, K51

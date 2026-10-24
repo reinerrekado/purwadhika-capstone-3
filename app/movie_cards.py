@@ -18,11 +18,12 @@ import streamlit as st
 
 _CSS = """
 .cards { font-family: var(--st-font, inherit); color: var(--st-text-color); }
-.grid, .wall { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.wall { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr)); gap: 12px; }  /* lebar minimum: satu kartu tidak lagi menyempit (K64) */
 .rack { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .list { display: flex; flex-direction: column; gap: 4px; }
 @media (max-width: 560px) {
-  .grid, .wall { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .wall { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 .card { all: unset; cursor: pointer; display: flex; min-width: 0; box-sizing: border-box; }
 .grid .card, .wall .card, .rack .card { flex-direction: column; gap: 6px; }
@@ -73,7 +74,7 @@ _CSS = """
   overflow: hidden; min-height: 2.5em;
 }
 .list .title { font-size: 1rem; padding-top: 2px; }
-.meta { font-family: var(--st-code-font, monospace); font-size: 0.75rem; opacity: 0.65; }
+.meta { font-family: var(--st-code-font, monospace); font-size: 0.75rem; opacity: 0.65; white-space: nowrap; }
 .text { margin-top: 2px; font-size: 0.95rem; line-height: 1.55; opacity: 0.85; }
 @media (prefers-reduced-motion: reduce) {
   .card, .shade, .shade svg, .frame, .frame img, .glass, .glassy::after { transition: none; }

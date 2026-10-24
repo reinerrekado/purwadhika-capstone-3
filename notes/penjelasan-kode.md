@@ -698,6 +698,14 @@ elif story_click:
 ```
 Streamlit hanya bisa membuka satu `st.dialog` dalam satu rerun. Klik dari rak, dinding poster, dan tombol story dikumpulkan dulu, lalu satu panel dibuka di akhir skrip.
 
+**Cadangan pencocok kartu (K64), di `split_answer`:**
+```python
+for movie in by_length[::-1]:
+    if movie["id"] not in carded and movie["id"] not in leftover and re.search(re.escape(movie["title"]), answer):
+        leftover.append(movie["id"])
+```
+Pola utama hanya mengenali "Judul (tahun)". Kalau agent menulis "Parasite (judul asli Gisaengchung, 2019)", polanya tidak cocok dan film tidak mendapat kartu. Cadangan ini mencari **judul saja** di jawaban: film hasil tool yang judulnya disebut tapi belum menjadi kartu ditaruh di grid di bawah jawaban. Film hasil tool yang tidak disebut di jawaban tidak ikut. `[::-1]` membalik urutan panjang-ke-pendek supaya urutannya mengikuti hasil tool.
+
 **Hover ala Netflix (K52), di `app/movie_cards.py`:**
 ```css
 .card:hover .frame img { transform: scale(1.06); }
