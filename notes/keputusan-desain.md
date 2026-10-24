@@ -616,3 +616,13 @@ Sumber: [OpenRouter Embeddings API](https://openrouter.ai/docs/api-reference/emb
 - **Uji contoh pertanyaan:** ke-10 contoh pertanyaan di README sudah dicoba ke agent sungguhan. Semuanya memanggil tool yang tertulis di tabel dan jawabannya benar.
 - **Waktunya sekarang, bukan di akhir:** video (Fase 6) memperlihatkan repo, jadi strukturnya harus final dulu. Yang ditunda ke Fase 7 hanya langkah sekali jalan: cek riwayat git, ubah repo dan app jadi public.
 - **Status:** ➕ Tambahan
+
+### K57 · Dokumen yang di-retrieve + skor kemiripan tampil di expander tool call
+- **Dasar:** catatan modul (Sesi 17 Bab 8): UI harus menunjukkan *tool call dan dokumen yang dipakai*. Sebelumnya expander hanya menampilkan nama tool, argumen, dan daftar judul. Isi dokumen dan skor retrieval belum terlihat, sehingga komponen Streamlit (25%) punya celah.
+- **Sekarang:** untuk `search_movies`, `similar_movies`, dan `get_movie_details`, expander menampilkan tiap dokumen: judul (tahun), skor kemiripan kosinus (hanya dua tool Qdrant yang punya skor), dan sinopsis yang dipakai. `rank_movies` tetap berupa daftar judul karena hasilnya dihitung dari tabel, bukan hasil retrieval.
+- **Perubahan kode:**
+  - `search_page` memakai `similarity_search_with_score`, dan `similar_page` membaca `p.score`.
+  - Tiap film di hasil tool dapat kunci `score` (3 desimal).
+  - Biaya tambahan token: sekitar 5 angka per pencarian, tidak berarti.
+- **Catatan hasil uji:** skor "pencuri masuk mimpi" Inception 0,488 vs 0,320 untuk film nomor 2, jadi selisihnya jelas. "Mirip Interstellar" menghasilkan skor 0,546 sampai 0,516 (Gravity sampai Arrival), jadi lima film itu memang berdekatan.
+- **Status:** ➕ Tambahan (memenuhi syarat wajib)

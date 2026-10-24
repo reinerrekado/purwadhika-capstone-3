@@ -83,8 +83,10 @@
 - [ ] Set uji memeriksa otomatis: setiap query `search_movies` berbahasa Inggris (K26)
 - [ ] Rapikan system prompt di Langfuse
 - [x] README: diagram alur, install, env, cara run, contoh query (24 Okt, K56)
+- [x] Expander tool call menampilkan dokumen yang di-retrieve + skor kemiripan (syarat wajib: tool call dan dokumen yang dipakai) (24 Okt, K57)
 - [ ] README: tambahkan 2-3 screenshot Rakfilm (dari pengguna)
 - [x] Repo dirapikan: `docs/anatomi-capstone-3.html` dan `Dataset Description.docx` dihapus, isinya pindah ke README (24 Okt, K56)
+- [x] Expander tool call menampilkan dokumen yang di-retrieve + skor kemiripan (syarat wajib: tool call dan dokumen yang dipakai) (24 Okt, K57)
 - [ ] API key Qdrant **read-only** untuk penilai
 
 ## Fase 5 · Cadangan (2–5 Nov, Module 4 masih berjalan)

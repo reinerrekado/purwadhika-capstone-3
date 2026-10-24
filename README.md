@@ -12,7 +12,7 @@ Capstone Module 3, Purwadhika JCAIEH.
 ## Fitur
 
 - **Chat dengan ingatan sesi:** pertanyaan lanjutan ("yang paling lama durasinya?") memahami jawaban sebelumnya.
-- **Tool call terlihat:** setiap jawaban menampilkan tool yang dipanggil beserta argumennya.
+- **Tool call dan dokumen terlihat:** setiap jawaban menampilkan tool yang dipanggil beserta argumennya, dokumen film yang di-retrieve dari Qdrant, dan skor kemiripannya.
 - **Usage per jawaban dan per sesi:** token input/output dan biaya dalam USD dan Rupiah (kurs harian ECB).
 - **Kartu film di dalam jawaban:** poster bisa diklik untuk membuka panel detail berisi sinopsis berbahasa Indonesia, fakta menarik, pemain dan sutradara yang bisa diklik, film mirip, dan tautan "Tonton di mana".
 - **Muat lebih banyak:** hasil pencarian dan peringkat bisa dilanjutkan tanpa bertanya ulang.

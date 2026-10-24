@@ -91,6 +91,10 @@ def summarize_run(new_messages: list) -> dict:
     totals = {m.tool_call_id: tool_total(m.content) for m in new_messages if m.type == "tool"}
     tool_calls = [{"name": call["name"], "args": call["args"],
                    "titles": [movie["title"] for movie in movies.get(call["id"], [])],
+                   # dokumen yang dipakai (K57): hanya tool yang mengembalikan sinopsis; skor hanya dari Qdrant
+                   "docs": [{"title": movie["title"], "year": movie["year"], "score": movie.get("score"),
+                             "overview": movie["overview"]}
+                            for movie in movies.get(call["id"], []) if "overview" in movie],
                    "ids": [movie["id"] for movie in movies.get(call["id"], [])],
                    "total": totals.get(call["id"])}
                   for m in ai_messages for call in m.tool_calls]
@@ -323,7 +327,14 @@ def show_details(details: dict, index: int) -> None:
         for call in calls:
             args = ", ".join(f"{k}={v!r}" for k, v in call["args"].items() if v is not None)
             st.code(f"{call['name']}({args})", language="python")
-            st.caption("Hasil: " + (", ".join(call["titles"]) or "tidak ada film yang cocok"))
+            if not call.get("docs"):  # rank_movies: hasil dihitung dari tabel, tidak ada dokumen
+                st.caption("Hasil: " + (", ".join(call["titles"]) or "tidak ada film yang cocok"))
+                continue
+            st.caption("Dokumen yang dipakai:")
+            for doc in call["docs"]:
+                score = f" · skor kemiripan {doc['score']:.3f}" if doc["score"] is not None else ""
+                st.markdown(f"**{doc['title']} ({doc['year']})**{score}")
+                st.caption(doc["overview"])
     usd = cost_usd(details["input_tokens"], details["output_tokens"])
     st.caption(f"{details['input_tokens']:,} input · {details['output_tokens']:,} output token · "
                f"≈ {rupiah(usd)} (${usd:.4f})")

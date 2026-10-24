@@ -296,6 +296,13 @@ store.client.query_points(store.collection_name, query=source_id, using=store.ve
 ```
 Kalau `query` diisi **id** sebuah point, Qdrant memakai vektor point itu sendiri sebagai query. Tidak perlu memanggil API embedding lagi, dan film asalnya otomatis tidak ikut di hasil. `store.client` adalah `QdrantClient` yang sudah dibuat LangChain, jadi tidak perlu koneksi kedua. `using=store.vector_name` diperlukan karena LangChain memberi nama `""` pada vektornya (ingat bug `vectors[""]` di ingest).
 
+**Skor kemiripan sebagai bukti dokumen (K57):**
+```python
+hits = _vector_store().similarity_search_with_score(query, k=PAGE_SIZE, offset=offset, filter=...)
+return [{**{field: doc.metadata[field] for field in FIELDS_FOR_LLM}, "score": round(score, 3)} for doc, score in hits]
+```
+`similarity_search_with_score` mengembalikan pasangan `(dokumen, skor)`. Skornya adalah **kemiripan kosinus** antara vektor pertanyaan dan vektor dokumen film (1 = identik). Untuk `similar_movies`, skor sudah ada di `p.score` pada hasil `query_points`. Skor ikut masuk ke JSON hasil tool, lalu `summarize_run()` di `streamlit_app.py` mengumpulkan judul, tahun, skor, dan sinopsis menjadi `docs`, dan `show_details()` menampilkannya di dalam expander tool call. Ini memenuhi syarat Pak Herman bahwa UI harus menunjukkan **tool call dan dokumen yang dipakai**. Tool `rank_movies` tidak punya dokumen atau skor, karena hasilnya dihitung dari tabel, jadi expander-nya tetap berisi daftar judul.
+
 **Filter bersama (`_qdrant_filter`):** filter genre dan tahun dipakai oleh `search_movies` dan `similar_movies`, jadi kodenya ditulis sekali saja.
 
 **Normalisasi judul (`normalize`):**

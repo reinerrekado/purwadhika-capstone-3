@@ -85,9 +85,11 @@ def search_movies(
 def search_page(query: str, genre: str | None = None, year_from: int | None = None, year_to: int | None = None,
                 offset: int = 0) -> list[dict]:
     """Satu halaman (5 film) hasil search_movies. offset dipakai tombol "Muat lebih banyak" di UI (K45)."""
-    docs = _vector_store().similarity_search(query, k=PAGE_SIZE, offset=offset,
-                                             filter=_qdrant_filter(genre, year_from, year_to))
-    return [{field: doc.metadata[field] for field in FIELDS_FOR_LLM} for doc in docs]
+    hits = _vector_store().similarity_search_with_score(query, k=PAGE_SIZE, offset=offset,
+                                                        filter=_qdrant_filter(genre, year_from, year_to))
+    # score = kemiripan kosinus query dan dokumen (K57): ditampilkan di UI sebagai bukti dokumen yang dipakai
+    return [{**{field: doc.metadata[field] for field in FIELDS_FOR_LLM}, "score": round(score, 3)}
+            for doc, score in hits]
 
 
 def normalize(text: str) -> str:
@@ -177,7 +179,8 @@ def similar_page(title: str, year_from: int | None = None, year_to: int | None =
         store.collection_name, query=next(iter(matches)), using=store.vector_name, limit=PAGE_SIZE, offset=offset,
         with_payload=True, query_filter=_qdrant_filter(None, year_from, year_to),  # tanpa genre (K34)
     ).points
-    return [{field: p.payload["metadata"][field] for field in FIELDS_FOR_LLM} for p in points]
+    return [{**{field: p.payload["metadata"][field] for field in FIELDS_FOR_LLM}, "score": round(p.score, 3)}
+            for p in points]
 
 
 SortField = Literal["rating", "meta_score", "votes", "gross_usd", "runtime_min", "year"]
