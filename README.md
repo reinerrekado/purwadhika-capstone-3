@@ -164,6 +164,7 @@ Tidak ada prompt yang ditulis di kode. Semuanya diambil dari Langfuse dengan lab
 | `movie-agent-system` | system prompt agent (`app/agent.py`) | Ya |
 | `story-headline` | headline IG story (`app/story.py`) | Tidak, tanpa prompt ini headline dibuat dari aturan cadangan |
 | `overview-translator` | `scripts/translate_overviews.py` | Tidak, hasil terjemahannya sudah ada di `data/overview_id.csv` |
+| `bio-translator` | `scripts/translate_people.py` | Tidak, hasil terjemahannya sudah ada di `data/people.csv` |
 
 Prompt diambil ulang setiap 60 detik, jadi versi baru di Langfuse langsung terpakai tanpa restart app.
 

@@ -839,3 +839,15 @@ Sumber: [OpenRouter Embeddings API](https://openrouter.ai/docs/api-reference/emb
 - **Bug yang ketemu di Cloud (tangkapan layar Reiner, 25 Okt):** foto dan kotak inisial tampil berdampingan di hero panel orang. Penyebab: atribut `hidden` dikalahkan oleh `display: grid` (`.initials`) dan `display: block` (`.photo`) di CSS komponen. Perbaikan: `[hidden] { display: none !important; }` di CSS `person_hero`. Mockup kanvas tidak memperlihatkan ini karena memakai cabang `sc-if`, bukan atribut `hidden`. `movie_hero` tidak terkena karena elemennya tidak memaksakan `display`. Pelajaran: mockup tidak bisa menangkap bug CSS komponen asli; hanya uji di app yang hidup yang bisa.
 - **Galat `ImportError` setelah deploy (25 Okt):** `person_profile` tidak ditemukan padahal ada di GitHub dan impor dari salinan bersih berhasil. Penyebabnya modul `app.data` versi lama masih di memori proses Cloud; Reboot app memperbaikinya.
 - **`.devcontainer/` ditambahkan lagi lalu dihapus lagi (25 Okt):** Codespaces (kemungkinan dari ikon pensil di toolbar app Streamlit) menambahkannya otomatis dengan commit "Added Dev Container Folder". Dihapus kembali atas permintaan Reiner dengan alasan yang sama seperti K55: tidak dipakai, mengunci Python 3.11 padahal app berjalan di 3.14, dan Docker tidak diminta.
+
+### K72 · Audit kriteria dan penanganan galat
+- **Panel orang menampilkan semua film, tanpa tombol "Muat" (merevisi K71).** Batas 6 film adalah angka yang saya pilih sendiri dari mockup, bukan batas grid (grid memuat ±11 poster per baris di layar lebar). Data: hanya 47 dari 3.202 orang punya lebih dari 6 film, 17 di antaranya hanya kurang 1 film (Bruce Willis), dan paling banyak 17 film (Robert De Niro). Kode penghitung dan callback tombol ikut dihapus.
+- **Penanganan galat di sekitar pemanggilan agent.** Sebelumnya kalau OpenRouter, Qdrant, atau Langfuse gagal, pengunjung melihat galat Streamlit mentah. Sekarang: pesan yang jelas, galat lengkap masuk log (`logger.exception`, terlihat di Manage app), pertanyaan yang gagal dibuang dari riwayat supaya percakapan tidak timpang. Diuji dengan mensimulasikan kuota habis di tengah jawaban. Penting karena key OpenRouter punya batas $5 (sisa ±$2,84).
+- **Audit terhadap kriteria Pak Herman (bukti, bukan ingatan):**
+  - Agen memakai LangGraph: `CompiledStateGraph` (dari `create_agent`).
+  - Sintaks 17 file `.py` lolos Python 3.11 (README menjanjikan 3.11+). `pip install --dry-run -r requirements.txt` berhasil.
+  - Tidak ada jejak HR/Resume di file dilacak.
+  - Chat history (`session_state`), tool call, dokumen yang dipakai, dan usage tampil di UI.
+  - README: diagram, instalasi, variabel, cara menjalankan, contoh. Ketinggalan: baris prompt `bio-translator` (sudah ditambahkan) dan screenshot (menunggu).
+- **Yang diputuskan Reiner (belum):** (1) teks instruksi LLM di kode (`SCENE_NOTE`, `ENGLISH_ONLY`, `NOT_FOUND_HINT`, petunjuk tool orang, "(Reply in English.)") apakah dipindah ke Langfuse atau dibiarkan; (2) `LICENSE`; (3) menaikkan batas key OpenRouter menjelang rekaman video dan penilaian.
+- **Status:** ➕ Tambahan

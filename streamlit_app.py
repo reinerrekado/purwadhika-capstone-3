@@ -1,6 +1,7 @@
 """Antarmuka chat Rakfilm. File ini hanya mengurus tampilan; logika agent ada di app/agent.py."""
 
 import json
+import logging
 import re
 import urllib.parse
 import urllib.request
@@ -16,9 +17,10 @@ from app.movie_cards import movie_cards, movie_hero, person_hero
 from app.story import MAX_FILMS, THEME_BY_NAME, auto_theme, render_story, story_text, watchlist_movies
 from app.tools import PAGE_SIZE, PAGERS
 
+logger = logging.getLogger(__name__)
+
 # Harga openai/gpt-4.1-mini di OpenRouter (USD per 1 juta token, Okt 2026). Hanya untuk perkiraan biaya.
 PRICE_INPUT, PRICE_OUTPUT = 0.40, 1.60
-PERSON_PAGE = 6  # film per halaman di panel orang (K71)
 FX_URL = "https://api.frankfurter.dev/v1/latest?base=USD&symbols=IDR"  # kurs referensi ECB, gratis, tanpa API key
 LOGO = "static/rakfilm_mark.png"  # dibuat scripts/make_logo.py (K51)
 SUGGESTIONS = {  # contoh pertanyaan di tampilan awal: teks tombol → pertanyaan yang dikirim
@@ -207,11 +209,6 @@ def open_person(name: str) -> None:
     st.rerun()
 
 
-def show_more_people(name: str) -> None:
-    """Callback "Muat N film lagi" di panel orang: tambah satu halaman film yang ditampilkan."""
-    st.session_state[f"person_shown_{name}"] = st.session_state.get(f"person_shown_{name}", PERSON_PAGE) + PERSON_PAGE
-
-
 @st.dialog("Profil", width="large")
 def person_dialog(name: str) -> None:
     """Panel orang saat nama sutradara atau pemain diklik (K71): foto, bio Wikipedia, angka dari dataset, dan filmnya."""
@@ -238,14 +235,9 @@ def person_dialog(name: str) -> None:
     if st.button(f"Tanya Rakfilm tentang {name.split()[0]}", type="primary", key=f"ask_person_{name}"):
         ask(f"Ceritakan tentang {name}")
 
-    shown = st.session_state.get(f"person_shown_{name}", PERSON_PAGE)
-    films = person["films"]
-    st.markdown("**Film di Rakfilm**")
-    clicked = movie_cards(card_data([(movie_id, "") for movie_id, _ in films[:shown]]), layout="grid",
+    st.markdown("**Film di Rakfilm**")  # semua film: paling banyak 17 orang (De Niro), jadi tanpa tombol "Muat" (K71)
+    clicked = movie_cards(card_data([(movie_id, "") for movie_id, _ in person["films"]]), layout="grid",
                           key=f"person_films_{name}", on_open=lambda: None)
-    if len(films) > shown:
-        st.button(f"Muat {min(PERSON_PAGE, len(films) - shown)} film lagi", key=f"more_films_{name}",
-                  on_click=show_more_people, args=(name,), icon=":material/expand_more:")
     if clicked is not None:  # klik poster → panel detail film (lewat penyalur di akhir skrip)
         st.session_state.open_movie = clicked
         st.rerun()
@@ -488,13 +480,21 @@ elif question:
     with st.chat_message("assistant", avatar=LOGO):
         run = {}  # diisi stream_agent setelah selesai: pesan baru + trace_id
         streaming = st.empty()  # teks mengalir dulu, lalu diganti tampilan dengan kartu film
-        with streaming.container(), st.spinner("Mencari film..."):
-            answer = st.write_stream(stream_agent(history, st.session_state.session_id, run))
-        streaming.empty()
-        details = summarize_run(run["messages"]) | {"trace_id": run["trace_id"]}
-        show_answer(answer, details, len(st.session_state.chat))
-        show_details(details, len(st.session_state.chat))
-    st.session_state.chat.append({"role": "assistant", "content": answer, "details": details})
+        try:
+            with streaming.container(), st.spinner("Mencari film..."):
+                answer = st.write_stream(stream_agent(history, st.session_state.session_id, run))
+            streaming.empty()
+            details = summarize_run(run["messages"]) | {"trace_id": run["trace_id"]}
+            show_answer(answer, details, len(st.session_state.chat))
+            show_details(details, len(st.session_state.chat))
+        except Exception:  # OpenRouter, Qdrant, atau Langfuse gagal (K72): pesan jelas, bukan galat Streamlit mentah
+            logger.exception("Agent gagal menjawab")  # lengkapnya ada di log (Manage app)
+            streaming.empty()
+            st.session_state.chat.pop()  # buang pertanyaan yang gagal supaya riwayat tidak timpang
+            st.error("Maaf, Rakfilm sedang tidak bisa menjawab. Layanan di belakangnya mungkin sedang sibuk atau "
+                     "kuota demo habis. Coba kirim ulang pertanyaanmu sebentar lagi.", icon=":material/error:")
+        else:
+            st.session_state.chat.append({"role": "assistant", "content": answer, "details": details})
 
 # Satu panel per rerun: dari panel orang (film atau orang lain), rak di sidebar, dinding poster, atau tombol IG story.
 if (opened_movie := st.session_state.pop("open_movie", None)) is not None:
