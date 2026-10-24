@@ -747,3 +747,18 @@ Sumber: [OpenRouter Embeddings API](https://openrouter.ai/docs/api-reference/emb
 - **Hasil:** 10 dari 10 percobaan benar. Seri Star Wars, judul yang memang tidak ada, dan judul + aktor tidak berubah.
 - **Pelajaran:** pertanyaan hitung dan filter berlapis membuka kombinasi argumen yang tidak terduga. Set uji yang lebih lebar menemukannya.
 - **Status:** ➕ Tambahan
+
+### K67 · Repo GitHub diubah menjadi public (24 Okt 2026)
+- **Dasar:** syarat penilaian: repo GitHub public, `.env` tidak ter-commit. Dikerjakan lebih awal dari rencana Fase 7 atas permintaan Reiner, dengan syarat semua key aman.
+- **Audit sebelum public (seluruh riwayat, semua branch dan tag):**
+  - Nilai asli enam rahasia dari `.env` dicari satu per satu di setiap commit: OpenRouter, Qdrant admin, Qdrant read-only, Qdrant URL, Langfuse public dan secret. Hasil: 0 commit memuat satu pun.
+  - Pola key umum (`sk-or-v1-`, `sk-lf-`/`pk-lf-`, JWT, baris `KEY=nilai panjang`) di seluruh isi diff: 0 temuan.
+  - `.env` dan `secrets.toml` tidak pernah dilacak atau ada di riwayat. `.env.example` hanya berisi nama variabel.
+  - Tidak ada alamat email di file yang dilacak.
+- **Setelah public:** halaman repo dapat dibuka tanpa login, `.env.example` terbaca, dan `.env` mengembalikan 404.
+- **Perlindungan uang (OpenRouter):** key OpenRouter punya batas $5 sendiri (terpakai ±$1,48, sisa ±$3,52, tanpa reset). Kerugian maksimal lewat key ini tinggal sisa itu, bukan saldo akun. Perlu dicatat bahwa kalau batasnya habis, app berhenti menjawab, sehingga penilaian bisa terganggu.
+- **Yang perlu diketahui:**
+  - Email penulis commit (`reinerrekado@gmail.com`) terlihat di riwayat commit publik. Itu data pribadi, bukan rahasia finansial. Commit berikutnya bisa memakai alamat noreply GitHub (`git config user.email`).
+  - App Streamlit tetap private (README menautkannya). Pengunjung repo melihat halaman login Streamlit sampai app dibuat public di Fase 7.
+  - Prompt Langfuse tidak ada di repo (sesuai aturan semua prompt di Langfuse), jadi penilai melihatnya lewat video.
+- **Status:** ➕ Tambahan (mempercepat Fase 7)

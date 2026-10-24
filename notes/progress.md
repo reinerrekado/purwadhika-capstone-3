@@ -116,8 +116,8 @@
 - [ ] Upload ke Google Drive/YouTube, link publik
 
 ## Fase 7 · Pengumpulan (9 Nov)
-- [ ] Cek riwayat git: tidak ada key yang pernah ter-commit
-- [ ] Repo GitHub diubah jadi **public**
+- [x] Cek riwayat git: tidak ada key yang pernah ter-commit (nilai asli enam rahasia dicari di seluruh riwayat, 0 temuan) (24 Okt, K67)
+- [x] Repo GitHub diubah jadi **public** (24 Okt, K67)
 - [ ] App Streamlit diubah jadi **public** (Share → "public and searchable"); sebelumnya pasang credit limit di key OpenRouter
   - Sampai tahap ini app private. Kalau Pak Herman perlu melihat lebih awal: Share → Invite viewers → email beliau
 - [ ] Isi Google Form: repo, video, app Streamlit, akses Qdrant
