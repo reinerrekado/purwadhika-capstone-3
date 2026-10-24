@@ -12,7 +12,8 @@ Capstone Module 3, Purwadhika JCAIEH.
 ## Fitur
 
 - **Chat dengan ingatan sesi:** pertanyaan lanjutan ("yang paling lama durasinya?") memahami jawaban sebelumnya.
-- **Tool call dan dokumen terlihat:** setiap jawaban menampilkan tool yang dipanggil beserta argumennya, dokumen film yang di-retrieve dari Qdrant, dan skor kemiripannya.
+- **Tool call dan dokumen terlihat:** setiap jawaban menampilkan tool yang dipanggil beserta argumennya, dokumen film yang di-retrieve dari Qdrant, skor kemiripan vektor, dan skor reranker.
+- **Reranker:** `search_movies` mengambil 15 kandidat dari Qdrant, lalu model reranker memilih 5 yang paling relevan terhadap pertanyaan. Kalau reranker gagal, urutan vektor dipakai.
 - **Usage per jawaban dan per sesi:** token input/output dan biaya dalam USD dan Rupiah (kurs harian ECB).
 - **Kartu film di dalam jawaban:** poster bisa diklik untuk membuka panel detail berisi sinopsis berbahasa Indonesia, fakta menarik, pemain dan sutradara yang bisa diklik, film mirip, dan tautan "Tonton di mana".
 - **Muat lebih banyak:** hasil pencarian dan peringkat bisa dilanjutkan tanpa bertanya ulang.
@@ -39,7 +40,9 @@ flowchart TD
         AG --> T2["similar_movies<br/>film yang mirip"]
         AG --> T3["get_movie_details<br/>detail judul"]
         AG --> T4["rank_movies<br/>peringkat, sutradara, aktor"]
-        T1 -->|similarity search + filter| QD
+        T1 -->|15 kandidat: similarity search + filter| QD
+        QD -->|kandidat| RR["Reranker<br/>qwen3-reranker-8b (OpenRouter)"]
+        RR -->|5 terbaik + skor| T1
         T2 -->|cari pakai vektor film itu| QD
         T3 --> DF[("pandas DataFrame<br/>dari CSV")]
         T4 --> DF
@@ -63,6 +66,7 @@ app/
   config.py                 baca .env / Streamlit Secrets, buat klien LLM dan embedding
   agent.py                  agent + prompt dari Langfuse + tracing + feedback
   tools.py                  4 tool agent + fungsi "muat lebih banyak"
+  rerank.py                 reranker untuk hasil search_movies
   data.py                   muat CSV ke DataFrame, fakta menarik
   movie_cards.py            komponen kartu poster (Streamlit Custom Components v2)
   story.py                  gambar IG story dengan Pillow
@@ -126,6 +130,7 @@ Salin `.env.example` menjadi `.env`, lalu isi. File `.env` tidak pernah di-commi
 | `QDRANT_URL` | URL cluster Qdrant Cloud |
 | `QDRANT_API_KEY` | API key Qdrant |
 | `QDRANT_COLLECTION` | `imdb_movies` |
+| `RERANK_MODEL` | Opsional. Bawaan: `qwen/qwen3-reranker-8b` |
 | `LANGFUSE_PUBLIC_KEY` | Public key project Langfuse |
 | `LANGFUSE_SECRET_KEY` | Secret key project Langfuse |
 | `LANGFUSE_HOST` | `https://cloud.langfuse.com` |

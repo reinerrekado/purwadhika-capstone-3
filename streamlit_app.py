@@ -93,7 +93,7 @@ def summarize_run(new_messages: list) -> dict:
                    "titles": [movie["title"] for movie in movies.get(call["id"], [])],
                    # dokumen yang dipakai (K57): hanya tool yang mengembalikan sinopsis; skor hanya dari Qdrant
                    "docs": [{"title": movie["title"], "year": movie["year"], "score": movie.get("score"),
-                             "overview": movie["overview"]}
+                             "rerank_score": movie.get("rerank_score"), "overview": movie["overview"]}
                             for movie in movies.get(call["id"], []) if "overview" in movie],
                    "ids": [movie["id"] for movie in movies.get(call["id"], [])],
                    "total": totals.get(call["id"])}
@@ -330,9 +330,11 @@ def show_details(details: dict, index: int) -> None:
             if not call.get("docs"):  # rank_movies: hasil dihitung dari tabel, tidak ada dokumen
                 st.caption("Hasil: " + (", ".join(call["titles"]) or "tidak ada film yang cocok"))
                 continue
-            st.caption("Dokumen yang dipakai:")
+            reranked = any(doc.get("rerank_score") is not None for doc in call["docs"])
+            st.caption("Dokumen yang dipakai" + (" (15 kandidat Qdrant, diurutkan ulang reranker):" if reranked else ":"))
             for doc in call["docs"]:
-                score = f" · skor kemiripan {doc['score']:.3f}" if doc["score"] is not None else ""
+                score = f" · kemiripan vektor {doc['score']:.3f}" if doc["score"] is not None else ""
+                score += f" · skor reranker {doc['rerank_score']:.2f}" if doc.get("rerank_score") is not None else ""
                 st.markdown(f"**{doc['title']} ({doc['year']})**{score}")
                 st.caption(doc["overview"])
     usd = cost_usd(details["input_tokens"], details["output_tokens"])

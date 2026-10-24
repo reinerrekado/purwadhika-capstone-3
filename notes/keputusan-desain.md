@@ -626,3 +626,25 @@ Sumber: [OpenRouter Embeddings API](https://openrouter.ai/docs/api-reference/emb
   - Biaya tambahan token: sekitar 5 angka per pencarian, tidak berarti.
 - **Catatan hasil uji:** skor "pencuri masuk mimpi" Inception 0,488 vs 0,320 untuk film nomor 2, jadi selisihnya jelas. "Mirip Interstellar" menghasilkan skor 0,546 sampai 0,516 (Gravity sampai Arrival), jadi lima film itu memang berdekatan.
 - **Status:** ➕ Tambahan (memenuhi syarat wajib)
+
+### K58 · Reranker untuk `search_movies` (bonus eksplisit Pak Herman)
+- **Dasar:** catatan modul (Sesi 17 Bab 8): *re-ranking* di RAG tool tidak wajib, tapi menambah poin.
+- **Cara kerja:**
+  - Qdrant mengambil 15 kandidat (`RERANK_CANDIDATES = 3 × PAGE_SIZE`).
+  - Model reranker membaca pertanyaan dan tiap kandidat bersamaan, lalu memilih 5 terbaik dengan skor 0 sampai 1.
+  - Tool `similar_movies` tidak di-rerank: film asal itu sendiri sudah menjadi query, jadi tidak ada kalimat pertanyaan untuk dibaca reranker.
+- **Pilihan model:**
+  - Endpoint `/api/v1/rerank` OpenRouter ada, tapi akun Reiner mewajibkan Zero Data Retention, sehingga Cohere dan Voyage ditolak (HTTP 404, alasan ZDR).
+  - `qwen/qwen3-reranker-8b` lolos: sekitar 0,6 sampai 1,1 detik per pencarian dan ±$0,00005 per panggilan.
+  - Setelan ZDR tidak diubah. Itu pilihan privasi akun, dan satu model yang lolos sudah cukup.
+  - Model bisa diganti lewat variabel `RERANK_MODEL` (opsional, ada nilai bawaan), jadi **tidak ada secret baru** di Streamlit Cloud.
+- **Bukti manfaat (20 pertanyaan):** lebih baik di "scary movie", "heist", "revenge", "pencuri masuk mimpi", dan "persahabatan di penjara". Satu kasus sedikit lebih buruk (WALL·E #2 → #4). Skor rendah merata di pertanyaan suasana samar, jadi tidak dipakai sebagai batas keras di kode.
+- **Ketahanan:** `rerank()` mengembalikan `None` kalau gagal, lalu 5 hasil vektor pertama dipakai. Pencarian tidak mati karena fitur tambahan.
+- **Batasan yang diketahui:**
+  - Tombol "Muat lebih banyak" menggeser jendela kandidat 5 film per halaman (offset), sedangkan jendelanya 15. Film yang sudah tampil dibuang di UI. Kandidat peringkat vektor 1 sampai 5 yang tidak dipilih reranker di halaman pertama tidak diperiksa lagi di halaman berikutnya.
+  - Tambahan 0,6 sampai 1,1 detik per pencarian.
+- **Perubahan lain:**
+  - Modul baru `app/rerank.py`.
+  - `httpx==0.28.1` dipin di `requirements.txt` (sebelumnya hanya ikut terpasang lewat `openai`).
+  - Hasil tool mendapat kunci `rerank_score`, dan UI menampilkannya di expander tool call.
+- **Status:** ➕ Tambahan (bonus penilaian)

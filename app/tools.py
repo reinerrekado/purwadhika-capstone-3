@@ -17,6 +17,7 @@ from qdrant_client import models
 
 from app.config import env, get_embeddings
 from app.data import all_genres, load_movies, to_records
+from app.rerank import rerank
 
 # 21 genre persis dari dataset. LLM hanya bisa memilih salah satu nilai ini (kritik diri #3).
 Genre = Literal[tuple(all_genres())]
@@ -31,6 +32,7 @@ RANK_FIELDS = ["id", "title", "year", "genres", "rating", "meta_score",
 ROMAN = {"ii": "2", "iii": "3", "iv": "4", "v": "5", "vi": "6", "vii": "7", "viii": "8", "ix": "9"}
 MAX_MATCHES = 10  # cukup untuk satu seri penuh, misalnya 6 film Harry Potter
 PAGE_SIZE = 5  # film per pencarian Qdrant (K05): hemat token dan relevansi turun setelah 5 besar
+RERANK_CANDIDATES = PAGE_SIZE * 3  # kandidat yang diambil dari Qdrant sebelum reranker memilih PAGE_SIZE terbaik (K58)
 NOT_FOUND_HINT = ("Do not tell the user the movie is missing yet. Non-English movies use their original "
                   "title (e.g. Parasite = Gisaengchung), so call the same tool again with the original "
                   "title if you know it. Otherwise try rank_movies with the director or year, or "
@@ -85,11 +87,16 @@ def search_movies(
 def search_page(query: str, genre: str | None = None, year_from: int | None = None, year_to: int | None = None,
                 offset: int = 0) -> list[dict]:
     """Satu halaman (5 film) hasil search_movies. offset dipakai tombol "Muat lebih banyak" di UI (K45)."""
-    hits = _vector_store().similarity_search_with_score(query, k=PAGE_SIZE, offset=offset,
+    hits = _vector_store().similarity_search_with_score(query, k=RERANK_CANDIDATES, offset=offset,
                                                         filter=_qdrant_filter(genre, year_from, year_to))
-    # score = kemiripan kosinus query dan dokumen (K57): ditampilkan di UI sebagai bukti dokumen yang dipakai
-    return [{**{field: doc.metadata[field] for field in FIELDS_FOR_LLM}, "score": round(score, 3)}
-            for doc, score in hits]
+    if not hits:
+        return []
+    # Qdrant mengambil 15 kandidat (cepat, berdasarkan makna), reranker memilih 5 terbaik (K58).
+    # Kalau reranker gagal, 5 pertama menurut vektor dipakai. score = kemiripan kosinus, rerank_score = skor reranker (K57).
+    ranked = rerank(query, [doc.page_content for doc, _ in hits], PAGE_SIZE) or [(i, None) for i in range(PAGE_SIZE)]
+    return [{**{field: hits[i][0].metadata[field] for field in FIELDS_FOR_LLM}, "score": round(hits[i][1], 3),
+             "rerank_score": None if relevance is None else round(relevance, 2)}
+            for i, relevance in ranked if i < len(hits)]
 
 
 def normalize(text: str) -> str:

@@ -303,6 +303,17 @@ return [{**{field: doc.metadata[field] for field in FIELDS_FOR_LLM}, "score": ro
 ```
 `similarity_search_with_score` mengembalikan pasangan `(dokumen, skor)`. Skornya adalah **kemiripan kosinus** antara vektor pertanyaan dan vektor dokumen film (1 = identik). Untuk `similar_movies`, skor sudah ada di `p.score` pada hasil `query_points`. Skor ikut masuk ke JSON hasil tool, lalu `summarize_run()` di `streamlit_app.py` mengumpulkan judul, tahun, skor, dan sinopsis menjadi `docs`, dan `show_details()` menampilkannya di dalam expander tool call. Ini memenuhi syarat Pak Herman bahwa UI harus menunjukkan **tool call dan dokumen yang dipakai**. Tool `rank_movies` tidak punya dokumen atau skor, karena hasilnya dihitung dari tabel, jadi expander-nya tetap berisi daftar judul.
 
+**Reranker: dua tahap pencarian (K58), di `app/rerank.py`:**
+```python
+hits = store.similarity_search_with_score(query, k=15, offset=offset, filter=...)      # tahap 1: Qdrant, cepat
+ranked = rerank(query, [doc.page_content for doc, _ in hits], PAGE_SIZE) or [(i, None) for i in range(PAGE_SIZE)]   # tahap 2
+```
+Pencarian vektor membandingkan **satu vektor per dokumen** (bi-encoder): cepat, tapi kasar, karena pertanyaan dan dokumen dijadikan angka secara terpisah. Reranker (**cross-encoder**) membaca **pertanyaan dan dokumen bersamaan**, jadi lebih teliti tapi lebih lambat. Karena itu dipakai bertahap: Qdrant memilih 15 kandidat, reranker memilih 5 terbaik dan memberi skor relevansi 0 sampai 1.
+- `or [(i, None) ...]` adalah **cadangan**: kalau `rerank()` mengembalikan `None` (jaringan atau kuota bermasalah), 5 pertama menurut vektor dipakai dan pencarian tetap jalan.
+- Hasil uji (8 + 12 pertanyaan): reranker menaikkan film relevan dari peringkat bawah, misalnya *Paprika* (#6 → #2) untuk "pencuri masuk mimpi" dan *The Exorcist* serta *Get Out* untuk "scary movie". Satu kasus memburuk sedikit: *WALL·E* turun dari #2 ke #4 untuk "robot jatuh cinta".
+- Skor reranker tidak seragam untuk semua jenis pertanyaan. Pertanyaan suasana yang samar ("bikin menangis") skornya rendah semua (maks 0,02) padahal hasilnya wajar. Jadi skor ditampilkan sebagai informasi, bukan batas keras. Yang konsisten hanya: kalau **semua** skor 0,00 (pertanyaan adegan atau kutipan), memang tidak ada yang cocok.
+- Model: `qwen/qwen3-reranker-8b`. Model Cohere dan Voyage ditolak akun karena setelan Zero Data Retention di OpenRouter.
+
 **Filter bersama (`_qdrant_filter`):** filter genre dan tahun dipakai oleh `search_movies` dan `similar_movies`, jadi kodenya ditulis sekali saja.
 
 **Normalisasi judul (`normalize`):**

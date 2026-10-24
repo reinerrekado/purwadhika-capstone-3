@@ -84,9 +84,13 @@
 - [ ] Rapikan system prompt di Langfuse
 - [x] README: diagram alur, install, env, cara run, contoh query (24 Okt, K56)
 - [x] Expander tool call menampilkan dokumen yang di-retrieve + skor kemiripan (syarat wajib: tool call dan dokumen yang dipakai) (24 Okt, K57)
+- [x] Reranker (qwen3-reranker-8b via OpenRouter) untuk `search_movies`: 15 kandidat → 5 terbaik, bonus poin (24 Okt, K58)
+- [ ] **Anda:** pasang prompt `movie-agent-system` **v7** (aturan 7 baru memakai `rerank_score`) di UI Langfuse, label production
 - [ ] README: tambahkan 2-3 screenshot Rakfilm (dari pengguna)
 - [x] Repo dirapikan: `docs/anatomi-capstone-3.html` dan `Dataset Description.docx` dihapus, isinya pindah ke README (24 Okt, K56)
 - [x] Expander tool call menampilkan dokumen yang di-retrieve + skor kemiripan (syarat wajib: tool call dan dokumen yang dipakai) (24 Okt, K57)
+- [x] Reranker (qwen3-reranker-8b via OpenRouter) untuk `search_movies`: 15 kandidat → 5 terbaik, bonus poin (24 Okt, K58)
+- [ ] **Anda:** pasang prompt `movie-agent-system` **v7** (aturan 7 baru memakai `rerank_score`) di UI Langfuse, label production
 - [ ] API key Qdrant **read-only** untuk penilai
 
 ## Fase 5 · Cadangan (2–5 Nov, Module 4 masih berjalan)
