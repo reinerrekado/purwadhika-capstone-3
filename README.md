@@ -19,6 +19,7 @@ Capstone Module 3, Purwadhika JCAIEH.
 - **Muat lebih banyak:** hasil pencarian dan peringkat bisa dilanjutkan tanpa bertanya ulang.
 - **Rak + IG story:** simpan sampai 4 film ke rak, lalu buat gambar story 1080×1920 dengan headline dari LLM dan tema warna sesuai genre.
 - **Feedback 👍/👎:** tersimpan sebagai score di trace Langfuse, bisa dibandingkan per versi prompt.
+- **Dua bahasa:** pertanyaan berbahasa Indonesia dijawab Indonesia, pertanyaan berbahasa Inggris dijawab Inggris.
 - **Tema terang dan gelap.**
 
 ## Cara kerja
@@ -77,7 +78,7 @@ scripts/
   ingest.py                 CSV -> embedding -> Qdrant
   translate_overviews.py    terjemahkan 1.000 sinopsis ke bahasa Indonesia (sekali saja)
   make_logo.py              gambar logo Rakfilm
-  eval.py                   set uji 10 pertanyaan otomatis -> notes/hasil-uji.md
+  eval.py                   set uji 14 pertanyaan otomatis -> notes/hasil-uji.md
   check_readonly_key.py     uji key Qdrant read-only: baca berhasil, tulis ditolak
 data/
   imdb_top_1000.csv         dataset
@@ -158,14 +159,14 @@ Prompt diambil ulang setiap 60 detik, jadi versi baru di Langfuse langsung terpa
 python scripts/check_connections.py   # 1. pastikan ketiga layanan terhubung
 python -m scripts.ingest              # 2. isi Qdrant (cukup sekali)
 streamlit run streamlit_app.py        # 3. buka http://localhost:8501
-python -m scripts.eval              # 4. (opsional) uji 10 pertanyaan otomatis
+python -m scripts.eval              # 4. (opsional) uji 14 pertanyaan otomatis
 ```
 
 Langkah 2 aman diulang: collection dibuat ulang dari nol, jadi data tidak tergandakan.
 
 ## Pengujian
 
-`python -m scripts.eval` menjalankan agent sungguhan pada 10 pertanyaan yang mewakili tiap jenis kasus (cari dari cerita, film mirip, judul asli, peringkat per genre, typo sutradara, pertanyaan lanjutan, seri film, adegan, di luar topik). Setiap pertanyaan diperiksa otomatis: tool yang dipanggil, argumennya, film kunci di jawaban, query `search_movies` berbahasa Inggris, dan jawaban yang jujur untuk pertanyaan adegan. Laporan terbaru ada di [notes/hasil-uji.md](notes/hasil-uji.md).
+`python -m scripts.eval` menjalankan agent sungguhan pada 14 pertanyaan yang mewakili tiap jenis kasus (cari dari cerita, film mirip, judul asli, peringkat per genre, typo sutradara, filter tahun, pertanyaan hitung, perbandingan, pertanyaan lanjutan, seri film, adegan, bahasa Inggris, di luar topik). Setiap pertanyaan diperiksa otomatis: tool yang dipanggil, argumennya, film kunci di jawaban, query `search_movies` berbahasa Inggris, dan jawaban yang jujur untuk pertanyaan adegan. Laporan terbaru ada di [notes/hasil-uji.md](notes/hasil-uji.md).
 
 Jawaban LLM tidak persis sama setiap kali, jadi yang diperiksa adalah perilaku, bukan kata per kata.
 ## Contoh pertanyaan

@@ -15,7 +15,7 @@ from pathlib import Path
 
 from langfuse import get_client
 
-from app.agent import get_agent, stream_agent
+from app.agent import get_agent, reply_language, stream_agent
 from app.tools import INDONESIAN_WORDS
 
 REPORT = Path(__file__).resolve().parent.parent / "notes" / "hasil-uji.md"
@@ -129,6 +129,8 @@ GENERAL = [  # berlaku untuk semua pertanyaan
     Check("jawaban tidak kosong", lambda r: bool(r.answer.strip())),
     Check("tidak ada error tool", lambda r: not any(c["error"] for c in r.calls)),
     Check("jawaban tidak ditutup dengan pertanyaan (aturan 6 prompt)", lambda r: not r.answer.strip().endswith("?")),
+    Check("bahasa jawaban sama dengan bahasa pertanyaan (K65)",
+          lambda r: reply_language(r.answer) == reply_language(r.question)),
 ]
 
 
@@ -162,6 +164,15 @@ CASES = [
          [called("search_movies"), english_queries(), arg_is("search_movies", "describes_scene", True),
           answer_has("sinopsis"), answer_lacks("Berikut film dengan adegan")]),
     Case("cara masak rendang", "di luar topik", [no_tools(), answer_has_any("film")]),
+    Case("film horor tahun 80-an", "filter tahun",
+         [called("rank_movies"), arg_is("rank_movies", "year_from", 1980), arg_is("rank_movies", "year_to", 1989),
+          answer_has("The Shining", "The Thing")]),
+    Case("ada berapa film Hayao Miyazaki tahun 2000-an?", "pertanyaan hitung",
+         [called("rank_movies"), arg_contains("rank_movies", "director", "miyazaki"), answer_has_any("3 film", "tiga film")]),
+    Case("bandingkan The Godfather dan Goodfellas", "membandingkan dua film",
+         [called("get_movie_details"), answer_has("The Godfather", "Goodfellas")]),
+    Case("movies like Inception", "pertanyaan berbahasa Inggris (K65)",
+         [called("similar_movies"), answer_has_any("Inside Man", "The Matrix", "Gattaca", "The Bourne")]),
 ]
 
 

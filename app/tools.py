@@ -238,7 +238,7 @@ def rank_movies(
     Args:
         sort_by: rating = IMDB rating, meta_score = critics score (0-100), votes = popularity, gross_usd = box office.
         order: highest or lowest first.
-        title: Movie series or part of a title, e.g. Star Wars. Tolerates typos.
+        title: Movie series or part of a movie title, e.g. Star Wars. Tolerates typos. Never put a person's name here; use director or star.
         genre: Only movies with this genre. Leave empty unless the user names a genre.
         year_from: Earliest release year, inclusive. Leave empty unless the user names a year or decade.
         year_to: Latest release year, inclusive. Leave empty unless the user names a year or decade.
@@ -266,7 +266,9 @@ def _ranked(sort_by, order, title, genre, year_from, year_to, director, star):
     """Filter lalu urutkan. Dipakai rank_movies (untuk LLM) dan rank_page (untuk UI)."""
     df = load_movies().dropna(subset=[sort_by])  # gross_usd/meta_score kosong untuk sebagian film
     if title:
-        df = df[df["id"].isin(find_title(title))]
+        title_ids = find_title(title)
+        if title_ids or not (director or star):  # judul tidak cocok apa pun tapi ada sutradara/aktor = nama orang salah tempat (K66)
+            df = df[df["id"].isin(title_ids)]
     if genre:
         df = df[df["genres"].map(lambda genres: genre in genres)]
     if year_from:

@@ -728,3 +728,22 @@ Sumber: [OpenRouter Embeddings API](https://openrouter.ai/docs/api-reference/emb
 - **Tidak diubah:** label "Muat 5 film lagi" setelah pertanyaan superlatif tunggal ("yang mana paling lama?"). Secara teknis benar dan prioritasnya rendah.
 - **Keterbatasan verifikasi:** kode dan alur diuji (AppTest: tanpa error, tidak ada expander untuk pertanyaan rendang, label tombol benar, `split_answer` untuk kasus Parasite). **CSS belum dilihat di browser**, jadi tampilan grid dan tombol perlu dicek langsung di app.
 - **Status:** 🔁 Revisi K44, K51
+
+### K65 · Dua bahasa: jawaban mengikuti bahasa pertanyaan (Indonesia atau Inggris)
+- **Temuan:** uji manual Reiner: "movies like Inception" dijawab dalam bahasa Indonesia. Aturan 6 prompt berbunyi "Reply in the user's language (Indonesian by default)".
+- **Uji lokal (15 percobaan pertanyaan Inggris):** prompt v8 menjawab Inggris 0 kali. Rumusan "ikuti bahasa pesan terakhir" hanya 8 sampai 11 dari 15, tidak stabil. Pola yang sama dengan K59 dan K61: model tidak patuh pada aturan bahasa di prompt.
+- **Keputusan Reiner:** dua bahasa saja (Indonesia dan Inggris).
+- **Cara kerja (di kode, `app/agent.py`):**
+  - `reply_language()` menghitung kata penanda Inggris dan Indonesia di pesan pengguna. Yang terbanyak menang, seri = Indonesia (perilaku sebelumnya). Tanpa panggilan API, tanpa biaya atau latensi tambahan.
+  - Kalau Inggris, satu baris "(Reply in English.)" ditambahkan di pesan terakhir hanya untuk panggilan agent. Riwayat di UI tidak berubah, tapi jejak Langfuse memuat baris itu.
+  - Pendeteksi diuji pada 19 pertanyaan (7 Inggris, 12 Indonesia), semuanya benar. Pertanyaan satu kata ("Inception", "Star Wars") dianggap Indonesia.
+- **Yang tetap Indonesia:** seluruh UI (tombol, label, sidebar, panel detail) dan sinopsis di kartu tambahan "Muat lebih banyak". Hanya teks jawaban agent yang ikut bahasa pertanyaan.
+- **Set uji:** pemeriksaan umum baru "bahasa jawaban sama dengan bahasa pertanyaan", ditambah pertanyaan 11 sampai 14 (filter tahun, pertanyaan hitung, perbandingan dua film, pertanyaan Inggris).
+- **Status:** ➕ Tambahan
+
+### K66 · `rank_movies`: nama orang di kolom judul diabaikan
+- **Temuan (set uji pertanyaan 12):** "ada berapa film Hayao Miyazaki tahun 2000-an?" sesekali dipanggil dengan `title='Hayao Miyazaki'` selain `director='Miyazaki'`. Filter judul tidak cocok dengan film mana pun, sehingga jawabannya "Tidak ada film..." padahal ada 3. Terjadi 2 dari 10 percobaan.
+- **Perbaikan:** kalau `title` tidak cocok dengan judul apa pun dan ada `director` atau `star`, kolom judul diabaikan (nama orang tidak mungkin judul film). Docstring tool juga menyuruh jangan menaruh nama orang di `title`.
+- **Hasil:** 10 dari 10 percobaan benar. Seri Star Wars, judul yang memang tidak ada, dan judul + aktor tidak berubah.
+- **Pelajaran:** pertanyaan hitung dan filter berlapis membuka kombinasi argumen yang tidak terduga. Set uji yang lebih lebar menemukannya.
+- **Status:** ➕ Tambahan

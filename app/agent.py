@@ -1,5 +1,6 @@
 """Agent ReAct: LLM + tools + system prompt dari Langfuse, dan setiap run di-trace ke Langfuse."""
 
+import re
 from collections.abc import Iterator
 from functools import lru_cache
 
@@ -8,9 +9,23 @@ from langfuse import get_client
 from langfuse.langchain import CallbackHandler
 
 from app.config import get_llm
-from app.tools import TOOLS
+from app.tools import INDONESIAN_WORDS, TOOLS
 
 PROMPT_NAME = "movie-agent-system"  # dibuat lewat UI Langfuse, label "production" (K03)
+
+# Kata penanda bahasa (K65). Heuristik sederhana: bahasa dengan kata penanda terbanyak menang, seri = Indonesia.
+ENGLISH_MARKERS = {"the", "is", "are", "what", "who", "how", "which", "movie", "movies", "like", "about", "best", "with",
+                   "for", "of", "an", "me", "show", "find", "recommend", "directed", "does", "do", "can", "any", "some",
+                   "from", "in", "to", "there", "many", "similar", "give", "list", "and", "that", "this", "longest"}
+INDONESIAN_MARKERS = INDONESIAN_WORDS | {"film", "apa", "siapa", "berapa", "bagaimana", "mana", "paling", "terbaik",
+                                         "mirip", "ada", "tolong", "carikan", "dong", "bisa", "dan", "di", "ke", "sutradara"}
+
+
+def reply_language(text: str) -> str:
+    """"English" kalau pesan lebih banyak memuat kata penanda Inggris, selain itu "Indonesian" (termasuk kalau seri)."""
+    words = re.findall(r"[a-z]+", text.lower())
+    english, indonesian = sum(w in ENGLISH_MARKERS for w in words), sum(w in INDONESIAN_MARKERS for w in words)
+    return "English" if english > indonesian else "Indonesian"
 
 
 @lru_cache(maxsize=4)
@@ -32,6 +47,8 @@ def stream_agent(messages: list[dict], session_id: str, run: dict) -> Iterator[s
     run: diisi setelah selesai, berisi "messages" (pesan baru dari run ini) dan "trace_id" (untuk feedback).
     """
     agent, prompt_version = get_agent()
+    if reply_language(messages[-1]["content"]) == "English":  # model mengabaikan aturan bahasa di prompt, jadi ditegakkan di sini (K65)
+        messages = messages[:-1] + [{**messages[-1], "content": messages[-1]["content"] + "\n\n(Reply in English.)"}]
     handler = CallbackHandler()  # trace ke Langfuse (Sesi 17)
     config = {"callbacks": [handler], "metadata": {
         "langfuse_session_id": session_id,  # satu percakapan = satu session

@@ -13,7 +13,7 @@
 6. [`app/tools.py`](#6-apptoolspy)
 7. [`app/agent.py`](#7-appagentpy)
 8. [`streamlit_app.py`](#8-streamlit_apppy)
-11. [`scripts/eval.py`: set uji](#11-scriptsevalpy-set-uji-10-pertanyaan-k60)
+11. [`scripts/eval.py`: set uji](#11-scriptsevalpy-set-uji-14-pertanyaan-k60)
 
 ---
 
@@ -745,7 +745,7 @@ Kanal alfa menyimpan bentuk logo: piksel logo bernilai 255, latar dan lubang spr
 
 ---
 
-## 11. `scripts/eval.py`: set uji 10 pertanyaan (K60)
+## 11. `scripts/eval.py`: set uji 14 pertanyaan (K60)
 
 ### Tugasnya
 Menjalankan agent **sungguhan** (LLM, Qdrant, Langfuse) pada 10 pertanyaan yang mewakili tiap jenis kasus, memeriksa perilakunya secara otomatis, lalu menyimpan laporan di `notes/hasil-uji.md`. Dijalankan dengan `python -m scripts.eval`. Kode keluar 1 kalau ada yang gagal.
@@ -787,3 +787,21 @@ J: LLM tidak deterministik: pertanyaan yang sama bisa menghasilkan kalimat berbe
 J: Ya, tapi kecil: satu putaran sekitar 30 ribu token (kurang dari satu sen). Trace-nya juga tercatat di Langfuse dengan `session_id` berawalan `eval-`, jadi mudah dipisahkan dari pemakaian asli.
 
 > 🎬 **Untuk video:** "Saya tidak hanya mencoba app dengan tangan. Ada set uji 10 pertanyaan yang dijalankan otomatis: tiap pertanyaan memeriksa tool yang dipanggil, bahasa query, dan film kunci di jawaban. Pernah satu pertanyaan sering gagal, dan itu menunjukkan model tidak patuh pada satu aturan di prompt. Ini laporannya."
+
+### Dua bahasa dan penjagaan tool (K65, K66)
+Tiga aturan di prompt (query berbahasa Inggris, jujur soal adegan, bahasa jawaban) ternyata sering diabaikan `gpt-4.1-mini`. Setiap kali, pemecahannya sama: **tegakkan di kode, jangan hanya di prompt.**
+
+| Aturan | Penegakan di kode |
+|---|---|
+| Query `search_movies` harus Inggris (K61) | `search_movies` menolak query yang memuat kata Indonesia, agent mengulang |
+| Jujur soal adegan atau kutipan (K59) | parameter `describes_scene` + `note` di hasil tool |
+| Bahasa jawaban = bahasa pertanyaan (K65) | `reply_language()` di `agent.py` menambah "(Reply in English.)" di pesan untuk agent |
+| Nama orang tidak boleh di kolom `title` (K66) | `_ranked()` mengabaikan `title` yang tidak cocok kalau ada `director` atau `star` |
+
+```python
+english = sum(w in ENGLISH_MARKERS for w in words); indonesian = sum(w in INDONESIAN_MARKERS for w in words)
+return "English" if english > indonesian else "Indonesian"
+```
+Bahasa dideteksi dengan menghitung kata penanda, tanpa panggilan API. Hasil seri (termasuk pertanyaan satu kata seperti "Inception") dianggap Indonesia.
+
+> 🎬 **Untuk video:** "Saya menemukan model sering mengabaikan aturan di prompt, jadi saya memindahkan aturan penting ke kode: tool menolak query yang bukan Inggris, tool menandai pertanyaan adegan, dan kode memastikan bahasa jawaban sesuai pertanyaan. Set uji 14 pertanyaan membuktikannya, tiga putaran berturut-turut lolos semua."
