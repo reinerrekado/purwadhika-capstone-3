@@ -182,6 +182,8 @@ Tidak ada prompt yang ditulis di kode. Semuanya diambil dari Langfuse dengan lab
 
 Prompt diambil ulang setiap 60 detik, jadi versi baru di Langfuse langsung terpakai tanpa restart app.
 
+Setiap pemanggilan LLM tercatat sebagai trace dan tertaut ke versi prompt yang dipakainya, termasuk skrip terjemahan offline (tag `offline`), sehingga tab Metrics tiap prompt di Langfuse terisi.
+
 **Catatan operasional di hasil tool.** Selain prompt di atas, beberapa tool menyisipkan kalimat pendek di hasilnya, misalnya `note` untuk pertanyaan tentang adegan atau kutipan ("dataset hanya punya sinopsis, jangan mengaku film itu memuat adegannya"), `hint` kalau judul tidak ketemu, dan pesan yang menyuruh mengulang query dalam bahasa Inggris. Kalimat itu bagian dari **output tool**, bukan prompt agent, dan sengaja ditulis di `app/tools.py` berdampingan dengan logika yang memicunya, supaya aturannya, kodenya, dan ujinya selalu sejalan. Hal yang sama berlaku untuk satu baris "(Reply in English.)" yang ditambahkan `app/agent.py` pada pertanyaan berbahasa Inggris. Aturannya diuji otomatis oleh `python -m scripts.eval`.
 
 ## Menjalankan
