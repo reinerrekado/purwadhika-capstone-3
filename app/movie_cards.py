@@ -211,3 +211,76 @@ _MOVIE_HERO = st.components.v2.component(
 def movie_hero(movie: dict, *, key: str) -> None:
     """Bagian atas panel detail. movie: {"title", "meta", "rating", "metascore", "overview", "poster" atau None}."""
     _MOVIE_HERO(data=movie, key=key)
+
+
+_PERSON_HERO_CSS = """
+.hero { position: relative; overflow: hidden; border-radius: 6px; background: #161513; color: #EDEAE4;
+  font-family: var(--st-font, inherit); }
+.backdrop { position: absolute; inset: -60px; width: calc(100% + 120px); height: calc(100% + 120px);
+  object-fit: cover; filter: blur(42px) brightness(0.3) saturate(1.15); }
+.content { position: relative; display: flex; gap: 32px; align-items: flex-start; padding: 28px; }
+.photo, .initials { width: 200px; aspect-ratio: 3 / 4; flex: none; border-radius: 4px; display: block;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5); }
+.photo { object-fit: cover; object-position: 50% 20%; }
+.initials { display: grid; place-items: center; background: #26231F; font-family: "Anton", Impact, sans-serif;
+  font-size: 72px; letter-spacing: 2px; color: #F2531B; }
+.info { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.eyebrow { font-family: var(--st-code-font, monospace); font-size: 12px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: #CFC9C0; }
+h1 { margin: 0; font-family: "Anton", Impact, sans-serif; font-weight: 400; font-size: 64px; line-height: 0.95;
+  letter-spacing: 1px; text-transform: uppercase; overflow-wrap: anywhere; }
+.scores { display: flex; flex-wrap: wrap; gap: 6px 22px; align-items: baseline; font-size: 14px; color: #CFC9C0; }
+.scores strong { font-size: 20px; color: #EDEAE4; }
+p { margin: 0; max-width: 640px; font-size: 16px; line-height: 1.6; color: #E4DFD7; }
+p.empty { color: #CFC9C0; font-style: italic; }
+@media (max-width: 640px) {
+  .content { flex-direction: column; gap: 18px; padding: 18px; }
+  .photo, .initials { width: 140px; }
+  .initials { font-size: 52px; }
+  h1 { font-size: 40px; }
+  p { font-size: 15px; }
+}
+"""
+
+_PERSON_HERO_JS = """
+export default function ({ data, parentElement }) {
+  const hero = parentElement.querySelector(".hero")
+  const backdrop = hero.querySelector(".backdrop"), photo = hero.querySelector(".photo")
+  const initials = hero.querySelector(".initials")
+  const showPhoto = (visible) => { backdrop.hidden = photo.hidden = !visible; initials.hidden = visible }
+  photo.onerror = () => showPhoto(false)  // foto Wikipedia gagal dimuat: tampilkan inisial
+  showPhoto(Boolean(data?.photo))
+  if (data?.photo) {
+    backdrop.src = data.photo
+    photo.src = data.photo
+    photo.alt = `Foto ${data.name}`
+  }
+  initials.textContent = data?.initials ?? ""
+  initials.setAttribute("aria-label", `Inisial ${data?.name ?? ""}`)
+  hero.querySelector(".eyebrow").textContent = data?.eyebrow ?? ""
+  hero.querySelector("h1").textContent = data?.name ?? ""
+  hero.querySelector(".scores").replaceChildren(...(data?.stats ?? []).map(({ value, label }) => {
+    const item = document.createElement("span"), strong = document.createElement("strong")
+    strong.textContent = value
+    item.append(strong, label ? ` ${label}` : "")
+    return item
+  }))
+  const bio = hero.querySelector("p")
+  bio.textContent = data?.bio || data?.empty || ""
+  bio.className = data?.bio ? "" : "empty"
+}
+"""
+
+_PERSON_HERO = st.components.v2.component(
+    "person_hero",
+    html="""<div class="hero"><img class="backdrop" alt="" aria-hidden="true"><div class="content">
+<img class="photo"><div class="initials" role="img"></div><div class="info"><div class="eyebrow"></div><h1></h1>
+<div class="scores"></div><p></p></div></div></div>""",
+    css=_PERSON_HERO_CSS, js=_PERSON_HERO_JS,
+)
+
+
+def person_hero(person: dict, *, key: str) -> None:
+    """Bagian atas panel orang (K71). person: {"name", "initials", "eyebrow", "stats": [{"value", "label"}], "bio",
+    "empty" (teks kalau bio kosong), "photo" atau ""}. Tanpa foto atau foto gagal dimuat: kotak inisial."""
+    _PERSON_HERO(data=person, key=key)

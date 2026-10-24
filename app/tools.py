@@ -16,7 +16,7 @@ from langchain_qdrant import QdrantVectorStore
 from qdrant_client import models
 
 from app.config import env, get_embeddings
-from app.data import all_genres, load_movies, to_records
+from app.data import _filmography, all_genres, load_movies, load_people, person_profile, to_records
 from app.rerank import rerank
 
 # 21 genre persis dari dataset. LLM hanya bisa memilih salah satu nilai ini (kritik diri #3).
@@ -181,6 +181,76 @@ def get_movie_details(titles: list[str]) -> str:
     return json.dumps(result, ensure_ascii=False)
 
 
+@lru_cache(maxsize=1)
+def _person_index() -> dict[str, str]:
+    """{nama yang dinormalisasi: nama di dataset}, dari nama dataset dan judul Wikipedia (K71).
+
+    Judul Wikipedia ikut supaya "Wong Kar-wai" menemukan "Kar-Wai Wong" dan "Tony Leung Chiu-wai" menemukan
+    "Tony Chiu-Wai Leung". Nama dataset didahulukan kalau dua nama bertabrakan.
+    """
+    index = {}
+    for name, row in load_people().iterrows():
+        index[normalize(name)] = name
+    for name, row in load_people().iterrows():
+        if row["title"]:
+            index.setdefault(normalize(row["title"]), name)
+    return index
+
+
+def find_person(query: str) -> list[str]:
+    """Cari orang dalam 3 lapis, paling cocok dulu, maksimal 5: nama persis, semua kata ada (urutan bebas), lalu typo."""
+    index, words = _person_index(), set(normalize(query).split())
+    if not words:
+        return []
+    popularity = lambda name: -len(_filmography().get(name, []))  # yang tampil di lebih banyak film dulu
+    exact = index.get(normalize(query))
+    partial = sorted({name for key, name in index.items() if words <= set(key.split())}, key=popularity)
+    if not exact and not partial:  # lapis typo: tiap kata query hampir sama dengan satu kata di nama (cutoff 0,8, seperti find_title)
+        partial = sorted({name for key, name in index.items()
+                          if all(difflib.get_close_matches(w, key.split(), n=1, cutoff=0.8) for w in words)}, key=popularity)
+    return list(dict.fromkeys([exact, *partial]) if exact else partial)[:5]
+
+
+@tool(parse_docstring=True)
+def get_person_info(name: str) -> str:
+    """Look up a director or actor from the dataset: short biography, photo source, and their movies in the top 1,000.
+
+    Use this when the user asks who a person is ("who is Christopher Nolan", "tell me about Tom Hanks"),
+    what a person is known for, or about their background. Tolerates typos and other spellings of the name.
+    For a ranked list of a person's movies use rank_movies with director or star instead. Never use it to find who
+    directed or starred in a movie, or anything else about a movie: use get_movie_details for that.
+
+    Args:
+        name: A person's name (not a movie title), full or partial, e.g. Christopher Nolan or Hanks.
+    """
+    matches = find_person(name)
+    if not matches:
+        # Judul film sering salah dikirim ke sini ("sutradara Parasite"), dan model tidak patuh pada petunjuk. Jadi tool
+        # ini sendiri mencari filmnya dan mengembalikan detailnya, apa pun tool yang dipilih model (K71).
+        as_movie = json.loads(get_movie_details.invoke({"titles": [name]}))
+        if as_movie["movies"]:
+            as_movie["note"] = (f"'{name}' is a movie title, not a person. These are that movie's details, including "
+                                "its director and cast. Answer from them.")
+            return json.dumps(as_movie, ensure_ascii=False)
+        return json.dumps({"movies": [], "not_found": [{"query": name}],
+                           "hint": "No director or main actor with this name is in the dataset. If it could be a movie "
+                                   "title, call get_movie_details with its original title (non-English movies use "
+                                   "their original titles, e.g. Parasite = Gisaengchung). Otherwise say the person is "
+                                   "not in the dataset, and do not describe them from your own knowledge."})
+    person = person_profile(matches[0])
+    movies = load_movies().set_index("id")
+    return json.dumps({
+        "person": {"name": person["name"], "roles": ["director" if r == "Sutradara" else "actor" for r in person["roles"]],
+                   "movies_in_dataset": len(person["films"]), "average_rating": person["average_rating"],
+                   "years_active_in_dataset": person["years"], "biography": person["bio_en"] or None,
+                   "source": person["url"] or None},
+        "movies": [{"id": movie_id, "title": movies.loc[movie_id, "title"], "year": int(movies.loc[movie_id, "year"]),
+                    "rating": float(movies.loc[movie_id, "rating"]), "role": "director" if role == "Sutradara" else "actor"}
+                   for movie_id, role in person["films"][:10]],
+        "other_matches": matches[1:],
+    }, ensure_ascii=False)
+
+
 @tool(parse_docstring=True)
 def similar_movies(title: str, year_from: int | None = None, year_to: int | None = None) -> str:
     """Find movies similar to a given movie ("movies like Inception"), by comparing plot embeddings.
@@ -283,6 +353,6 @@ def _ranked(sort_by, order, title, genre, year_from, year_to, director, star):
     return df.sort_values(sort_by, ascending=(order == "lowest"))
 
 
-TOOLS = [search_movies, similar_movies, get_movie_details, rank_movies]
+TOOLS = [search_movies, similar_movies, get_movie_details, rank_movies, get_person_info]
 # Tool yang punya "Muat lebih banyak" (K45, K47): nama tool → fungsi satu halaman dengan offset.
 PAGERS = {"search_movies": search_page, "similar_movies": similar_page, "rank_movies": rank_page}

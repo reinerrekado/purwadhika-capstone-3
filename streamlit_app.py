@@ -11,13 +11,14 @@ import streamlit as st
 
 from app import quota
 from app.agent import send_feedback, stream_agent
-from app.data import load_movies, movie_facts
-from app.movie_cards import movie_cards, movie_hero
+from app.data import load_movies, movie_facts, person_profile
+from app.movie_cards import movie_cards, movie_hero, person_hero
 from app.story import MAX_FILMS, THEME_BY_NAME, auto_theme, render_story, story_text, watchlist_movies
 from app.tools import PAGE_SIZE, PAGERS
 
 # Harga openai/gpt-4.1-mini di OpenRouter (USD per 1 juta token, Okt 2026). Hanya untuk perkiraan biaya.
 PRICE_INPUT, PRICE_OUTPUT = 0.40, 1.60
+PERSON_PAGE = 6  # film per halaman di panel orang (K71)
 FX_URL = "https://api.frankfurter.dev/v1/latest?base=USD&symbols=IDR"  # kurs referensi ECB, gratis, tanpa API key
 LOGO = "static/rakfilm_mark.png"  # dibuat scripts/make_logo.py (K51)
 SUGGESTIONS = {  # contoh pertanyaan di tampilan awal: teks tombol → pertanyaan yang dikirim
@@ -84,18 +85,36 @@ def tool_total(content: str) -> int | None:
         return None
 
 
+def tool_person(content: str) -> dict | None:
+    """Profil orang dari hasil get_person_info (K71), kalau ada dan punya bio."""
+    try:
+        person = json.loads(content).get("person")
+    except json.JSONDecodeError:
+        return None
+    return person if person and person.get("biography") else None
+
+
+def call_docs(movies: list[dict], person: dict | None) -> list[dict]:
+    """Dokumen yang dipakai satu tool call (K57, K71): sinopsis film (dengan skor Qdrant kalau ada) dan bio Wikipedia."""
+    docs = [{"title": movie["title"], "year": movie["year"], "score": movie.get("score"),
+             "rerank_score": movie.get("rerank_score"), "overview": movie["overview"]}
+            for movie in movies if "overview" in movie]
+    if person:
+        docs.append({"title": person["name"], "year": "", "score": None, "rerank_score": None,
+                     "overview": person["biography"]})
+    return docs
+
+
 def summarize_run(new_messages: list) -> dict:
     """Ambil tool call, film yang ditemukan tool, dan pemakaian token dari satu run agent."""
     ai_messages = [m for m in new_messages if m.type == "ai"]
     movies = {m.tool_call_id: tool_movies(m.content) for m in new_messages if m.type == "tool"}
     found = {movie["id"]: movie for result in movies.values() for movie in result}  # tanpa duplikat
     totals = {m.tool_call_id: tool_total(m.content) for m in new_messages if m.type == "tool"}
+    persons = {m.tool_call_id: tool_person(m.content) for m in new_messages if m.type == "tool"}
     tool_calls = [{"name": call["name"], "args": call["args"],
                    "titles": [movie["title"] for movie in movies.get(call["id"], [])],
-                   # dokumen yang dipakai (K57): hanya tool yang mengembalikan sinopsis; skor hanya dari Qdrant
-                   "docs": [{"title": movie["title"], "year": movie["year"], "score": movie.get("score"),
-                             "rerank_score": movie.get("rerank_score"), "overview": movie["overview"]}
-                            for movie in movies.get(call["id"], []) if "overview" in movie],
+                   "docs": call_docs(movies.get(call["id"], []), persons.get(call["id"])),
                    "ids": [movie["id"] for movie in movies.get(call["id"], [])],
                    "total": totals.get(call["id"])}
                   for m in ai_messages for call in m.tool_calls]
@@ -182,6 +201,56 @@ def ask(question: str) -> None:
     st.rerun()
 
 
+def open_person(name: str) -> None:
+    """Titipkan nama orang, lalu jalankan ulang app: panelnya dibuka di akhir skrip (satu panel per rerun)."""
+    st.session_state.open_person = name
+    st.rerun()
+
+
+def show_more_people(name: str) -> None:
+    """Callback "Muat N film lagi" di panel orang: tambah satu halaman film yang ditampilkan."""
+    st.session_state[f"person_shown_{name}"] = st.session_state.get(f"person_shown_{name}", PERSON_PAGE) + PERSON_PAGE
+
+
+@st.dialog("Profil", width="large")
+def person_dialog(name: str) -> None:
+    """Panel orang saat nama sutradara atau pemain diklik (K71): foto, bio Wikipedia, angka dari dataset, dan filmnya."""
+    person = person_profile(name)
+    english = st.session_state.get(f"english_{name}", False)
+    stats = []
+    if person["films"]:
+        first, last = person["years"]
+        stats = [{"value": f"{person['average_rating']:.1f}", "label": "rata-rata rating"},
+                 {"value": str(len(person["films"])), "label": "film"},
+                 {"value": str(first) if first == last else f"{first}–{last}", "label": ""}]
+    person_hero({
+        "name": name, "initials": "".join(word[0] for word in name.split()[:2]).upper(), "photo": person["photo"],
+        "eyebrow": f"{' · '.join(person['roles'])} · {len(person['films'])} film di Top 1000",
+        "stats": stats, "bio": person["bio_en"] if english else person["bio_id"],
+        "empty": f"Wikipedia belum punya halaman bio untuk {name}. Yang tercatat di Rakfilm hanya filmnya di bawah ini.",
+    }, key=f"person_hero_{name}")
+
+    if person["bio_en"]:
+        with st.container(horizontal=True, vertical_alignment="center"):
+            st.caption("Teks asli dari Wikipedia (Inggris)" if english else "Terjemahan otomatis dari Wikipedia")
+            st.toggle("Teks asli", key=f"english_{name}")
+            st.link_button("Sumber: Wikipedia ↗", url=person["url"])  # CC BY-SA 4.0: sumber wajib disebut
+    if st.button(f"Tanya Rakfilm tentang {name.split()[0]}", type="primary", key=f"ask_person_{name}"):
+        ask(f"Ceritakan tentang {name}")
+
+    shown = st.session_state.get(f"person_shown_{name}", PERSON_PAGE)
+    films = person["films"]
+    st.markdown("**Film di Rakfilm**")
+    clicked = movie_cards(card_data([(movie_id, "") for movie_id, _ in films[:shown]]), layout="grid",
+                          key=f"person_films_{name}", on_open=lambda: None)
+    if len(films) > shown:
+        st.button(f"Muat {min(PERSON_PAGE, len(films) - shown)} film lagi", key=f"more_films_{name}",
+                  on_click=show_more_people, args=(name,), icon=":material/expand_more:")
+    if clicked is not None:  # klik poster → panel detail film (lewat penyalur di akhir skrip)
+        st.session_state.open_movie = clicked
+        st.rerun()
+
+
 @st.dialog("Detail film", width="large")
 def movie_dialog(movie_id: int) -> None:
     """Panel detail saat kartu diklik (K41, K43, K51): latar poster buram, info, sutradara/pemain, rak, fakta."""
@@ -194,15 +263,15 @@ def movie_dialog(movie_id: int) -> None:
         "poster": movie["poster"] if poster_available(movie["poster"]) else None,
     }, key=f"hero_{movie_id}")
 
-    with st.container(horizontal=True, vertical_alignment="center"):  # klik nama → film lain orang itu (K43)
+    with st.container(horizontal=True, vertical_alignment="center"):  # klik nama → panel orang (K71, merevisi K43)
         st.caption("Sutradara")
         if st.button(movie["director"], key=f"director_{movie_id}"):
-            ask(f"Film lain yang disutradarai {movie['director']}")
+            open_person(movie["director"])
     with st.container(horizontal=True, vertical_alignment="center"):
         st.caption("Pemain")
         for star in movie["stars"]:
             if st.button(star, key=f"star_{movie_id}_{star}"):
-                ask(f"Film lain yang dibintangi {star}")
+                open_person(star)
 
     watchlist = st.session_state.watchlist
     with st.container(horizontal=True):
@@ -339,7 +408,8 @@ def show_details(details: dict, index: int) -> None:
                 for doc in call["docs"]:
                     score = f" · kemiripan vektor {doc['score']:.3f}" if doc["score"] is not None else ""
                     score += f" · skor reranker {doc['rerank_score']:.2f}" if doc.get("rerank_score") is not None else ""
-                    st.markdown(f"**{doc['title']} ({doc['year']})**{score}")
+                    label = f"{doc['title']} ({doc['year']})" if doc["year"] else doc["title"]  # bio orang tanpa tahun
+                    st.markdown(f"**{label}**{score}")
                     st.caption(doc["overview"])
     usd = cost_usd(details["input_tokens"], details["output_tokens"])
     st.caption(f"{details['input_tokens']:,} input · {details['output_tokens']:,} output token · "
@@ -426,8 +496,12 @@ elif question:
         show_details(details, len(st.session_state.chat))
     st.session_state.chat.append({"role": "assistant", "content": answer, "details": details})
 
-# Satu panel per rerun: dari rak di sidebar, dinding poster, atau tombol IG story.
-if (opened := rack_click if rack_click is not None else wall_click) is not None:
+# Satu panel per rerun: dari panel orang (film atau orang lain), rak di sidebar, dinding poster, atau tombol IG story.
+if (opened_movie := st.session_state.pop("open_movie", None)) is not None:
+    movie_dialog(opened_movie)
+elif opened_person := st.session_state.pop("open_person", None):
+    person_dialog(opened_person)
+elif (opened := rack_click if rack_click is not None else wall_click) is not None:
     movie_dialog(opened)
 elif story_click:
     story_dialog()

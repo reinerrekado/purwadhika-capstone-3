@@ -74,6 +74,10 @@ def called(tool: str) -> Check:
     return Check(f"memanggil {tool}", lambda r: any(c["name"] == tool for c in r.calls))
 
 
+def called_any(*tools: str) -> Check:
+    return Check("memanggil salah satu dari " + ", ".join(tools), lambda r: any(c["name"] in tools for c in r.calls))
+
+
 def not_called(tool: str) -> Check:
     return Check(f"tidak memanggil {tool}", lambda r: all(c["name"] != tool for c in r.calls))
 
@@ -150,7 +154,8 @@ CASES = [
     Case("film yang mirip Interstellar", "film mirip",
          [called("similar_movies"), answer_has_any("Gravity", "The Martian", "Arrival")]),
     Case("siapa sutradara Parasite dan berapa ratingnya?", "judul asli ≠ judul populer (K32)",
-         [called("get_movie_details"), answer_has("Bong Joon Ho", "8.6")]),
+         # get_person_info boleh dipakai model; tool itu meneruskan judul film ke pencarian film (K71)
+         [called_any("get_movie_details", "get_person_info"), answer_has("Bong Joon Ho", "8.6")]),
     Case("5 film horor terbaik", "peringkat per genre",
          [called("rank_movies"), arg_is("rank_movies", "genre", "Horror"), answer_lists(5), before("Psycho", "The Shining")]),
     Case("rekomendasikan film horor", "rekomendasi genre saja (K49)",
@@ -173,6 +178,12 @@ CASES = [
          [called("get_movie_details"), answer_has("The Godfather", "Goodfellas")]),
     Case("movies like Inception", "pertanyaan berbahasa Inggris (K65)",
          [called("similar_movies"), answer_has_any("Inside Man", "The Matrix", "Gattaca", "The Bourne")]),
+    Case("siapa Christopher Nolan?", "profil orang (K71)",
+         [called("get_person_info"), answer_has("Nolan"), answer_has_any("pembuat film", "sutradara", "filmmaker")]),
+    Case("tell me about Tom Hanks", "profil orang, bahasa Inggris (K71)",
+         [called("get_person_info"), answer_has("Hanks"), answer_has_any("actor", "filmmaker")]),
+    Case("siapa Gal Gadot?", "orang yang tidak ada di dataset (K71)",
+         [called("get_person_info"), answer_lacks("Wonder Woman"), answer_has_any("tidak", "bukan")]),
 ]
 
 

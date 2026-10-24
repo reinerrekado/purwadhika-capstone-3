@@ -94,6 +94,60 @@ def movie_facts(movie_id: int) -> list[str]:
     return facts
 
 
+@lru_cache(maxsize=1)
+def load_people() -> pd.DataFrame:
+    """Bio dan foto sutradara/pemain dari people.csv (K69, K70), diindeks nama seperti di dataset.
+
+    Kolom: title (judul Wikipedia), description, extract (Inggris), extract_id (Indonesia), photo, url.
+    Teks kosong berarti tidak ada. File tidak ada: tabel kosong, app tetap jalan tanpa bio.
+    """
+    columns = ["title", "description", "extract", "extract_id", "photo", "url"]
+    if not PEOPLE_PATH.exists():
+        return pd.DataFrame(columns=columns).rename_axis("name")
+    people = pd.read_csv(PEOPLE_PATH, keep_default_na=False).set_index("name")
+    return people.reindex(columns=columns, fill_value="")
+
+
+@lru_cache(maxsize=1)
+def _filmography() -> dict[str, list[tuple[int, str]]]:
+    """{nama: [(id film, "Sutradara" atau "Pemain")]} untuk semua orang, dihitung sekali dari 1.000 film."""
+    films: dict[str, list[tuple[int, str]]] = {}
+    for movie in load_movies().itertuples():
+        films.setdefault(movie.director, []).append((movie.id, "Sutradara"))
+        for star in movie.stars:
+            films.setdefault(star, []).append((movie.id, "Pemain"))
+    return films
+
+
+def person_profile(name: str) -> dict:
+    """Profil satu orang: bio, foto, dan angka yang dihitung dari dataset (K71). Dipakai tool dan panel orang.
+
+    films diurutkan dari rating tertinggi; satu film yang orangnya sutradara dan pemain sekaligus dihitung sekali.
+    """
+    movies = load_movies().set_index("id")
+    seen, films = set(), []
+    for movie_id, role in sorted(_filmography().get(name, []), key=lambda f: -movies.loc[f[0], "rating"]):
+        if movie_id not in seen:
+            seen.add(movie_id)
+            films.append((int(movie_id), role))
+    people = load_people()
+    row = people.loc[name] if name in people.index else None
+    ratings = [movies.loc[movie_id, "rating"] for movie_id, _ in films]
+    years = [int(movies.loc[movie_id, "year"]) for movie_id, _ in films]
+    return {
+        "name": name,
+        "wikipedia_title": row["title"] if row is not None else "",
+        "bio_en": row["extract"] if row is not None else "",
+        "bio_id": (row["extract_id"] or row["extract"]) if row is not None else "",  # tanpa terjemahan: teks Inggris
+        "photo": row["photo"] if row is not None else "",
+        "url": row["url"] if row is not None else "",
+        "roles": sorted({role for _, role in films}),
+        "films": films,
+        "average_rating": round(float(sum(ratings) / len(ratings)), 1) if ratings else None,
+        "years": [min(years), max(years)] if years else [],
+    }
+
+
 def all_genres() -> list[str]:
     """21 genre unik, diurutkan. Dipakai untuk membatasi pilihan genre di tool."""
     return sorted(load_movies()["genres"].explode().unique())

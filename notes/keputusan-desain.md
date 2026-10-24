@@ -815,3 +815,24 @@ Sumber: [OpenRouter Embeddings API](https://openrouter.ai/docs/api-reference/emb
 - **Hasil:** 2.964 bio, semuanya punya terjemahan. Pemeriksaan kata-kata yang hilang yang saya coba lebih dulu terlalu naif (menandai "Amerika" sebagai nama hilang), jadi diganti pemeriksaan nama belakang.
 - **Keterbatasan jujur:** terjemahan tidak diperiksa satu per satu oleh manusia. Sampel acak (10 bio) terbaca natural, tapi tidak ada jaminan sempurna. Teks Inggris asli tetap ada di kolom `extract` sebagai cadangan.
 - **Status:** ➕ Tambahan
+
+### K71 · Profil orang: tool `get_person_info`, panel orang, dan data dari Wikipedia
+- **Dasar:** Pak Herman menyetujui sumber luar untuk informasi sutradara dan pemain. Catatan Sesi 17 menyebut "bikin tools baru" sebagai nilai tambah, dan menurut Pak Herman UI yang bagus juga dinilai.
+- **Yang dibangun (semua membaca `data/people.csv`, tanpa jaringan saat app berjalan):**
+  - `app/data.py`: `load_people()`, `_filmography()` (nama → film dan perannya, dihitung sekali), dan `person_profile(name)` (bio, foto, peran, rata-rata rating, rentang tahun, daftar film terurut rating). Satu fungsi dipakai bersama oleh tool dan panel.
+  - `app/tools.py`: `find_person(query)` dan tool kelima `get_person_info`. Pencarian nama 3 lapis (persis, semua kata ada urutan bebas, typo), memakai nama dataset **dan judul Wikipedia** sebagai alias, jadi "Wong Kar-wai" menemukan "Kar-Wai Wong".
+  - `app/movie_cards.py`: komponen `person_hero` (latar foto buram, foto rata di **atas**, inisial kalau tanpa foto atau foto gagal dimuat).
+  - `streamlit_app.py`: `person_dialog` (hero, terjemahan otomatis dengan tombol "Teks asli", tautan sumber Wikipedia CC BY-SA, tombol "Tanya Rakfilm tentang …", grid film dengan "Muat N film lagi"); nama sutradara dan pemain di panel film sekarang membuka panel orang. Bio yang dipakai agent tampil sebagai dokumen di expander tool call.
+- **Merevisi K43:** klik nama dulu mengirim pertanyaan "Film lain yang disutradarai X" ke agent (satu panggilan LLM). Sekarang membuka panel orang yang langsung menampilkan filmnya dari data, tanpa LLM. Tombol "Tanya Rakfilm tentang X" tetap ada untuk yang ingin bertanya.
+- **Hasil pengujian agent:**
+  - Pertanyaan tentang orang: 15 dari 15 memilih `get_person_info`. Pertanyaan lama ("film christoper nolan", "5 film Tom Hanks terbaik") tidak direbut.
+  - **Regresi ditemukan:** "siapa sutradara Parasite?" 2 dari 3 kali dikirim ke tool orang seolah "Parasite" nama orang, sekali dijawab salah ("tidak ada dalam dataset"). Petunjuk di hasil tool tidak dipatuhi, dan pencocokan judul tidak cukup karena judul asli berbeda (Parasite = Gisaengchung, K32).
+  - **Perbaikan (pola K59, K61):** kalau nama tidak ketemu sebagai orang, tool **sendiri** mencari film itu dan mengembalikan detailnya (sutradara dan pemain), apa pun tool yang dipilih model. Hasil: 5 dari 5 jawaban benar, tanpa menjawab dari ingatan.
+  - Orang yang tidak ada ("siapa Gal Gadot?"): ditolak jujur 4 dari 5, satu menjawab "tidak ada dalam data". Tidak ada yang mengarang bio.
+- **Prompt sistem tidak diubah.** Daftar tool di prompt v8 masih empat, tool kelima dikenali lewat skema dan docstring-nya. Perutean 100% di uji, tapi kalau suatu saat bergeser, langkahnya satu baris di prompt (v9).
+- **Biaya token:** hasil tool sekitar 1.500 karakter (±370 token, ±$0,0001) per pertanyaan orang. Panel orang tidak memakai token sama sekali.
+- **Set uji:** 14 → 17 pertanyaan (siapa Nolan, tell me about Tom Hanks, siapa Gal Gadot). Pertanyaan #3 menerima jalur baru lewat `called_any`.
+- **Mockup:** panel orang digabung ke kanvas utama (bukan artefak lepas), judul kanvas diganti "Rakfilm", dibagi 4 halaman, dan Story R&D ikut dipindah. Foto dipasang di atas (masukan Reiner).
+- **Keterbatasan jujur:** (1) klik di dalam panel (nama → panel orang, poster → panel film, "Tanya Rakfilm") tidak bisa diuji `AppTest`, karena `AppTest` menjalankan ulang seluruh skrip sedangkan panel hanya menjalankan ulang fragmennya; yang terbukti hanya penyalur membuka empat keadaan panel dan alur chat penuh. (2) Bio berbahasa Inggris dari Wikipedia dijawab ulang oleh LLM dalam bahasa pengguna; isinya tetap dari hasil tool. (3) Panel hanya untuk orang yang ada di dataset.
+- **Status:** ➕ Tambahan (tool baru)
+- **Hasil set uji 17 pertanyaan (prompt v8, tiga putaran):** 16/17, 17/17, 17/17. Satu-satunya kegagalan (putaran 1, pertanyaan 8 "Star Wars mana yang paling bagus?") adalah pemeriksaan bahasa jawaban. Empat jawaban pembanding semuanya Indonesia (kata penanda Indonesia 8 sampai 13 lawan 4 sampai 5 kata Inggris). Penyebabnya kelemahan pemeriksaan: judul film berbahasa Inggris menambah kata penanda Inggris, dan pada jawaban pendek bisa menang tipis. Pemeriksaan tidak diubah; kegagalan ini dicatat sebagai keterbatasan heuristik.

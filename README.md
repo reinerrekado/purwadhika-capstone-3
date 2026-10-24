@@ -13,6 +13,7 @@ Capstone Module 3, Purwadhika JCAIEH.
 
 - **Chat dengan ingatan sesi:** pertanyaan lanjutan ("yang paling lama durasinya?") memahami jawaban sebelumnya.
 - **Tool call dan dokumen terlihat:** setiap jawaban menampilkan tool yang dipanggil beserta argumennya, dokumen film yang di-retrieve dari Qdrant, skor kemiripan vektor, dan skor reranker.
+- **Profil orang:** klik nama sutradara atau pemain di panel film untuk membuka panel orang (foto, bio Wikipedia berbahasa Indonesia atau teks asli, rata-rata rating dan rentang tahun dari dataset, serta filmnya). Agent juga bisa menjawab "siapa Christopher Nolan?" lewat tool `get_person_info`.
 - **Reranker:** `search_movies` mengambil 15 kandidat dari Qdrant, lalu model reranker memilih 5 yang paling relevan terhadap pertanyaan. Kalau reranker gagal, urutan vektor dipakai.
 - **Usage per jawaban dan per sesi:** token input/output dan biaya dalam USD dan Rupiah (kurs harian ECB).
 - **Kartu film di dalam jawaban:** poster bisa diklik untuk membuka panel detail berisi sinopsis berbahasa Indonesia, fakta menarik, pemain dan sutradara yang bisa diklik, film mirip, dan tautan "Tonton di mana".
@@ -49,15 +50,18 @@ flowchart TD
     AG --> T2["similar_movies<br/>film yang mirip"]
     AG --> T3["get_movie_details<br/>detail judul"]
     AG --> T4["rank_movies<br/>peringkat, sutradara, aktor"]
+    AG --> T5["get_person_info<br/>bio sutradara/pemain"]
     T1 -->|15 kandidat| QD[("Qdrant Cloud")]
     T1 -->|diurutkan ulang| RR["Reranker<br/>qwen3-reranker-8b"]
     T2 -->|vektor film itu| QD
     T3 --> DF[("pandas<br/>dari CSV")]
     T4 --> DF
+    T5 --> PP[("people.csv<br/>bio + foto Wikipedia")]
 ```
 
-**Kenapa empat tool, dua jenis sumber:**
+**Kenapa lima tool, tiga jenis sumber:**
 - **RAG (Qdrant):** pertanyaan berbasis makna, misalnya "film tentang kesepian di luar angkasa", butuh pencarian vektor.
+- **Data orang (people.csv):** bio dan foto sutradara dan pemain diambil sekali dari Wikipedia (`scripts/fetch_people.py`), jadi pertanyaan "siapa Tom Hanks?" dijawab dari data, bukan dari ingatan model.
 - **Non-RAG (pandas):** pertanyaan pasti, misalnya "5 film horor dengan rating tertinggi" atau "film Christopher Nolan", lebih akurat kalau disaring dan diurutkan langsung dari tabel. Pencarian vektor tidak bisa mengurutkan berdasarkan rating.
 
 Agent menulis query `search_movies` dalam bahasa Inggris (sinopsis di dataset berbahasa Inggris), lalu menjawab dalam bahasa pengguna.
@@ -69,10 +73,10 @@ streamlit_app.py            UI: chat, kartu film, panel detail, rak, IG story, u
 app/
   config.py                 baca .env / Streamlit Secrets, buat klien LLM dan embedding
   agent.py                  agent + prompt dari Langfuse + tracing + feedback
-  tools.py                  4 tool agent + fungsi "muat lebih banyak"
+  tools.py                  5 tool agent + fungsi "muat lebih banyak"
   rerank.py                 reranker untuk hasil search_movies
   quota.py                  batas pemakaian untuk app publik (30 per sesi, 150 per jam)
-  data.py                   muat CSV ke DataFrame, fakta menarik
+  data.py                   muat CSV ke DataFrame, fakta menarik, profil orang
   movie_cards.py            komponen kartu poster (Streamlit Custom Components v2)
   story.py                  gambar IG story dengan Pillow
 scripts/
@@ -82,7 +86,7 @@ scripts/
   make_logo.py              gambar logo Rakfilm
   fetch_people.py           ambil bio dan foto sutradara/pemain dari Wikipedia (sekali saja)
   translate_people.py       terjemahkan bio ke bahasa Indonesia (sekali saja)
-  eval.py                   set uji 14 pertanyaan otomatis -> notes/hasil-uji.md
+  eval.py                   set uji 17 pertanyaan otomatis -> notes/hasil-uji.md
   check_readonly_key.py     uji key Qdrant read-only: baca berhasil, tulis ditolak
 data/
   imdb_top_1000.csv         dataset
@@ -169,14 +173,14 @@ Prompt diambil ulang setiap 60 detik, jadi versi baru di Langfuse langsung terpa
 python scripts/check_connections.py   # 1. pastikan ketiga layanan terhubung
 python -m scripts.ingest              # 2. isi Qdrant (cukup sekali)
 streamlit run streamlit_app.py        # 3. buka http://localhost:8501
-python -m scripts.eval              # 4. (opsional) uji 14 pertanyaan otomatis
+python -m scripts.eval              # 4. (opsional) uji 17 pertanyaan otomatis
 ```
 
 Langkah 2 aman diulang: collection dibuat ulang dari nol, jadi data tidak tergandakan.
 
 ## Pengujian
 
-`python -m scripts.eval` menjalankan agent sungguhan pada 14 pertanyaan yang mewakili tiap jenis kasus (cari dari cerita, film mirip, judul asli, peringkat per genre, typo sutradara, filter tahun, pertanyaan hitung, perbandingan, pertanyaan lanjutan, seri film, adegan, bahasa Inggris, di luar topik). Setiap pertanyaan diperiksa otomatis: tool yang dipanggil, argumennya, film kunci di jawaban, query `search_movies` berbahasa Inggris, dan jawaban yang jujur untuk pertanyaan adegan. Laporan terbaru ada di [notes/hasil-uji.md](notes/hasil-uji.md).
+`python -m scripts.eval` menjalankan agent sungguhan pada 17 pertanyaan yang mewakili tiap jenis kasus (cari dari cerita, film mirip, judul asli, peringkat per genre, typo sutradara, filter tahun, pertanyaan hitung, perbandingan, pertanyaan lanjutan, seri film, adegan, bahasa Inggris, profil orang, di luar topik). Setiap pertanyaan diperiksa otomatis: tool yang dipanggil, argumennya, film kunci di jawaban, query `search_movies` berbahasa Inggris, dan jawaban yang jujur untuk pertanyaan adegan. Laporan terbaru ada di [notes/hasil-uji.md](notes/hasil-uji.md).
 
 Jawaban LLM tidak persis sama setiap kali, jadi yang diperiksa adalah perilaku, bukan kata per kata.
 ## Contoh pertanyaan
@@ -190,6 +194,7 @@ Jawaban LLM tidak persis sama setiap kali, jadi yang diperiksa adalah perilaku, 
 | bandingkan The Godfather dan Goodfellas | `get_movie_details` |
 | 5 film horor terbaik | `rank_movies` |
 | film Christopher Nolan | `rank_movies` |
+| siapa Christopher Nolan? | `get_person_info` |
 | film Tom Hanks yang paling lama durasinya | `rank_movies` |
 | Star Wars mana yang paling bagus? | `rank_movies` |
 | ada berapa film Hayao Miyazaki tahun 2000-an? | `rank_movies` |

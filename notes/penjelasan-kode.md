@@ -15,6 +15,7 @@
 8. [`streamlit_app.py`](#8-streamlit_apppy)
 11. [`scripts/eval.py`: set uji](#11-scriptsevalpy-set-uji-14-pertanyaan-k60)
 12. [`scripts/fetch_people.py` dan `translate_people.py`: data orang film](#12-data-orang-film-k69-k70)
+13. [`get_person_info` dan panel orang](#13-get_person_info-dan-panel-orang-k71)
 
 ---
 
@@ -253,6 +254,7 @@ Berisi fungsi-fungsi yang **boleh dipanggil agent**: dua tool Qdrant dan dua too
 | `similar_movies` | Qdrant (vektor film) | "film yang mirip Inception": tetangga terdekat dari vektor sebuah film (K34) |
 | `get_movie_details` | `data.py` (pandas) | menyebut judul, pertanyaan lanjutan, perbandingan |
 | `rank_movies` | `data.py` (pandas) | "paling bagus/terlaris/berapa banyak", seri film, film seorang sutradara atau aktor |
+| `get_person_info` | `people.csv` + `data.py` | "siapa Christopher Nolan?": bio Wikipedia, peran, rata-rata rating, dan filmnya di dataset (K71) |
 
 Ketiganya mengembalikan JSON dengan kunci `"movies"` (K28).
 
@@ -861,3 +863,61 @@ J: Cakupan Wikipedia sudah 100% untuk orang yang muncul di 3 film atau lebih dan
 J: Tiga pemeriksaan: audit pasangan nama-judul yang berbeda (87 baris dibaca satu per satu), pembuangan pencocokan salah orang, dan pemeriksaan bahwa terjemahan menyebut orangnya.
 
 > 🎬 **Untuk video:** "Dataset tidak punya bio atau foto, jadi saya mengambilnya dari Wikipedia sekali secara offline. Percobaan pertama hanya menemukan 28% karena pembatasan kecepatan saya catat sebagai 'tidak ada'. Itu saya perbaiki. Lalu pencocokan nama menukar beberapa orang, jadi saya ganti dengan pembandingan kata per kata dan memeriksa hasilnya satu per satu. Hasil akhirnya bio untuk 92,6% orang, dan 100% untuk yang muncul di tiga film atau lebih."
+
+---
+
+## 13. `get_person_info` dan panel orang (K71)
+
+### Tugasnya
+Menjawab "siapa Christopher Nolan?" dari data, dan membuka panel orang (foto, bio, angka, film) saat nama sutradara atau pemain diklik. Keduanya memakai satu fungsi data yang sama, `person_profile()`, jadi tidak ada angka yang bisa berbeda antara jawaban agent dan panel.
+
+### Fungsi-fungsinya
+| Fungsi | Tugas |
+|---|---|
+| `load_people()` (`data.py`) | Baca `people.csv` sekali, diindeks nama seperti di dataset |
+| `_filmography()` | `{nama: [(id film, peran)]}` untuk semua orang, dihitung sekali dari 1.000 film |
+| `person_profile(name)` | Bio, foto, peran, rata-rata rating, rentang tahun, dan film terurut rating |
+| `find_person(query)` (`tools.py`) | Cari nama dalam 3 lapis: persis, semua kata ada (urutan bebas), lalu typo |
+| `get_person_info` | Tool kelima: hasilnya bio Inggris, angka dari dataset, dan 10 film teratas |
+| `person_hero` (`movie_cards.py`) | Komponen bagian atas panel: latar foto buram, foto di atas, inisial kalau tanpa foto |
+| `person_dialog` (`streamlit_app.py`) | Panel: hero, tombol "Teks asli", tautan sumber, "Tanya Rakfilm", grid film |
+
+### Baris penting
+**Nama dataset dan judul Wikipedia sama-sama jadi alias:**
+```python
+index[normalize(name)] = name                      # "kar wai wong" -> "Kar-Wai Wong"
+index.setdefault(normalize(row["title"]), name)    # "wong kar wai" -> "Kar-Wai Wong"
+```
+Dataset menulis "Kar-Wai Wong", Wikipedia "Wong Kar-wai". Keduanya menunjuk orang yang sama, jadi pengguna menemukannya dengan ejaan mana pun. `setdefault` membuat nama dataset menang kalau dua kunci bertabrakan.
+
+**Urutan kata bebas, tanpa mencocokkan huruf per huruf:**
+```python
+partial = {name for key, name in index.items() if words <= set(key.split())}
+```
+`<=` pada `set` berarti "himpunan bagian": semua kata query ada di nama. "hanks" menemukan "Tom Hanks", "nolan" menemukan "Christopher Nolan". Hasil diurutkan menurut jumlah film (yang muncul di lebih banyak film dulu).
+
+**Tool yang meneruskan judul film ke pencarian film:**
+```python
+as_movie = json.loads(get_movie_details.invoke({"titles": [name]}))
+if as_movie["movies"]: return json.dumps(as_movie | {"note": "... a movie title, not a person ..."})
+```
+"siapa sutradara Parasite?" sering dikirim model ke tool orang seolah "Parasite" nama orang, dan petunjuk di hasil tool tidak dipatuhi. Maka kalau nama tidak ketemu sebagai orang, tool orang sendiri mencari film itu dan mengembalikan detailnya (sutradara dan pemain), apa pun tool yang dipilih model. Ini pola yang sama dengan K59 dan K61: aturan penting ditegakkan di kode.
+
+**Penyalur satu panel per rerun:**
+```python
+if (opened_movie := st.session_state.pop("open_movie", None)) is not None: movie_dialog(opened_movie)
+elif opened_person := st.session_state.pop("open_person", None): person_dialog(opened_person)
+```
+Panel orang dibuka lewat `open_person` yang dititipkan tombol nama, dan poster di panel orang membuka panel film lewat `open_movie`. `pop` membuang nilainya setelah dipakai, jadi panel tidak muncul lagi di rerun berikutnya.
+
+### Pertanyaan yang mungkin ditanyakan
+**T: Kenapa klik nama tidak lagi bertanya ke agent seperti dulu (K43)?**
+J: Panel orang menampilkan filmnya langsung dari data, tanpa panggilan LLM, jadi lebih cepat dan tanpa biaya token. Pengguna yang ingin penjelasan tetap bisa menekan "Tanya Rakfilm tentang …".
+
+**T: Dari mana bio dan fotonya?**
+J: Wikipedia, diambil sekali secara offline (bagian 12). Setiap panel menyebut sumbernya (CC BY-SA 4.0).
+
+**T: Bagaimana kalau orangnya tidak ada di dataset?**
+J: Tool mengembalikan "tidak ketemu" dan petunjuk untuk tidak menjelaskan orang itu dari ingatan model. Uji "siapa Gal Gadot?" menjawab jujur.
+
+> 🎬 **Untuk video:** "Dataset hanya punya nama. Saya menambah tool kelima, get_person_info, yang menjawab dari bio Wikipedia yang saya ambil offline, plus panel orang di UI. Saya menemukan model salah mengirim judul film ke tool ini, jadi tool-nya sendiri meneruskan ke pencarian film. Hasilnya benar walau model memilih tool yang salah."
