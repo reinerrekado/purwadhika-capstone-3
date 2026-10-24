@@ -13,6 +13,7 @@
 6. [`app/tools.py`](#6-apptoolspy)
 7. [`app/agent.py`](#7-appagentpy)
 8. [`streamlit_app.py`](#8-streamlit_apppy)
+11. [`scripts/eval.py`: set uji](#11-scriptsevalpy-set-uji-10-pertanyaan-k60)
 
 ---
 
@@ -733,3 +734,48 @@ mark.putalpha(alpha)
 Kanal alfa menyimpan bentuk logo: piksel logo bernilai 255, latar dan lubang sproket bernilai 0. Bentuk itu dipasang ke kotak satu warna (warna teks tema). Hasilnya logo yang sama, tapi warnanya mengikuti tema, sehingga tetap terbaca di latar kuning Komedi maupun hitam Horor.
 
 > 🎬 **Untuk video:** "Namanya Rakfilm. Tampilannya sengaja netral; warna datang dari poster filmnya, seperti Netflix atau Letterboxd. Tema terang dan gelap diatur di satu file config, logonya digambar dengan kode, dan semuanya memakai fitur resmi Streamlit, bukan CSS tempelan yang bisa rusak saat Streamlit di-update."
+
+---
+
+## 11. `scripts/eval.py`: set uji 10 pertanyaan (K60)
+
+### Tugasnya
+Menjalankan agent **sungguhan** (LLM, Qdrant, Langfuse) pada 10 pertanyaan yang mewakili tiap jenis kasus, memeriksa perilakunya secara otomatis, lalu menyimpan laporan di `notes/hasil-uji.md`. Dijalankan dengan `python -m scripts.eval`. Kode keluar 1 kalau ada yang gagal.
+
+### Fungsi-fungsinya
+| Bagian | Tugas |
+|---|---|
+| `run_turn()` | Satu giliran agent, memakai `stream_agent()` yang sama dengan app. Mengumpulkan tool yang dipanggil (nama, argumen, judul hasil, error), jawaban akhir, dan token |
+| `Check` + fungsi pembuat (`called`, `arg_is`, `english_queries`, `answer_has`, `before`, ...) | Satu pemeriksaan = deskripsi + fungsi `(Result) -> bool`. Dibuat dari fungsi kecil supaya daftar kasus terbaca seperti kalimat |
+| `GENERAL` | Tiga pemeriksaan untuk semua pertanyaan: jawaban tidak kosong, tidak ada error tool, tidak ditutup dengan pertanyaan |
+| `CASES` | 10 pertanyaan, apa yang diuji, dan pemeriksaannya. Kasus 7 memakai `follows=6`, jadi riwayat percakapannya diambil dari kasus 6 |
+| `write_report()` | Tabel ringkasan + rincian tiap pertanyaan (tool, hasil tiap pemeriksaan, potongan jawaban) |
+
+### Baris penting
+**Yang diperiksa adalah perilaku, bukan kata per kata:**
+```python
+Case("film christoper nolan", "typo nama sutradara",
+     [called("rank_movies"), arg_contains("rank_movies", "director", "nolan"), answer_has("The Dark Knight", "Inception")])
+```
+Jawaban LLM berbeda sedikit tiap kali, jadi yang diperiksa: tool yang benar dipanggil, argumennya masuk akal, dan film kuncinya muncul.
+
+**Pemeriksaan bahasa query (K26):**
+```python
+INDONESIAN = {"yang", "dengan", "tentang", ...}
+not (set(re.findall(r"[a-z]+", q.lower())) & INDONESIAN)
+```
+`&` pada `set` adalah irisan: kalau query memuat satu kata Indonesia saja, pemeriksaan gagal. Ini heuristik, bukan pendeteksi bahasa yang sempurna: query Indonesia yang tidak memuat satu pun kata di daftar akan lolos.
+
+**Bukti bahwa uji bisa gagal:** pemeriksaan diuji dengan hasil palsu yang meniru kegagalan di uji manual (query Indonesia, klaim adegan, penutup berupa pertanyaan, tanpa tool, salah tool). Semuanya terdeteksi.
+
+### Hasil
+Tiga putaran berturut-turut (24 Okt): putaran 1 lolos 10/10 (58/58 pemeriksaan), putaran 2 dan 3 lolos 9/10. Yang gagal selalu pertanyaan #10 (rendang): agent menutup penolakannya dengan "Ada hal lain tentang film yang bisa saya bantu?", melanggar aturan 6 prompt.
+
+### Pertanyaan yang mungkin ditanyakan
+**T: Kenapa hasilnya bisa berbeda antar putaran?**
+J: LLM tidak deterministik: pertanyaan yang sama bisa menghasilkan kalimat berbeda. Karena itu pemeriksaan melihat perilaku, dan satu pertanyaan yang sesekali gagal adalah temuan yang berguna (di sini: aturan "jangan menutup dengan pertanyaan" tidak dipatuhi model untuk penolakan).
+
+**T: Apakah uji ini memakai uang?**
+J: Ya, tapi kecil: satu putaran sekitar 30 ribu token (kurang dari satu sen). Trace-nya juga tercatat di Langfuse dengan `session_id` berawalan `eval-`, jadi mudah dipisahkan dari pemakaian asli.
+
+> 🎬 **Untuk video:** "Saya tidak hanya mencoba app dengan tangan. Ada set uji 10 pertanyaan yang dijalankan otomatis: tiap pertanyaan memeriksa tool yang dipanggil, bahasa query, dan film kunci di jawaban. Pernah satu pertanyaan sering gagal, dan itu menunjukkan model tidak patuh pada satu aturan di prompt. Ini laporannya."

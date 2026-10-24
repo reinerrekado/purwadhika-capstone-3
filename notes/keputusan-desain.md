@@ -660,3 +660,13 @@ Sumber: [OpenRouter Embeddings API](https://openrouter.ai/docs/api-reference/emb
 - **Prompt v7:** aturan 7 tetap dipakai apa adanya. Sebagian isinya kini diulang oleh catatan di hasil tool, tidak berbahaya, jadi tidak perlu v8.
 - **Pelajaran untuk video:** aturan yang kritis sebaiknya ditegakkan di kode atau di skema tool, bukan hanya di prompt.
 - **Status:** 🔁 Revisi K55 (prompt v6/v7)
+
+### K60 · Set uji 10 pertanyaan otomatis (`scripts/eval.py`)
+- **Dasar:** ketentuan modul: demo model 2-3 kali, dan target Fase 4 "set uji: semuanya lolos". Uji manual di app (PDF Reiner, 24 Okt) menemukan masalah yang tidak terlihat di tes terminal, jadi pemeriksaannya diotomatiskan.
+- **Cakupan:** 10 pertanyaan, masing-masing satu jenis kasus (cerita, film mirip, judul asli, peringkat genre, rekomendasi genre saja, typo sutradara, pertanyaan lanjutan, seri film, adegan, di luar topik). Ditambah 3 pemeriksaan umum: jawaban tidak kosong, tidak ada error tool, tidak ditutup pertanyaan.
+- **Yang diperiksa:** perilaku (tool yang dipanggil, argumennya, film kunci muncul, query Inggris), bukan kecocokan kata. Jawaban LLM tidak persis sama tiap kali.
+- **Keterbatasan:** pemeriksaan bahasa query berupa daftar kata Indonesia (heuristik). Query yang tidak memuat satu pun kata di daftar lolos.
+- **Bukti uji bisa gagal:** lima hasil palsu yang meniru kegagalan nyata semuanya terdeteksi.
+- **Hasil tiga putaran (24 Okt, prompt v7):** 10/10, 9/10, 9/10. Satu-satunya yang gagal: pertanyaan 10 (rendang), karena penolakan ditutup dengan pertanyaan, melanggar aturan 6. Laporan putaran terakhir (9/10) disimpan apa adanya di `notes/hasil-uji.md`.
+- **Tindak lanjut:** perbaikan aturan penolakan di prompt (v8), diuji ulang dengan skrip ini.
+- **Status:** ➕ Tambahan
