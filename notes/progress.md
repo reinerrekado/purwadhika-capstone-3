@@ -89,7 +89,7 @@
 - [x] Prompt `movie-agent-system` **v7** terpasang (24 Okt)
 - [ ] README: tambahkan 2-3 screenshot Rakfilm (dari pengguna)
 - [x] Repo dirapikan: `docs/anatomi-capstone-3.html` dan `Dataset Description.docx` dihapus, isinya pindah ke README (24 Okt, K56)
-- [ ] API key Qdrant **read-only** untuk penilai
+- [x] API key Qdrant **read-only** untuk penilai: dibuat dan diuji, baca berhasil dan tulis ditolak 403 (24 Okt, K62). Tinggal dimasukkan di Google Form saat pengumpulan
 
 ## Fase 5 · Cadangan (2–5 Nov, Module 4 masih berjalan)
 - [ ] Perbaikan dari hasil uji, kalau ada. **Catatan UI untuk dikerjakan nanti** (dari uji PDF 24 Okt, dicatat saja, belum diubah):

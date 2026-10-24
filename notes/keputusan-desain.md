@@ -687,3 +687,16 @@ Sumber: [OpenRouter Embeddings API](https://openrouter.ai/docs/api-reference/emb
 - **Hasil:** 3 putaran set uji setelah kedua perbaikan, semuanya 10/10 (58/58 pemeriksaan). Sebelumnya: 10/10, 9/10, 9/10 (v7) lalu 10/10, 9/10, 10/10 (v8 tanpa penjagaan query).
 - **Keterbatasan jujur:** 3 putaran adalah sampel kecil. Karena model tidak deterministik, kegagalan langka bisa muncul lagi. Set uji bisa dijalankan ulang kapan saja.
 - **Status:** 🔁 Revisi prompt v7
+
+### K62 · Key Qdrant read-only untuk penilai
+- **Dasar:** klarifikasi Pak Herman (22 Okt): Qdrant harus bisa dilihat penilai. Keputusan kita: URL + API key read-only, dan dashboard ditunjukkan di video.
+- **Pembuatan:** key baru di konsol Qdrant Cloud (cluster Capstone-M3), nama `penilai-pak-herman`, permission read-only, dengan tanggal kedaluwarsa. Terpisah dari key admin yang dipakai app.
+- **Verifikasi (`scripts/check_readonly_key.py`):**
+  - key berbeda dari key admin
+  - baca berhasil: 1000 point terbaca di `imdb_movies`
+  - tulis ditolak: percobaan membuat collection baru dijawab HTTP 403
+  - hanya `imdb_movies` yang ada di cluster, tidak ada collection percobaan tertinggal
+- **Keamanan:** key hanya ada di `.env` lokal (gitignored) dan dikirim ke Pak Herman lewat Google Form. Tidak ada di README, kode, notes, atau GitHub, karena repo akan dibuat public. `.env.example` hanya berisi nama variabelnya.
+- **Cara penilai melihat data:** buka `<URL cluster>/dashboard`, masukkan key, lalu pilih collection `imdb_movies`.
+- **Keterbatasan:** tanggal kedaluwarsa hanya bisa dilihat di konsol Cloud, bukan lewat skrip. Kalau key hilang, buat ulang, karena Qdrant hanya menampilkannya sekali.
+- **Status:** ➕ Tambahan
