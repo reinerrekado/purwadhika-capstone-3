@@ -89,10 +89,6 @@
 - [x] Prompt `movie-agent-system` **v7** terpasang (24 Okt)
 - [ ] README: tambahkan 2-3 screenshot Rakfilm (dari pengguna)
 - [x] Repo dirapikan: `docs/anatomi-capstone-3.html` dan `Dataset Description.docx` dihapus, isinya pindah ke README (24 Okt, K56)
-- [x] Expander tool call menampilkan dokumen yang di-retrieve + skor kemiripan (syarat wajib: tool call dan dokumen yang dipakai) (24 Okt, K57)
-- [x] Reranker (qwen3-reranker-8b via OpenRouter) untuk `search_movies`: 15 kandidat → 5 terbaik, bonus poin (24 Okt, K58)
-- [x] Pertanyaan adegan/kutipan: parameter `describes_scene` + catatan di hasil tool, agent jujur "hanya cocok dari sinopsis" (24 Okt, K59)
-- [x] Prompt `movie-agent-system` **v7** terpasang (24 Okt)
 - [ ] API key Qdrant **read-only** untuk penilai
 
 ## Fase 5 · Cadangan (2–5 Nov, Module 4 masih berjalan)
