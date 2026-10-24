@@ -670,3 +670,20 @@ Sumber: [OpenRouter Embeddings API](https://openrouter.ai/docs/api-reference/emb
 - **Hasil tiga putaran (24 Okt, prompt v7):** 10/10, 9/10, 9/10. Satu-satunya yang gagal: pertanyaan 10 (rendang), karena penolakan ditutup dengan pertanyaan, melanggar aturan 6. Laporan putaran terakhir (9/10) disimpan apa adanya di `notes/hasil-uji.md`.
 - **Tindak lanjut:** perbaikan aturan penolakan di prompt (v8), diuji ulang dengan skrip ini.
 - **Status:** ➕ Tambahan
+
+### K61 · Prompt v8 dan penolakan query non-Inggris di tool (hasil set uji)
+- **Temuan set uji (K60):**
+  - Pertanyaan 10 (di luar topik) gagal di 2 dari 3 putaran: jawaban ditutup dengan pertanyaan. Uji lokal: 15 dari 20 jawaban di luar topik berakhir dengan pertanyaan.
+  - Pertanyaan 1 sesekali mengirim query berbahasa Indonesia ke `search_movies` (pelanggaran K26), terlihat juga di uji manual Reiner (PDF).
+- **Perbaikan 1, prompt v8 (aturan 8):**
+  - Pertanyaan di luar topik dijawab satu kalimat tanpa pertanyaan atau tawaran. Pertanyaan tentang asisten itu sendiri dijawab satu kalimat perkenalan "Saya Rakfilm...".
+  - Uji lokal sebelum dipasang: 0 dari 24 jawaban berakhir dengan pertanyaan, dan tidak ada tool yang dipanggil.
+- **Perbaikan 2, di kode, bukan prompt (pola yang sama dengan K59):**
+  - `search_movies` menolak query yang memuat kata Indonesia dan mengembalikan `{"error": "...translate..."}`. Agent lalu menerjemahkan dan mengulang.
+  - Daftar `INDONESIAN_WORDS` dipindah dari `scripts/eval.py` ke `app/tools.py` supaya hanya ada satu sumber.
+  - Set uji hanya memeriksa query yang **diterima** tool (`rejected=False`), jadi pengulangan yang berhasil tidak dihitung gagal.
+  - Pemeriksaan ini heuristik: query Indonesia tanpa satu pun kata di daftar tetap lolos.
+  - Biaya: satu pemanggilan tool tambahan hanya pada kasus langka itu.
+- **Hasil:** 3 putaran set uji setelah kedua perbaikan, semuanya 10/10 (58/58 pemeriksaan). Sebelumnya: 10/10, 9/10, 9/10 (v7) lalu 10/10, 9/10, 10/10 (v8 tanpa penjagaan query).
+- **Keterbatasan jujur:** 3 putaran adalah sampel kecil. Karena model tidak deterministik, kegagalan langka bisa muncul lagi. Set uji bisa dijalankan ulang kapan saja.
+- **Status:** 🔁 Revisi prompt v7

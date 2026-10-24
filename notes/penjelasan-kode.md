@@ -761,7 +761,7 @@ Jawaban LLM berbeda sedikit tiap kali, jadi yang diperiksa: tool yang benar dipa
 
 **Pemeriksaan bahasa query (K26):**
 ```python
-INDONESIAN = {"yang", "dengan", "tentang", ...}
+INDONESIAN_WORDS = {"yang", "dengan", "tentang", ...}  # di app/tools.py, dipakai juga oleh eval
 not (set(re.findall(r"[a-z]+", q.lower())) & INDONESIAN)
 ```
 `&` pada `set` adalah irisan: kalau query memuat satu kata Indonesia saja, pemeriksaan gagal. Ini heuristik, bukan pendeteksi bahasa yang sempurna: query Indonesia yang tidak memuat satu pun kata di daftar akan lolos.
@@ -769,7 +769,7 @@ not (set(re.findall(r"[a-z]+", q.lower())) & INDONESIAN)
 **Bukti bahwa uji bisa gagal:** pemeriksaan diuji dengan hasil palsu yang meniru kegagalan di uji manual (query Indonesia, klaim adegan, penutup berupa pertanyaan, tanpa tool, salah tool). Semuanya terdeteksi.
 
 ### Hasil
-Tiga putaran berturut-turut (24 Okt): putaran 1 lolos 10/10 (58/58 pemeriksaan), putaran 2 dan 3 lolos 9/10. Yang gagal selalu pertanyaan #10 (rendang): agent menutup penolakannya dengan "Ada hal lain tentang film yang bisa saya bantu?", melanggar aturan 6 prompt.
+Putaran pertama (prompt v7): 10/10, 9/10, 9/10. Yang gagal: pertanyaan #10 (rendang), karena agent menutup penolakannya dengan "Ada hal lain tentang film yang bisa saya bantu?" (aturan 6). Perbaikan: prompt v8 (aturan 8) untuk penolakan, dan penolakan query non-Inggris langsung di `search_movies` (K61): kalau query memuat kata Indonesia, tool mengembalikan `{"error": "... translate ..."}` dan agent mengulang dengan query Inggris. Setelah itu tiga putaran berturut-turut 10/10 (58/58 pemeriksaan).
 
 ### Pertanyaan yang mungkin ditanyakan
 **T: Kenapa hasilnya bisa berbeda antar putaran?**

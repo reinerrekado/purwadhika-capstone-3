@@ -37,6 +37,13 @@ WEAK_MATCH = 0.01  # semua skor reranker segini atau lebih rendah = jelas tidak 
 SCENE_NOTE = ("The dataset only has short plot summaries, not scenes or quotes. Start your answer by telling the user, "
               "in their language, that these movies are matched on plot summaries only, so you cannot confirm that any "
               "of them contains the scene or quote. Never say that a movie contains it.")
+# Kata yang hanya ada di bahasa Indonesia (K61). Heuristik sederhana: menangkap query yang tidak diterjemahkan,
+# bukan pendeteksi bahasa yang sempurna. Dipakai juga oleh scripts/eval.py.
+INDONESIAN_WORDS = {"yang", "dengan", "tentang", "untuk", "adalah", "seorang", "dalam", "atau", "tidak", "karena",
+                    "pada", "dari", "itu", "ini", "juga", "saya", "aku", "kamu", "mimpi", "pencuri", "adegan",
+                    "orang", "masuk", "menari", "tangga", "kapal", "tenggelam", "sedih", "penjara", "persahabatan"}
+ENGLISH_ONLY = ("The query must be in English. Translate it into one English sentence and call search_movies again; "
+                "do not tell the user about this retry.")
 NOT_FOUND_HINT = ("Do not tell the user the movie is missing yet. Non-English movies use their original "
                   "title (e.g. Parasite = Gisaengchung), so call the same tool again with the original "
                   "title if you know it. Otherwise try rank_movies with the director or year, or "
@@ -87,6 +94,8 @@ def search_movies(
         year_to: Latest release year, inclusive. Leave empty unless the user names a year or decade.
         describes_scene: Set true when the user describes one specific scene, moment, or quote (e.g. "the scene where a man dances on stairs", "the movie with the line I'll be back") instead of the overall plot, theme, or mood.
     """
+    if INDONESIAN_WORDS & set(re.findall(r"[a-z]+", query.lower())):  # model kadang lupa menerjemahkan (K61)
+        return json.dumps({"error": ENGLISH_ONLY})
     movies = search_page(query, genre, year_from, year_to)
     result = {"movies": movies}
     if movies and (describes_scene or all(m["rerank_score"] is not None and m["rerank_score"] <= WEAK_MATCH

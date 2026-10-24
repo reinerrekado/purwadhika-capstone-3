@@ -79,7 +79,7 @@
 - [x] Verifikasi v4 + coba fitur baru di app Cloud
 
 ## Fase 4 · Uji dan dokumentasi (30 Okt – 1 Nov)
-- [~] Set uji 10 pertanyaan (`scripts/eval.py`, K60): 9 sampai 10 dari 10 lolos; #10 (rendang) sering gagal karena penolakan ditutup dengan pertanyaan, tunggu prompt v8
+- [x] Set uji 10 pertanyaan (`scripts/eval.py`, K60): setelah prompt v8 dan penjagaan query Inggris di tool (K61), 3 putaran berturut-turut 10/10 (24 Okt)
 - [x] Set uji memeriksa otomatis: setiap query `search_movies` berbahasa Inggris (K26) (24 Okt, K60)
 - [ ] Rapikan system prompt di Langfuse
 - [x] README: diagram alur, install, env, cara run, contoh query (24 Okt, K56)

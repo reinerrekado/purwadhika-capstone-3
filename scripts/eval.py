@@ -16,13 +16,9 @@ from pathlib import Path
 from langfuse import get_client
 
 from app.agent import get_agent, stream_agent
+from app.tools import INDONESIAN_WORDS
 
 REPORT = Path(__file__).resolve().parent.parent / "notes" / "hasil-uji.md"
-# Kata yang hanya ada di bahasa Indonesia. Heuristik sederhana: menangkap query yang tidak diterjemahkan, bukan
-# pendeteksi bahasa yang sempurna (query Indonesia yang tidak memuat satu pun kata ini lolos).
-INDONESIAN = {"yang", "dengan", "tentang", "untuk", "adalah", "seorang", "dalam", "atau", "tidak", "karena", "pada",
-              "dari", "itu", "ini", "juga", "saya", "aku", "kamu", "mimpi", "pencuri", "adegan", "orang", "masuk",
-              "menari", "tangga", "kapal", "tenggelam", "sedih", "penjara", "persahabatan"}
 
 
 @dataclass
@@ -60,11 +56,12 @@ def run_turn(history: list[dict], question: str, session_id: str) -> Result:
         for call in message.tool_calls:
             result = results.get(call["id"])
             try:
-                movies = json.loads(result.content).get("movies", []) if result else []
+                body = json.loads(result.content) if result else {}
             except json.JSONDecodeError:  # pesan error tool berupa teks biasa
-                movies = []
-            calls.append({"name": call["name"], "args": call["args"], "movies": [m["title"] for m in movies],
-                          "error": bool(result and getattr(result, "status", "") == "error")})
+                body = {}
+            calls.append({"name": call["name"], "args": call["args"], "movies": [m["title"] for m in body.get("movies", [])],
+                          "error": bool(result and getattr(result, "status", "") == "error"),
+                          "rejected": "error" in body})  # ditolak tool (mis. query tidak berbahasa Inggris), lalu diulang agent
     final = next((m.content for m in reversed(new) if m.type == "ai" and m.content), answer)
     ai = [m for m in new if m.type == "ai"]
     return Result(question, final, calls, sum((m.usage_metadata or {}).get("input_tokens", 0) for m in ai),
@@ -97,9 +94,9 @@ def arg_is(tool: str, name: str, value) -> Check:
 
 def english_queries() -> Check:
     def test(r: Result) -> bool:
-        queries = [c["args"].get("query", "") for c in r.calls if c["name"] == "search_movies"]
-        return all(not (set(re.findall(r"[a-z]+", q.lower())) & INDONESIAN) for q in queries)
-    return Check("query search_movies berbahasa Inggris (K26)", test)
+        queries = [c["args"].get("query", "") for c in r.calls if c["name"] == "search_movies" and not c["rejected"]]
+        return all(not (set(re.findall(r"[a-z]+", q.lower())) & INDONESIAN_WORDS) for q in queries)
+    return Check("query search_movies yang diterima berbahasa Inggris (K26, K61)", test)
 
 
 def answer_has(*texts: str) -> Check:
