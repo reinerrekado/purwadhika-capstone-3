@@ -214,6 +214,7 @@ def movie_hero(movie: dict, *, key: str) -> None:
 
 
 _PERSON_HERO_CSS = """
+[hidden] { display: none !important; }  /* tanpa ini, display: grid/block di bawah mengalahkan atribut hidden (K71) */
 .hero { position: relative; overflow: hidden; border-radius: 6px; background: #161513; color: #EDEAE4;
   font-family: var(--st-font, inherit); }
 .backdrop { position: absolute; inset: -60px; width: calc(100% + 120px); height: calc(100% + 120px);
