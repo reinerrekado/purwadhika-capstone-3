@@ -5,6 +5,7 @@ Asisten rekomendasi film berbasis **agentic RAG** untuk dataset **IMDB Top 1000*
 Capstone Module 3, Purwadhika JCAIEH.
 
 - **App:** https://imdb-movie-assistant.streamlit.app/
+  Kalau muncul layar *This app has gone to sleep*, klik tombolnya dan tunggu sekitar satu menit. Streamlit Community Cloud menidurkan app yang tidak dikunjungi sekitar 12 jam; itu batasan platform, bukan galat.
 - **Stack wajib:** Qdrant Cloud (vector database), Langfuse (prompt + tracing), Streamlit (UI + deploy)
 - **LLM:** `openai/gpt-4.1-mini` lewat OpenRouter · **Embedding:** `openai/text-embedding-3-small` (1536 dimensi)
 - **Agent:** LangChain `create_agent` (loop ReAct)
@@ -169,6 +170,8 @@ Tidak ada prompt yang ditulis di kode. Semuanya diambil dari Langfuse dengan lab
 | `bio-translator` | `scripts/translate_people.py` | Tidak, hasil terjemahannya sudah ada di `data/people.csv` |
 
 Prompt diambil ulang setiap 60 detik, jadi versi baru di Langfuse langsung terpakai tanpa restart app.
+
+**Catatan operasional di hasil tool.** Selain prompt di atas, beberapa tool menyisipkan kalimat pendek di hasilnya, misalnya `note` untuk pertanyaan tentang adegan atau kutipan ("dataset hanya punya sinopsis, jangan mengaku film itu memuat adegannya"), `hint` kalau judul tidak ketemu, dan pesan yang menyuruh mengulang query dalam bahasa Inggris. Kalimat itu bagian dari **output tool**, bukan prompt agent, dan sengaja ditulis di `app/tools.py` berdampingan dengan logika yang memicunya, supaya aturannya, kodenya, dan ujinya selalu sejalan. Hal yang sama berlaku untuk satu baris "(Reply in English.)" yang ditambahkan `app/agent.py` pada pertanyaan berbahasa Inggris. Aturannya diuji otomatis oleh `python -m scripts.eval`.
 
 ## Menjalankan
 
