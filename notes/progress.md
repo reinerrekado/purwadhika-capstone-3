@@ -132,7 +132,7 @@
 
 ## Menunggu keputusan atau tindakan Reiner (dicatat 25 Okt)
 - [ ] Pindahkan teks instruksi LLM di kode (`SCENE_NOTE`, `ENGLISH_ONLY`, `NOT_FOUND_HINT`, petunjuk tool orang, "(Reply in English.)") ke satu prompt Langfuse `tool-notes`: Reiner condong ke pilihan B, menunggu penjelasan kekurangannya
-- [ ] **LICENSE:** belum dipikirkan, putuskan nanti (MIT satu file, atau biarkan; lisensi dataset Kaggle juga belum dipastikan)
+- [ ] **LICENSE:** belum dipikirkan, putuskan nanti (MIT satu file, atau biarkan; lisensi dataset Kaggle juga belum dipastikan). **Reiner: tidak perlu sekarang, ingatkan saat menjelang pengumpulan (sebelum 8 Nov).**
 - [ ] Link **Google Form** belum diterima dari operasional; cek isian selain repo, video, app, akses Qdrant
 - [ ] Top-up OpenRouter kalau mepet: key punya batas $5 (sisa ±$2,8), saldo akun ±$6
 - [ ] Opsional: ambil ulang `docs/img/jawaban-tool-call.png` (gabungan dua tangkapan: kotak input ganda, kartu ketiga terpotong, tombol Manage app terlihat)
@@ -143,6 +143,7 @@
 - [ ] Opsional: paragraf README tentang prompt di Langfuse dan catatan operasional di hasil tool; kalimat README tentang layar "app gone to sleep"
 - [ ] Qdrant gratis dinonaktifkan setelah 1 minggu tanpa pemakaian dan dihapus setelah 4 minggu: pakai app tiap beberapa hari sampai penilaian selesai
 ## Pengingat untuk hari merekam dan mengumpulkan
+- **Ingatkan Reiner soal LICENSE** (keputusan ditunda, 25 Okt) sebelum pengumpulan.
 - Buka **Langfuse** saat merekam: tampilkan trace per sesi, versi prompt v1 sampai v8 dengan metrik per versi, dan skor feedback. Demo 2 sampai 3 pertanyaan saja supaya token tidak habis (permintaan Pak Herman).
 - **Bangunkan app Streamlit** sebelum merekam dan sebelum mengumpulkan (app tidur setelah ±12 jam tanpa pengunjung), lalu uji sekali lewat jendela incognito.
 - **Cek cluster Qdrant** masih aktif di dashboard, dan tunjukkan `imdb_movies` (1.000 point) di video.
