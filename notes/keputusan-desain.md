@@ -594,3 +594,15 @@ Sumber: [OpenRouter Embeddings API](https://openrouter.ai/docs/api-reference/emb
   - Halaman tetap tenang. Warna baru hidup saat pengguna berinteraksi, dan tiap film membawa warnanya sendiri.
 - **Kode:** parameter `featured` dihapus dari `movie_cards`. Kartu `list` yang punya poster otomatis mendapat kelas `glassy`.
 - **Status:** 🔁 Revisi K52
+
+### K55 · Audit sebelum Fase 4: hapus `.devcontainer/`, prompt agent v6
+- **Hasil audit:**
+  - 9 jenis pertanyaan nyata lolos tanpa error.
+  - Koneksi dan ketiga prompt Langfuse aman.
+  - Tidak ada key di riwayat git.
+- **`.devcontainer/` dihapus:** isinya konfigurasi container GitHub Codespaces yang mengunci Python 3.11. Tidak dipakai (app jalan di Streamlit Cloud dengan Python 3.14), dan Docker tidak diminta: aturan kelasnya satu app Streamlit tanpa FastAPI atau Docker. Folder kosong `assets/` sisa K51 ikut dihapus.
+- **Prompt `movie-agent-system` v6** (dipasang lewat UI Langfuse) menutup dua kelemahan yang ditemukan audit:
+  - **"Film horor terbaik" hanya memberi 3 film.** Aturan "2-3 film" untuk rekomendasi terbuka ikut terbawa ke daftar peringkat. Di v6, aturan 2-3 hanya untuk pencarian cerita; daftar peringkat tanpa jumlah memakai 5.
+  - **Adegan spesifik dijawab terlalu yakin.** "Pria menari di tangga" dijawab All That Jazz dan Billy Elliot dengan kalimat "film dengan adegan…". Datanya hanya sinopsis singkat (K50), jadi v6 mewajibkan agent menyebutnya "paling mendekati dari sinopsis".
+  - **Filter tahun 1920-2020 diisi sendiri oleh agent** di `rank_movies`. Hasilnya tidak salah, tapi tidak perlu. Larangan mengisi filter tanpa diminta sekarang berlaku untuk semua tool.
+- **Status:** 🔁 Revisi prompt v5

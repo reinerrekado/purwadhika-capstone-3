@@ -71,6 +71,8 @@
 - [x] Hover poster ala Netflix, kartu kaca hasil teratas, label "Muat N film lagi" sesuai sisa, mode terang putih tulang (24 Okt, K52)
 - [x] Logo Rakfilm di IG story, satu warna mengikuti tema (24 Okt, K53)
 - [x] Latar kaca jadi efek hover di semua kartu hasil (ide latar halaman dibatalkan karena butuh CSS internal Streamlit) (24 Okt, K54)
+- [x] Audit: 9 jenis pertanyaan lolos, koneksi + prompt + riwayat git aman; `.devcontainer/` dihapus (24 Okt, K55)
+- [ ] **Anda:** pasang prompt `movie-agent-system` **v6** di UI Langfuse, label production (K55)
 - [ ] **Anda:** coba UI baru di app Cloud (mode gelap dan terang, laptop dan HP)
 - [x] **Anda:** coba watchlist + Buat IG story di app Cloud, unduh PNG-nya
 - [x] **Anda:** buat prompt `movie-agent-system` **v4** di UI Langfuse, label production
