@@ -20,6 +20,7 @@ Capstone Module 3, Purwadhika JCAIEH.
 - **Rak + IG story:** simpan sampai 4 film ke rak, lalu buat gambar story 1080×1920 dengan headline dari LLM dan tema warna sesuai genre.
 - **Feedback 👍/👎:** tersimpan sebagai score di trace Langfuse, bisa dibandingkan per versi prompt.
 - **Dua bahasa:** pertanyaan berbahasa Indonesia dijawab Indonesia, pertanyaan berbahasa Inggris dijawab Inggris.
+- **Batas pemakaian:** 30 pertanyaan per sesi dan 150 per jam untuk semua pengunjung, supaya app publik tidak menghabiskan kuota API.
 - **Tema terang dan gelap.**
 
 ## Cara kerja
@@ -70,6 +71,7 @@ app/
   agent.py                  agent + prompt dari Langfuse + tracing + feedback
   tools.py                  4 tool agent + fungsi "muat lebih banyak"
   rerank.py                 reranker untuk hasil search_movies
+  quota.py                  batas pemakaian untuk app publik (30 per sesi, 150 per jam)
   data.py                   muat CSV ke DataFrame, fakta menarik
   movie_cards.py            komponen kartu poster (Streamlit Custom Components v2)
   story.py                  gambar IG story dengan Pillow

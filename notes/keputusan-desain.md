@@ -762,3 +762,18 @@ Sumber: [OpenRouter Embeddings API](https://openrouter.ai/docs/api-reference/emb
   - App Streamlit tetap private (README menautkannya). Pengunjung repo melihat halaman login Streamlit sampai app dibuat public di Fase 7.
   - Prompt Langfuse tidak ada di repo (sesuai aturan semua prompt di Langfuse), jadi penilai melihatnya lewat video.
 - **Status:** ➕ Tambahan (mempercepat Fase 7)
+
+### K68 · Pembatas pemakaian dan catatan privasi sebelum app dibuat public
+- **Dasar:** app publik bisa dipakai siapa saja dengan key OpenRouter milik Reiner. Key sudah punya batas $5 (sisa ±$3,52), tapi kalau batas itu habis app berhenti menjawab dan penilaian terganggu. Pembatas pemakaian menjaga agar itu tidak terjadi karena satu pengunjung atau bot.
+- **Batas (`app/quota.py`, konstanta mudah diubah):**
+  - 30 pertanyaan per sesi browser. Tidak direset oleh "+ Percakapan baru".
+  - 150 pertanyaan per jam untuk semua pengunjung, dihitung di memori proses server (reset kalau app restart).
+  - Satu pertanyaan sekitar Rp20-60, jadi 150 per jam paling banyak sekitar Rp9.000.
+  - Pertanyaan yang ditolak menampilkan pesan ramah dan tidak memanggil agent, jadi tidak menambah biaya.
+- **Keterbatasan jujur:**
+  - Batas sesi bisa dilewati dengan memuat ulang halaman. Batas per jam tetap berlaku untuk semua.
+  - Pembuatan IG story (headline dari LLM) tidak dihitung, biayanya kecil per panggilan.
+  - Batas per jam bisa dipenuhi satu bot dan menghalangi penilai sesaat. Itu pertukaran yang disengaja: lebih baik tertunda beberapa menit daripada kuota habis.
+- **Privasi:** sidebar mencantumkan "Pertanyaanmu dicatat (Langfuse) untuk menilai kualitas jawaban." Trace Langfuse memuat teks pertanyaan pengunjung dan hanya terlihat oleh pemilik akun.
+- **Diuji:** logika kuota (batas sesi, batas per jam, catatan lama kedaluwarsa), dan di dalam app: sesi yang sudah mencapai batas ditolak tanpa memanggil agent, pertanyaan normal menambah penghitung.
+- **Status:** ➕ Tambahan

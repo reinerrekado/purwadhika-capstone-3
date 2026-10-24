@@ -9,6 +9,7 @@ from uuid import uuid4
 import pandas as pd
 import streamlit as st
 
+from app import quota
 from app.agent import send_feedback, stream_agent
 from app.data import load_movies, movie_facts
 from app.movie_cards import movie_cards, movie_hero
@@ -404,7 +405,11 @@ for index, message in enumerate(st.session_state.chat):  # chat history
         else:
             st.markdown(message["content"])
 
-if question:
+if question and (limit_message := quota.blocked(st.session_state.get("asked", 0))):
+    st.warning(limit_message, icon=":material/hourglass_top:")  # batas pemakaian (K68): tidak memanggil agent
+elif question:
+    st.session_state.asked = st.session_state.get("asked", 0) + 1  # tidak direset "Percakapan baru"
+    quota.record()
     with st.chat_message("user"):
         st.markdown(question)
     st.session_state.chat.append({"role": "user", "content": question})
@@ -438,3 +443,4 @@ with session_box:
         rate = f"{fx[0]:,.0f}".replace(",", ".")
         st.caption(f"Kurs Rp{rate}/USD, ECB {fx[1]}. Harga gpt-4.1-mini: ${PRICE_INPUT:.2f} input / "
                    f"${PRICE_OUTPUT:.2f} output per 1 juta token.")
+    st.caption("Pertanyaanmu dicatat (Langfuse) untuk menilai kualitas jawaban.")  # app publik: pengunjung berhak tahu (K68)

@@ -83,6 +83,7 @@
 - [x] Set uji diperluas jadi 14 pertanyaan (filter tahun, hitung, perbandingan, bahasa Inggris), 3 putaran 14/14 (24 Okt, K65, K66)
 - [x] Dua bahasa: jawaban mengikuti bahasa pertanyaan, ditegakkan di kode (24 Okt, K65)
 - [x] Bug `rank_movies`: nama sutradara di kolom judul membuat hasil kosong, diperbaiki (24 Okt, K66)
+- [x] Pembatas pemakaian (30 per sesi, 150 per jam) dan catatan privasi untuk app publik (24 Okt, K68)
 - [x] Set uji memeriksa otomatis: setiap query `search_movies` berbahasa Inggris (K26) (24 Okt, K60)
 - [ ] Rapikan system prompt di Langfuse
 - [x] README: diagram alur, install, env, cara run, contoh query (24 Okt, K56)
