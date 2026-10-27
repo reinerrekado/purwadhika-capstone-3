@@ -140,7 +140,7 @@
 - [x] `docs/img/jawaban-tool-call.png` diganti dengan hasil cetak PDF yang bersih: argumen tool call, skor vektor dan reranker, usage (25 Okt)
 - [ ] Video ditunda sampai Reiner selesai menjelajah app
 
-- [ ] **Perbarui artefak "Anatomi Capstone 3"** (link sama): Pak Herman sudah menerimanya lewat WA (25 Okt) sebagai "Penjelasan arsitektur & stack", padahal isinya masih 3 tool, tanpa reranker, prompt v2, dan app/repo "private". Jangan dihapus
+- [x] **Perbarui artefak "Anatomi Capstone 3"** (link sama) jadi laporan 7 tab: Ringkasan, Arsitektur (diagram langkah bernomor), Komponen (peta pemicu P1–P6), Syarat dan pilihan (mandatori vs improvisasi), Proses (garis waktu + 22 temuan), Hasil, dan Arsip versi 25 Okt utuh (26 Okt)
 - [ ] Kabari Pak Herman: kanvas desain yang sama sekarang punya halaman "Panel orang" dan "Story" (potongan `#page-...` di link lama mungkin tidak lagi menunjuk halaman yang sama)
 - [ ] Opsional: paragraf README tentang prompt di Langfuse dan catatan operasional di hasil tool; kalimat README tentang layar "app gone to sleep"
 - [ ] Qdrant gratis dinonaktifkan setelah 1 minggu tanpa pemakaian dan dihapus setelah 4 minggu: pakai app tiap beberapa hari sampai penilaian selesai
