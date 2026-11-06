@@ -1,6 +1,6 @@
 # Rakfilm
 
-Asisten rekomendasi film berbasis **agentic RAG** untuk dataset **IMDB Top 1000**. Ceritakan film yang kamu ingat ("pencuri yang masuk ke mimpi orang"), minta yang mirip dengan film favoritmu, atau minta daftar terbaik per genre, sutradara, dan aktor. Agent memilih sendiri tool yang tepat, lalu menjawab dalam bahasa Indonesia dengan kartu poster yang bisa dibuka.
+Asisten rekomendasi film berbasis **agentic RAG** untuk dataset **IMDB Top 1000**. Ceritakan film yang kamu ingat ("pencuri yang masuk ke mimpi orang"), minta yang mirip dengan film favoritmu, atau minta daftar terbaik per genre, sutradara, dan aktor. Agent supervisor mengoper pertanyaan ke sub-agent yang tepat, sub-agent memilih sendiri tool-nya, lalu menjawab dalam bahasa Indonesia dengan kartu poster yang bisa dibuka.
 
 Capstone Module 3, Purwadhika JCAIEH.
 
@@ -8,7 +8,7 @@ Capstone Module 3, Purwadhika JCAIEH.
   Kalau muncul layar *This app has gone to sleep*, klik tombolnya dan tunggu sekitar satu menit. Streamlit Community Cloud menidurkan app yang tidak dikunjungi sekitar 12 jam; itu batasan platform, bukan galat.
 - **Stack wajib:** Qdrant Cloud (vector database), Langfuse (prompt + tracing), Streamlit (UI + deploy)
 - **LLM:** `openai/gpt-4.1-mini` lewat OpenRouter · **Embedding:** `openai/text-embedding-3-small` (1536 dimensi)
-- **Agent:** LangChain `create_agent` (loop ReAct)
+- **Agent:** arsitektur **supervisor** (`langgraph-supervisor`): 1 supervisor + 2 sub-agent LangChain `create_agent` (loop ReAct)
 
 ## Tampilan
 
@@ -52,17 +52,18 @@ flowchart LR
 ```mermaid
 flowchart TD
     U(["Pengguna"]) -->|pertanyaan + riwayat sesi| UI["streamlit_app.py"]
-    UI --> AG["app/agent.py<br/>create_agent (ReAct)"]
-    AG -->|jawaban + tool call + usage| UI
-    AG <-->|memilih tool| LLM["gpt-4.1-mini<br/>(OpenRouter)"]
-    LF[("Langfuse")] -->|system prompt| AG
-    AG -.->|trace per sesi| LF
+    UI --> SV["supervisor<br/>(app/agent.py)<br/>memilih sub-agent"]
+    SV -->|transfer_to_rag_agent| RA["rag_agent<br/>sub-agent RAG"]
+    SV -->|transfer_to_data_agent| DA["data_agent<br/>sub-agent data"]
+    RA & DA -->|jawaban, diteruskan apa adanya| UI
+    LF[("Langfuse")] -->|prompt supervisor + prompt sub-agent| SV
+    SV -.->|trace per sesi| LF
     UI -.->|feedback 👍/👎| LF
-    AG --> T1["search_movies<br/>cari dari cerita"]
-    AG --> T2["similar_movies<br/>film yang mirip"]
-    AG --> T3["get_movie_details<br/>detail judul"]
-    AG --> T4["rank_movies<br/>peringkat, sutradara, aktor"]
-    AG --> T5["get_person_info<br/>bio sutradara/pemain"]
+    RA --> T1["search_movies<br/>cari dari cerita"]
+    RA --> T2["similar_movies<br/>film yang mirip"]
+    DA --> T3["get_movie_details<br/>detail judul"]
+    DA --> T4["rank_movies<br/>peringkat, sutradara, aktor"]
+    DA --> T5["get_person_info<br/>bio sutradara/pemain"]
     T1 -->|15 kandidat| QD[("Qdrant Cloud")]
     T1 -->|diurutkan ulang| RR["Reranker<br/>qwen3-reranker-8b"]
     T2 -->|vektor film itu| QD
@@ -70,6 +71,16 @@ flowchart TD
     T4 --> DF
     T5 --> PP[("people.csv<br/>bio + foto Wikipedia")]
 ```
+
+**Tiga agent: 1 supervisor + 2 sub-agent.** Agent = LLM + prompt + tool, dan ketiganya memakai `gpt-4.1-mini`.
+
+| Agent | Tool | Tugas |
+|---|---|---|
+| `supervisor` | oper ke sub-agent, `forward_message` | memilih sub-agent; menjawab sendiri hanya untuk pertanyaan di luar topik |
+| `rag_agent` | `search_movies`, `similar_movies` | pencarian makna di Qdrant |
+| `data_agent` | `get_movie_details`, `rank_movies`, `get_person_info` | data terstruktur: fakta, peringkat, profil orang |
+
+Supervisor meneruskan jawaban sub-agent apa adanya (`forward_message`), tanpa menulis ulang, supaya tidak ada detail yang hilang dan tidak ada token terbuang. **Supervisor, bukan swarm:** pertanyaan film hampir selalu jatuh ke satu bidang, jadi cukup satu pengatur; swarm (agent saling mengoper) cocok untuk percakapan yang pemiliknya berganti. Dibanding agent tunggal, set uji 17 pertanyaan tetap lolos semua, dengan biaya sekitar 10% lebih tinggi dan rata-rata 6,9 vs 4,3 detik per pertanyaan.
 
 **Kenapa lima tool, tiga jenis sumber:**
 - **RAG (Qdrant):** pertanyaan berbasis makna, misalnya "film tentang kesepian di luar angkasa", butuh pencarian vektor.
@@ -84,8 +95,8 @@ Agent menulis query `search_movies` dalam bahasa Inggris (sinopsis di dataset be
 streamlit_app.py            UI: chat, kartu film, panel detail, rak, IG story, usage
 app/
   config.py                 baca .env / Streamlit Secrets, buat klien LLM dan embedding
-  agent.py                  agent + prompt dari Langfuse + tracing + feedback
-  tools.py                  5 tool agent + fungsi "muat lebih banyak"
+  agent.py                  supervisor + 2 sub-agent, prompt dari Langfuse, tracing, feedback
+  tools.py                  5 tool sub-agent + fungsi "muat lebih banyak"
   rerank.py                 reranker untuk hasil search_movies
   quota.py                  batas pemakaian untuk app publik (30 per sesi, 150 per jam)
   data.py                   muat CSV ke DataFrame, fakta menarik, profil orang
@@ -175,7 +186,8 @@ Tidak ada prompt yang ditulis di kode. Semuanya diambil dari Langfuse dengan lab
 
 | Nama prompt | Dipakai oleh | Wajib? |
 |---|---|---|
-| `movie-agent-system` | system prompt agent (`app/agent.py`) | Ya |
+| `movie-supervisor-system` | system prompt supervisor: aturan memilih sub-agent (`app/agent.py`) | Ya |
+| `movie-agent-system` | system prompt kedua sub-agent (`app/agent.py`) | Ya |
 | `story-headline` | headline IG story (`app/story.py`) | Tidak, tanpa prompt ini headline dibuat dari aturan cadangan |
 | `overview-translator` | `scripts/translate_overviews.py` | Tidak, hasil terjemahannya sudah ada di `data/overview_id.csv` |
 | `bio-translator` | `scripts/translate_people.py` | Tidak, hasil terjemahannya sudah ada di `data/people.csv` |
@@ -204,18 +216,18 @@ Langkah 2 aman diulang: collection dibuat ulang dari nol, jadi data tidak tergan
 Jawaban LLM tidak persis sama setiap kali, jadi yang diperiksa adalah perilaku, bukan kata per kata.
 ## Contoh pertanyaan
 
-| Pertanyaan | Tool yang dipakai agent |
-|---|---|
-| film tentang pencuri yang masuk ke mimpi orang | `search_movies` |
-| film sedih tentang persahabatan di penjara | `search_movies` |
-| film yang mirip Interstellar | `similar_movies` |
-| siapa sutradara Parasite dan berapa ratingnya? | `get_movie_details` |
-| bandingkan The Godfather dan Goodfellas | `get_movie_details` |
-| 5 film horor terbaik | `rank_movies` |
-| film Christopher Nolan | `rank_movies` |
-| siapa Christopher Nolan? | `get_person_info` |
-| film Tom Hanks yang paling lama durasinya | `rank_movies` |
-| Star Wars mana yang paling bagus? | `rank_movies` |
-| ada berapa film Hayao Miyazaki tahun 2000-an? | `rank_movies` |
+| Pertanyaan | Sub-agent | Tool |
+|---|---|---|
+| film tentang pencuri yang masuk ke mimpi orang | `rag_agent` | `search_movies` |
+| film sedih tentang persahabatan di penjara | `rag_agent` | `search_movies` |
+| film yang mirip Interstellar | `rag_agent` | `similar_movies` |
+| siapa sutradara Parasite dan berapa ratingnya? | `data_agent` | `get_movie_details` |
+| bandingkan The Godfather dan Goodfellas | `data_agent` | `get_movie_details` |
+| 5 film horor terbaik | `data_agent` | `rank_movies` |
+| film Christopher Nolan | `data_agent` | `rank_movies` |
+| siapa Christopher Nolan? | `data_agent` | `get_person_info` |
+| film Tom Hanks yang paling lama durasinya | `data_agent` | `rank_movies` |
+| Star Wars mana yang paling bagus? | `data_agent` | `rank_movies` |
+| ada berapa film Hayao Miyazaki tahun 2000-an? | `data_agent` | `rank_movies` |
 
 Pertanyaan lanjutan juga bisa, misalnya setelah "film Christopher Nolan" lalu tanya "yang mana paling lama?".
