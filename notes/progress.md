@@ -119,6 +119,15 @@
     - Pertanyaan adegan tangga masih dijawab "Film dengan adegan pria menari di tangga yang terkenal adalah All That Jazz". Cek apakah K59 sudah ter-deploy (reboot app), lalu ulang
     - Jawaban penolakan ditutup dengan pertanyaan ("Ada hal lain…?"), melanggar aturan 6 prompt
 
+## Fase 5b · Arsitektur supervisor (7 Nov, wajib dari Purwadhika, K75)
+- [x] Branch `supervisor`: 1 supervisor + 2 sub-agent (`rag_agent`, `data_agent`) dengan `langgraph-supervisor`
+- [x] Prompt `movie-supervisor-system` v1 di Langfuse (label `production`)
+- [x] Set uji 17/17 lolos (116/116); app lokal diuji lewat browser: jawaban sekali, tool call tanpa `transfer_*`, usage, "Muat lebih banyak"
+- [x] Catatan: `keputusan-desain.md` K75, `penjelasan-kode.md` bagian 15
+- [ ] **Reiner:** setujui commit + merge ke `main` (app publik ikut redeploy)
+- [ ] Setelah merge: perbarui diagram dan teks README (agent tunggal → supervisor), artefak "Anatomi Capstone 3", lalu cek app Cloud
+- [ ] Opsional: pertanyaan lintas domain baru memanggil satu sub-agent
+
 ## Fase 6 · Video (6–8 Nov)
 - [ ] Naskah dari `penjelasan-kode.md` + set uji
 - [ ] Uji rekam: kode terbaca jelas

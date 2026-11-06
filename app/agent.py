@@ -1,4 +1,7 @@
-"""Agent ReAct: LLM + tools + system prompt dari Langfuse, dan setiap run di-trace ke Langfuse."""
+"""Arsitektur supervisor: 1 supervisor + 2 sub-agent (rag_agent, data_agent). Setiap run di-trace ke Langfuse.
+
+Agent = LLM + prompt + tool. Supervisor hanya memilih sub-agent; sub-agent yang memanggil tool film.
+"""
 
 import re
 from collections.abc import Iterator
@@ -7,11 +10,14 @@ from functools import lru_cache
 from langchain.agents import create_agent
 from langfuse import get_client
 from langfuse.langchain import CallbackHandler
+from langgraph_supervisor import create_supervisor
+from langgraph_supervisor.handoff import create_forward_message_tool
 
 from app.config import get_llm
-from app.tools import INDONESIAN_WORDS, TOOLS
+from app.tools import INDONESIAN_WORDS, get_movie_details, get_person_info, rank_movies, search_movies, similar_movies
 
-PROMPT_NAME = "movie-agent-system"  # dibuat lewat UI Langfuse, label "production" (K03)
+PROMPT_NAME = "movie-agent-system"  # prompt sub-agent; dibuat lewat UI Langfuse, label "production" (K03)
+SUPERVISOR_PROMPT_NAME = "movie-supervisor-system"  # prompt supervisor; dibuat lewat API Langfuse, label "production"
 
 # Kata penanda bahasa (K65). Heuristik sederhana: bahasa dengan kata penanda terbanyak menang, seri = Indonesia.
 ENGLISH_MARKERS = {"the", "is", "are", "what", "who", "how", "which", "movie", "movies", "like", "about", "best", "with",
@@ -49,15 +55,21 @@ def trim_offer(answer: str) -> str:
 
 
 @lru_cache(maxsize=4)
-def _build_agent(system_prompt: str):
-    """Satu agent per teks prompt. Rerun Streamlit memakai agent yang sama selama prompt tidak berubah."""
-    return create_agent(model=get_llm(), tools=TOOLS, system_prompt=system_prompt)
+def _build_agent(system_prompt: str, supervisor_prompt: str):
+    """Supervisor + 2 sub-agent. Sub-agent memakai prompt agent; supervisor hanya memilih sub-agent."""
+    llm = get_llm()
+    rag_agent = create_agent(model=llm, tools=[search_movies, similar_movies], system_prompt=system_prompt, name="rag_agent")
+    data_agent = create_agent(model=llm, tools=[get_movie_details, rank_movies, get_person_info],
+                              system_prompt=system_prompt, name="data_agent")
+    return create_supervisor([rag_agent, data_agent], model=llm, prompt=supervisor_prompt, output_mode="full_history",
+                             tools=[create_forward_message_tool("supervisor")]).compile()  # teruskan, jangan tulis ulang
 
 
 def get_agent():
-    """Agent + objek prompt Langfuse-nya. SDK Langfuse menyimpan prompt 60 detik, jadi versi baru terpakai tanpa restart (K35)."""
-    prompt = get_client().get_prompt(PROMPT_NAME)
-    return _build_agent(prompt.compile()), prompt
+    """Supervisor + objek prompt Langfuse sub-agent dan supervisor. SDK Langfuse menyimpan prompt 60 detik,
+    jadi versi baru terpakai tanpa restart (K35)."""
+    prompt, supervisor_prompt = get_client().get_prompt(PROMPT_NAME), get_client().get_prompt(SUPERVISOR_PROMPT_NAME)
+    return _build_agent(prompt.compile(), supervisor_prompt.compile()), prompt, supervisor_prompt
 
 
 def stream_agent(messages: list[dict], session_id: str, run: dict) -> Iterator[str]:
@@ -66,25 +78,34 @@ def stream_agent(messages: list[dict], session_id: str, run: dict) -> Iterator[s
     messages: [{"role": "user" | "assistant", "content": "..."}], pesan terakhir = pertanyaan baru.
     run: diisi setelah selesai, berisi "messages" (pesan baru dari run ini) dan "trace_id" (untuk feedback).
     """
-    agent, prompt = get_agent()
+    agent, prompt, supervisor_prompt = get_agent()
     if reply_language(messages[-1]["content"]) == "English":  # model mengabaikan aturan bahasa di prompt, jadi ditegakkan di sini (K65)
         messages = messages[:-1] + [{**messages[-1], "content": messages[-1]["content"] + "\n\n(Reply in English.)"}]
     handler = CallbackHandler()  # trace ke Langfuse (Sesi 17)
     config = {"callbacks": [handler], "metadata": {
         "langfuse_session_id": session_id,  # satu percakapan = satu session
-        "langfuse_tags": [f"prompt-v{prompt.version}"],  # feedback bisa dibandingkan per versi prompt
+        # feedback bisa dibandingkan per versi prompt sub-agent dan supervisor
+        "langfuse_tags": [f"prompt-v{prompt.version}", f"supervisor-v{supervisor_prompt.version}"],
         "langfuse_prompt": prompt,  # menautkan generation ke prompt: metrik per versi di Langfuse terisi (K73)
     }}
-    new_messages = []
-    for mode, data in agent.stream({"messages": messages}, config=config, stream_mode=["messages", "updates"]):
+    history, last_source = [], None
+    for namespace, mode, data in agent.stream({"messages": messages}, config=config, stream_mode=["messages", "values"],
+                                              subgraphs=True):
         if mode == "messages":  # potongan token dari LLM
-            chunk, meta = data
-            if meta["langgraph_node"] == "model" and chunk.content:
-                yield chunk.content
-        else:  # "updates": pesan utuh setiap kali node model/tools selesai
-            for update in data.values():
-                new_messages += update["messages"]
-    run.update(messages=new_messages, trace_id=handler.last_trace_id)
+            chunk, meta = data  # meta["langgraph_node"]: "model" (sub-agent) atau "agent" (supervisor)
+            source = namespace[0].split(":")[0] if namespace else None  # "supervisor", "rag_agent", atau "data_agent"
+            # Yang tampil: jawaban sub-agent. Teks supervisor hanya kalau belum ada sub-agent yang menjawab (di luar
+            # topik); kalau supervisor menulis ulang jawaban sub-agent, tulisan ulang itu tidak ditampilkan dua kali.
+            if (meta["langgraph_node"] not in ("model", "agent") or not chunk.content
+                    or (source == "supervisor" and last_source not in (None, "supervisor"))):
+                continue
+            if last_source not in (None, source):
+                yield "\n\n"  # dua sub-agent menjawab berurutan (pertanyaan lintas domain)
+            last_source = source
+            yield chunk.content
+        elif not namespace:  # "values" tingkat atas: state penuh (pesan masukan + semua pesan baru)
+            history = data["messages"]
+    run.update(messages=history[len(messages):], trace_id=handler.last_trace_id)
 
 
 def send_feedback(trace_id: str, thumbs_up: bool) -> None:

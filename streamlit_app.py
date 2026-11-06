@@ -119,7 +119,7 @@ def summarize_run(new_messages: list) -> dict:
                    "docs": call_docs(movies.get(call["id"], []), persons.get(call["id"])),
                    "ids": [movie["id"] for movie in movies.get(call["id"], [])],
                    "total": totals.get(call["id"])}
-                  for m in ai_messages for call in m.tool_calls]
+                  for m in ai_messages for call in m.tool_calls if not call["name"].startswith("transfer_")]  # handoff supervisor bukan tool film
     # Pencarian terakhir yang masih punya hasil lanjutan bisa diteruskan dengan "Muat lebih banyak" (K45, K47):
     # rank_movies tahu jumlah totalnya (matching_count); search/similar dianggap berlanjut kalau halamannya penuh.
     pageable = [c for c in tool_calls if c["name"] in PAGERS and c["ids"]

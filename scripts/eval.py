@@ -53,7 +53,7 @@ def run_turn(history: list[dict], question: str, session_id: str) -> Result:
     results = {m.tool_call_id: m for m in new if m.type == "tool"}
     calls = []
     for message in (m for m in new if m.type == "ai"):
-        for call in message.tool_calls:
+        for call in (c for c in message.tool_calls if not c["name"].startswith("transfer_")):  # abaikan handoff supervisor
             result = results.get(call["id"])
             try:
                 body = json.loads(result.content) if result else {}
@@ -62,7 +62,7 @@ def run_turn(history: list[dict], question: str, session_id: str) -> Result:
             calls.append({"name": call["name"], "args": call["args"], "movies": [m["title"] for m in body.get("movies", [])],
                           "error": bool(result and getattr(result, "status", "") == "error"),
                           "rejected": "error" in body})  # ditolak tool (mis. query tidak berbahasa Inggris), lalu diulang agent
-    final = next((m.content for m in reversed(new) if m.type == "ai" and m.content), answer)
+    final = answer  # teks yang tampil di UI (supervisor bisa meneruskan atau menulis ulang; yang tampil jawaban sub-agent)
     ai = [m for m in new if m.type == "ai"]
     return Result(question, final, calls, sum((m.usage_metadata or {}).get("input_tokens", 0) for m in ai),
                   sum((m.usage_metadata or {}).get("output_tokens", 0) for m in ai), seconds, get_agent()[1].version)

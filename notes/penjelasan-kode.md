@@ -942,3 +942,51 @@ J: Sudah dicoba dua kali (v5 dan v8). Model ini sering mengabaikan aturan panjan
 J: Hanya kalimat paling akhir yang cocok pola tawaran. Pertanyaan klarifikasi ("film mana yang kamu maksud?") dan kalimat di tengah tidak disentuh. Ada 7 kasus uji untuk batas ini.
 
 > 🎬 **Untuk video:** "Di screenshot saya sendiri jawaban ditutup tawaran, padahal prompt melarang. Daripada menambah aturan di prompt, saya potong di kode dengan satu fungsi kecil."
+
+
+## 15. Arsitektur supervisor: 1 supervisor + 2 sub-agent (K75)
+
+**Definisi dulu.** Agent = LLM + prompt + tool. LLM tanpa tool hanya chatbot.
+
+**Sekarang ada 3 agent:**
+
+| Agent | Tool | Tugas |
+|---|---|---|
+| `supervisor` | tombol oper (`transfer_to_rag_agent`, `transfer_to_data_agent`) + `forward_message` | memilih sub-agent |
+| `rag_agent` (sub-agent) | `search_movies`, `similar_movies` | cari film dari cerita, film mirip |
+| `data_agent` (sub-agent) | `get_movie_details`, `rank_movies`, `get_person_info` | fakta, peringkat, profil orang |
+
+Pengguna hanya bicara dengan supervisor. Sub-agent bekerja di belakang layar.
+
+**Alur "5 film horor terbaik":**
+```
+User → supervisor: "soal peringkat" → transfer_to_data_agent
+     → data_agent: rank_movies(genre="Horror") → menulis jawaban → kembali ke supervisor
+     → supervisor: forward_message("data_agent") → jawaban data_agent sampai ke user apa adanya
+```
+"Cara masak rendang": supervisor tidak mengoper, langsung menjawab "Saya hanya membantu soal film."
+
+**Kodenya** (`app/agent.py`):
+1. `_build_agent(system_prompt, supervisor_prompt)`: dua `create_agent(..., name="rag_agent" / "data_agent")` dengan tool masing-masing dan prompt `movie-agent-system`, lalu `create_supervisor([rag_agent, data_agent], prompt=supervisor_prompt, tools=[forward_message], output_mode="full_history")`. Nama sub-agent otomatis jadi tool oper `transfer_to_<nama>`. `output_mode="full_history"` menyimpan semua pesan sub-agent (termasuk tool call) di riwayat, supaya panel tool call dan kartu film tetap terisi.
+2. `get_agent()`: ambil dua prompt dari Langfuse (`movie-agent-system`, `movie-supervisor-system`), kembalikan supervisor + kedua objek prompt.
+3. `stream_agent(...)`: `agent.stream(..., stream_mode=["messages", "values"], subgraphs=True)`.
+   - `subgraphs=True` membuat setiap potongan token membawa `namespace`, yaitu asal token: `("rag_agent:…",)`, `("data_agent:…",)`, atau `("supervisor:…",)`.
+   - Yang dialirkan ke layar: token sub-agent. Token supervisor hanya kalau belum ada sub-agent yang bicara (di luar topik). Kalau supervisor tetap menyalin jawaban sub-agent, salinan itu tidak ditampilkan.
+   - `values` di tingkat atas = state penuh; pesan baru = `history[len(messages):]`.
+
+**Di `streamlit_app.py` dan `scripts/eval.py`:** tool call yang namanya diawali `transfer_` disaring, karena itu tombol oper supervisor, bukan tool film.
+
+### Pertanyaan yang mungkin ditanyakan
+**T: Kenapa supervisor, bukan swarm?**
+J: Pertanyaan film hampir selalu jatuh ke satu bidang, jadi cukup satu pengatur yang memilih. Swarm cocok kalau agent harus saling mengoper di tengah percakapan, dan perlu mengingat agent mana yang aktif antar giliran. Memori kita hanya riwayat chat.
+
+**T: Kenapa 2 sub-agent, bukan 5 (satu per tool)?**
+J: Satu sub-agent per tool hanya menambah panggilan LLM tanpa menambah kemampuan. Pembagian RAG vs data mengikuti dua jenis sumber: Qdrant (vektor) dan CSV (data terstruktur).
+
+**T: Apa harganya dibanding agent tunggal?**
+J: Set uji 17 pertanyaan tetap lolos semua. Rata-rata 6,9 dtk vs 4,3 dtk per pertanyaan, biaya ±10% lebih mahal, karena supervisor harus memutuskan dulu.
+
+**T: Apa itu `forward_message`?**
+J: Tool bawaan `langgraph-supervisor`. Supervisor meneruskan jawaban sub-agent tanpa menulis ulang, sehingga tidak ada detail yang hilang dan tidak ada token terbuang. Karena model kadang tetap menulis ulang, layar dijaga di kode: yang tampil selalu jawaban sub-agent.
+
+> 🎬 **Untuk video:** "Sistem ini punya 3 agent: supervisor yang mengatur, dan 2 sub-agent yang mengerjakan. rag_agent mencari di Qdrant, data_agent membaca data terstruktur. Saya uji dengan 17 pertanyaan yang sama seperti agent tunggal: semuanya lolos, dengan biaya ±10% lebih mahal."
