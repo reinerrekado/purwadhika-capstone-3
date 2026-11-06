@@ -124,8 +124,10 @@
 - [x] Prompt `movie-supervisor-system` v1 di Langfuse (label `production`)
 - [x] Set uji 17/17 lolos (116/116); app lokal diuji lewat browser: jawaban sekali, tool call tanpa `transfer_*`, usage, "Muat lebih banyak"
 - [x] Catatan: `keputusan-desain.md` K75, `penjelasan-kode.md` bagian 15
-- [ ] **Reiner:** setujui commit + merge ke `main` (app publik ikut redeploy)
-- [ ] Setelah merge: perbarui diagram dan teks README (agent tunggal → supervisor), artefak "Anatomi Capstone 3", lalu cek app Cloud
+- [x] Disetujui Reiner, merge ke `main` dan push (7 Nov). App Cloud dicek: trace Langfuse menunjukkan supervisor → `data_agent` → `rank_movies`
+- [x] README: diagram alur, tabel 3 agent, tabel prompt, contoh pertanyaan per sub-agent
+- [x] Artefak "Anatomi Capstone 3" (link sama, versi 19): Ringkasan, Arsitektur (diagram + 21 langkah), bab Agent ditulis ulang, Syarat (16/18), Proses (7 Nov + 3 temuan), Hasil (tunggal vs supervisor). Tab Arsip tidak diubah
+- [ ] Kabari Pak Herman bahwa arsitektur sekarang supervisor (app, README, dan Anatomi sudah diperbarui)
 - [ ] Opsional: pertanyaan lintas domain baru memanggil satu sub-agent
 
 ## Fase 6 · Video (6–8 Nov)
