@@ -71,29 +71,29 @@ def rupiah(usd: float) -> str:
     return f"Rp{usd * fx[0]:,.0f}".replace(",", ".") if fx else ""
 
 
-def tool_movies(content: str) -> list[dict]:
-    """Daftar film dari hasil tool. Semua tool mengembalikan JSON berkunci "movies" (K28)."""
+def tool_json(content: str) -> dict:
+    """Hasil satu tool sebagai dict. Semua tool mengembalikan JSON berkunci "movies" (K28); galat tool berupa teks biasa."""
     try:
-        return json.loads(content).get("movies", [])
-    except json.JSONDecodeError:  # pesan error tool berupa teks biasa
-        return []
-
-
-def tool_total(content: str) -> int | None:
-    """Jumlah total hasil kalau tool menyebutkannya (rank_movies: matching_count)."""
-    try:
-        return json.loads(content).get("matching_count")
+        body = json.loads(content)
     except json.JSONDecodeError:
-        return None
+        return {}
+    return body if isinstance(body, dict) else {}
 
 
-def tool_person(content: str) -> dict | None:
+def tool_person(body: dict) -> dict | None:
     """Profil orang dari hasil get_person_info (K71), kalau ada dan punya bio."""
-    try:
-        person = json.loads(content).get("person")
-    except json.JSONDecodeError:
-        return None
+    person = body.get("person")
     return person if person and person.get("biography") else None
+
+
+def tool_status(body: dict) -> str:
+    """Kalimat untuk tool call yang ditolak atau tidak menemukan apa pun, supaya panel tidak sekadar "tidak ada film" (K79)."""
+    if error := body.get("error"):  # search_movies menolak query yang tidak berbahasa Inggris (K61)
+        return ("Ditolak tool: query harus berbahasa Inggris, jadi agent diminta mengulang (K61)." if "English" in error
+                else f"Ditolak tool: {error}")
+    if missing := [item["query"] for item in body.get("not_found", [])]:
+        return f"Tidak ketemu di dataset: {', '.join(missing)}. Tool menyertakan petunjuk untuk agent (K32)."
+    return ""
 
 
 def call_docs(movies: list[dict], person: dict | None) -> list[dict]:
@@ -108,23 +108,34 @@ def call_docs(movies: list[dict], person: dict | None) -> list[dict]:
 
 
 def summarize_run(new_messages: list) -> dict:
-    """Ambil tool call, film yang ditemukan tool, dan pemakaian token dari satu run agent."""
+    """Ambil rute supervisor, tool call film (dengan sub-agent pemanggilnya), film yang ditemukan, dan token dari satu run."""
     ai_messages = [m for m in new_messages if m.type == "ai"]
-    movies = {m.tool_call_id: tool_movies(m.content) for m in new_messages if m.type == "tool"}
-    found = {movie["id"]: movie for result in movies.values() for movie in result}  # tanpa duplikat
-    totals = {m.tool_call_id: tool_total(m.content) for m in new_messages if m.type == "tool"}
-    persons = {m.tool_call_id: tool_person(m.content) for m in new_messages if m.type == "tool"}
-    tool_calls = [{"name": call["name"], "args": call["args"],
-                   "titles": [movie["title"] for movie in movies.get(call["id"], [])],
-                   "docs": call_docs(movies.get(call["id"], []), persons.get(call["id"])),
-                   "ids": [movie["id"] for movie in movies.get(call["id"], [])],
-                   "total": totals.get(call["id"])}
-                  for m in ai_messages for call in m.tool_calls if not call["name"].startswith("transfer_")]  # handoff supervisor bukan tool film
+    results = {m.tool_call_id: tool_json(m.content) for m in new_messages if m.type == "tool"}
+    crashed = {m.tool_call_id for m in new_messages if m.type == "tool" and getattr(m, "status", "") == "error"}
+    found = {movie["id"]: movie for body in results.values() for movie in body.get("movies", [])}  # tanpa duplikat
+    route, agent, tool_calls = [], "supervisor", []
+    for message in ai_messages:  # urutan pesan = urutan kerja, jadi sub-agent yang sedang aktif bisa dilacak (K79)
+        for call in message.tool_calls:
+            if call["name"].startswith("transfer_to_"):  # supervisor mengoper ke sub-agent (K75)
+                agent = call["name"].removeprefix("transfer_to_")
+                route.append(agent)
+            elif call["name"].startswith("transfer_back_"):
+                agent = "supervisor"
+            elif call["name"] != "forward_message":  # tombol oper dan forward_message milik supervisor, bukan tool film
+                body = results.get(call["id"], {})
+                movies = body.get("movies", [])
+                tool_calls.append({"name": call["name"], "args": call["args"], "agent": agent,
+                                   "titles": [movie["title"] for movie in movies],
+                                   "docs": call_docs(movies, tool_person(body)),
+                                   "ids": [movie["id"] for movie in movies],
+                                   "total": body.get("matching_count"), "average": body.get("average_rating"),
+                                   "status": "Galat saat menjalankan tool." if call["id"] in crashed else tool_status(body)})
     # Pencarian terakhir yang masih punya hasil lanjutan bisa diteruskan dengan "Muat lebih banyak" (K45, K47):
     # rank_movies tahu jumlah totalnya (matching_count); search/similar dianggap berlanjut kalau halamannya penuh.
     pageable = [c for c in tool_calls if c["name"] in PAGERS and c["ids"]
                 and (c["total"] > len(c["ids"]) if c["total"] is not None else len(c["ids"]) == PAGE_SIZE)]
     return {
+        "route": route,
         "tool_calls": tool_calls,
         "more": {"tool": pageable[-1]["name"], "args": pageable[-1]["args"], "offset": len(pageable[-1]["ids"]),
                  "queue": pageable[-1]["ids"], "done": False, "total": pageable[-1]["total"]} if pageable else None,
@@ -385,15 +396,33 @@ def save_feedback(key: str, trace_id: str) -> None:
         send_feedback(trace_id, st.session_state[key] == 1)
 
 
+def rank_summary(call: dict) -> str:
+    """Hasil rank_movies: jumlah film yang cocok dan rata-rata ratingnya, supaya angka di jawaban bisa dicek (K79)."""
+    text = f"Hasil: {call['total']} film cocok"
+    if call.get("average") is not None:
+        text += f" · rata-rata rating {call['average']:.2f}".replace(".", ",")
+    return text + (" · teratas: " + ", ".join(call["titles"]) if call["titles"] else "")
+
+
 def show_details(details: dict, index: int) -> None:
-    """Tampilkan tool call (dalam expander), usage, dan tombol feedback di bawah jawaban."""
-    if calls := details["tool_calls"]:  # jawaban tanpa tool (di luar topik) tidak diberi expander kosong (K64)
-        with st.expander(f"{len(calls)} tool call", icon=":material/build:"):
+    """Tampilkan rute supervisor dan tool call (dalam expander), usage, dan tombol feedback di bawah jawaban."""
+    route, calls = details.get("route", []), details["tool_calls"]
+    # Rute supervisor (K79): sub-agent mana yang mengerjakan, terlihat tanpa membuka expander.
+    flow = " → ".join(["supervisor", *route]) if route else "supervisor menjawab sendiri, tanpa sub-agent"
+    if calls:  # jawaban tanpa tool (di luar topik) tidak diberi expander kosong (K64)
+        with st.expander(f"{flow} · {len(calls)} tool call", icon=":material/build:"):
+            several = len(set(route)) > 1  # pertanyaan lintas domain: tandai sub-agent pemanggil tiap tool
             for call in calls:
                 args = ", ".join(f"{k}={v!r}" for k, v in call["args"].items() if v is not None)
-                st.code(f"{call['name']}({args})", language="python", wrap_lines=True)  # dibungkus: argumen tidak terpotong
+                owner = f"  # {call['agent']}" if several and call.get("agent") else ""
+                st.code(f"{call['name']}({args}){owner}", language="python", wrap_lines=True)  # dibungkus: argumen tidak terpotong
+                if call.get("status"):  # ditolak tool atau tidak ketemu: katakan apa adanya
+                    st.caption(call["status"])
                 if not call.get("docs"):  # rank_movies: hasil dihitung dari tabel, tidak ada dokumen
-                    st.caption("Hasil: " + (", ".join(call["titles"]) or "tidak ada film yang cocok"))
+                    if call.get("total") is not None:
+                        st.caption(rank_summary(call))
+                    elif call["titles"] or not call.get("status"):
+                        st.caption("Hasil: " + (", ".join(call["titles"]) or "tidak ada film yang cocok"))
                     continue
                 reranked = any(doc.get("rerank_score") is not None for doc in call["docs"])
                 st.caption("Dokumen yang dipakai" + (" (15 kandidat Qdrant, diurutkan ulang reranker):" if reranked else ":"))
@@ -403,6 +432,8 @@ def show_details(details: dict, index: int) -> None:
                     label = f"{doc['title']} ({doc['year']})" if doc["year"] else doc["title"]  # bio orang tanpa tahun
                     st.markdown(f"**{label}**{score}")
                     st.caption(doc["overview"])
+    else:  # tanpa tool call: tetap tunjukkan siapa yang menjawab
+        st.caption(flow + (" · tanpa tool call" if route else ""))
     usd = cost_usd(details["input_tokens"], details["output_tokens"])
     st.caption(f"{details['input_tokens']:,} input · {details['output_tokens']:,} output token · "
                f"≈ {rupiah(usd)} (${usd:.4f})")
