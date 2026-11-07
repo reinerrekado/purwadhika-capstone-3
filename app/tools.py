@@ -9,10 +9,11 @@ import json
 import re
 import unicodedata
 from functools import lru_cache
-from typing import Literal
+from typing import Annotated, Literal
 
 from langchain.tools import tool
 from langchain_qdrant import QdrantVectorStore
+from pydantic import BeforeValidator
 from qdrant_client import models
 
 from app.config import env, get_embeddings
@@ -21,6 +22,9 @@ from app.rerank import rerank
 
 # 21 genre persis dari dataset. LLM hanya bisa memilih salah satu nilai ini (kritik diri #3).
 Genre = Literal[tuple(all_genres())]
+# "Leave empty" kadang dibaca model sebagai genre='' (±8% pencarian sejak supervisor, K81). String kosong diubah jadi
+# None sebelum divalidasi, jadi sama dengan tanpa genre; daftar 21 genre di skema yang dilihat model tidak berubah.
+OptionalGenre = Annotated[Genre | None, BeforeValidator(lambda value: value or None)]
 
 # Kolom yang dikirim ke LLM. Poster tidak ikut: UI mengambilnya sendiri lewat id (hemat token).
 FIELDS_FOR_LLM = ["id", "title", "year", "genres", "rating", "meta_score",
@@ -75,7 +79,7 @@ def _qdrant_filter(genre: str | None, year_from: int | None, year_to: int | None
 @tool(parse_docstring=True)
 def search_movies(
     query: str,
-    genre: Genre | None = None,
+    genre: OptionalGenre = None,
     year_from: int | None = None,
     year_to: int | None = None,
     describes_scene: bool | None = None,
@@ -292,7 +296,7 @@ def rank_movies(
     sort_by: SortField = "rating",
     order: Literal["highest", "lowest"] = "highest",
     title: str | None = None,
-    genre: Genre | None = None,
+    genre: OptionalGenre = None,
     year_from: int | None = None,
     year_to: int | None = None,
     director: str | None = None,

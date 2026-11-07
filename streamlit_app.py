@@ -420,7 +420,7 @@ def show_details(details: dict, index: int) -> None:
         with st.expander(f"{flow} · {len(calls)} tool call", icon=":material/build:"):
             several = len(set(route)) > 1  # pertanyaan lintas domain: tandai sub-agent pemanggil tiap tool
             for call in calls:
-                args = ", ".join(f"{k}={v!r}" for k, v in call["args"].items() if v is not None)
+                args = ", ".join(f"{k}={v!r}" for k, v in call["args"].items() if v not in (None, ""))  # kosong = tidak diisi (K81)
                 owner = f"  # {call['agent']}" if several and call.get("agent") else ""
                 st.code(f"{call['name']}({args}){owner}", language="python", wrap_lines=True)  # dibungkus: argumen tidak terpotong
                 if call.get("status"):  # ditolak tool atau tidak ketemu: katakan apa adanya
