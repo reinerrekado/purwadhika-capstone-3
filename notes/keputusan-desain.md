@@ -942,5 +942,9 @@ Sumber: [OpenRouter Embeddings API](https://openrouter.ai/docs/api-reference/emb
   - `summarize_run` pada pesan asli dari 4 pertanyaan: rute, label sub-agent, dan "3 film cocok · rata-rata rating 8,17" benar.
   - `tool_status` pada hasil tool asli: ditolak, tidak ketemu (sebagian dan seluruhnya), dan normal.
   - App lokal disetir Edge untuk 4 pertanyaan (hitungan, orang tidak ada, di luar topik, peringkat): label, isi panel, dan keterangan tampil benar, tanpa galat JS.
-- **Langsung berguna:** panel baru memperlihatkan bahwa untuk "ada berapa film Hayao Miyazaki tahun 2000-an?" agent sekali memanggil `rank_movies(star='Hayao Miyazaki', …)` → "0 film cocok", lalu menjawab "tidak ada" (yang benar 3). Sebelumnya kesalahan ini tidak terlihat di layar. Lihat temuan berikut.
+- **Langsung berguna:** panel baru memperlihatkan bahwa untuk "ada berapa film Hayao Miyazaki tahun 2000-an?" agent sekali memanggil `rank_movies(star='Hayao Miyazaki', …)` → "0 film cocok", lalu menjawab "tidak ada" (yang benar 3). Sebelumnya kesalahan ini tidak terlihat di layar.
+- **Temuan sampingan, diukur ulang 5× per pertanyaan lewat `stream_agent`:**
+  - "ada berapa film Hayao Miyazaki tahun 2000-an?": 5/5 benar (`director=`). Ditambah uji di app lokal: **1 salah dari 6** (`star=`).
+  - "ceritakan film Parasite": 5/5 benar (4× ke `data_agent`, yang mencoba `Parasite` lalu `Gisaengchung`; 1× ke `rag_agent`, yang tetap menemukan Gisaengchung lewat plot). Ditambah uji `summarize_run`: **1 salah dari 6** (ke `rag_agent`, query "story of Parasite movie", film tidak berhubungan).
+  - Usul, menunggu keputusan Reiner: (a) `rank_movies` di kode: kalau `star` tidak cocok siapa pun tapi namanya sutradara, pakai `director` (dan sebaliknya), pola yang sama dengan K66; (b) aturan supervisor untuk "ceritakan film X" → `data_agent` (prompt supervisor v2, perlu uji 3 putaran). Sementara itu dicatat sebagai keterbatasan di Anatomi.
 - **Status:** ✅ Baru

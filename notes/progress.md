@@ -136,6 +136,9 @@
 - [x] Bug `trim_offer` diperbaiki: daftar di paragraf terakhir tidak lagi tergabung jadi satu paragraf (K77). 11 kasus uji + 190 jawaban asli Langfuse: rusak 38 → 0
 - [x] Cek Langfuse (K75): urutan trace benar; tab Graph menggabungkan 3 graf (bukan diagram urutan); supervisor menulis ulang 75%, Anatomi dikoreksi (versi 22)
 - [x] Tiap agent tertaut ke prompt Langfuse-nya sendiri (K78): supervisor → `movie-supervisor-system`, sub-agent → `movie-agent-system`. Diuji lewat `stream_agent` + set uji 17 pertanyaan; app Cloud dicek setelah Reboot app (perlu reboot setelah push yang hanya mengubah kode)
+- [x] Panel tool call (K79): rute "supervisor → data_agent" di judul expander, jumlah cocok + rata-rata rating `rank_movies`, keterangan tool ditolak/tidak ketemu; `forward_message` tidak lagi tampil sebagai tool call. Diuji di app lokal (Edge)
+- [ ] **Reiner:** Reboot app di share.streamlit.io supaya panel baru (K79) aktif di app publik
+- [ ] Keputusan: kesalahan sesekali (±1 dari 6) "film Miyazaki" dicari sebagai aktor, dan "ceritakan film Parasite" dioper ke `rag_agent`. Usul perbaikan ada di K79
 
 ## Fase 6 · Video (6–8 Nov)
 - [ ] Naskah dari `penjelasan-kode.md` + set uji
