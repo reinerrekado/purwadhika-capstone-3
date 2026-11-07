@@ -802,6 +802,7 @@ Tiga aturan di prompt (query berbahasa Inggris, jujur soal adegan, bahasa jawaba
 | Jujur soal adegan atau kutipan (K59) | parameter `describes_scene` + `note` di hasil tool |
 | Bahasa jawaban = bahasa pertanyaan (K65) | `reply_language()` di `agent.py` menambah "(Reply in English.)" di pesan untuk agent |
 | Nama orang tidak boleh di kolom `title` (K66) | `_ranked()` mengabaikan `title` yang tidak cocok kalau ada `director` atau `star` |
+| `genre=''` tidak boleh membuat tool galat (K81) | `OptionalGenre`: string kosong diubah jadi `None` sebelum validasi, jadi sama dengan tanpa genre; daftar 21 genre di skema tetap |
 | Nama orang di peran yang benar (K80) | `_fix_role()`: kalau nama dikirim sebagai `star` tapi di seluruh dataset hanya pernah jadi sutradara, dicari sebagai `director` (dan sebaliknya). Hasil tool membawa `role_fixed` + `note` supaya agent menjawab "disutradarai", dan panel menampilkan "Peran dibetulkan tool" |
 
 ```python
@@ -1007,6 +1008,12 @@ J: Urutannya benar; lihat tab Tree atau Timeline: supervisor → `transfer_to_da
 
 **T: Panel menulis "Judul tidak cocok: Spirited Away". Apa filmnya tidak ada?**
 J: Ada, dengan judul aslinya, *Sen to Chihiro no kamikakushi* (2001). Dataset menulis film non-Inggris dengan judul asli, jadi pencarian judul "Spirited Away" gagal. Tool lalu memberi petunjuk, dan agent mencoba lagi dengan judul asli dan berhasil. Panel memperlihatkan kedua percobaan itu apa adanya (K32, K79).
+
+**T: Kenapa `similar_movies` tidak memakai reranker?**
+J: Reranker menilai seberapa cocok sebuah dokumen dengan sebuah **pertanyaan**. "Film mirip X" tidak punya pertanyaan, yang ada film X itu sendiri, dan kemiripan antar-sinopsis sudah diukur oleh vektor film X yang dipakai langsung sebagai query (K34). Reranker tetap dipakai di `search_movies`, dan skornya tampil di panel (K58).
+
+**T: Untuk "film tentang orang masuk mimpi", kenapa Inception tidak di urutan pertama?**
+J: Reranker menilai kecocokan kata secara harfiah. Sinopsis Inception di dataset menulis "dream-sharing technology", bukan "masuk ke mimpi", jadi skornya 0,08, sedangkan Paprika ("masuk ke mimpi pasien") 0,65. Inception tetap masuk 5 besar dan disebut di jawaban. Untuk pertanyaan yang lebih spesifik, "pencuri yang masuk ke mimpi orang", Inception di urutan 1 dengan skor 0,85. Reranker juga membantu di kasus yang sama: Requiem for a Dream, yang bukan film tentang mimpi, didorong ke bawah (0,01).
 
 **T: Apakah supervisor benar-benar meneruskan jawaban dengan `forward_message`?**
 J: Hanya 1 dari 4 kali (36 dari 145 trace); sisanya ia menulis ulang. Karena itu layar tidak bergantung padanya: `stream_agent` hanya menampilkan jawaban sub-agent. Harganya ±85 token dan ±0,6 detik per tulisan ulang.

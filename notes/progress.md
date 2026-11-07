@@ -139,7 +139,9 @@
 - [x] Panel tool call (K79): rute "supervisor → data_agent" di judul expander, jumlah cocok + rata-rata rating `rank_movies`, keterangan tool ditolak/tidak ketemu; `forward_message` tidak lagi tampil sebagai tool call. Diuji di app lokal (Edge)
 - [x] Reiner me-reboot app; panel baru (K79) dicek di app publik untuk 4 pertanyaan: rute, hasil hitungan, status "tidak ketemu", dan keterangan di luar topik tampil benar
 - [x] `rank_movies` membetulkan peran orang yang salah (K80, opsi a pilihan Reiner): "Miyazaki" sebagai aktor → dicari sebagai sutradara. 9 kasus tool lolos + set uji 17 pertanyaan
-- [ ] **Reiner:** Reboot app lagi setelah push K80
+- [x] Reiner me-reboot app setelah push K80 (panel menulis "Judul tidak cocok")
+- [x] `genre=''` diperlakukan sama dengan tanpa genre (K81): ±8% pencarian sejak supervisor sempat "Galat saat menjalankan tool". Reranker tetap hanya untuk `search_movies` (dijelaskan ke Reiner)
+- [ ] **Reiner:** Reboot app lagi setelah push K81
 - [x] "Ceritakan film Parasite" sesekali ke `rag_agent` (±1 dari 6): tidak dikerjakan (opsi b), dicatat sebagai keterbatasan
 
 ## Fase 6 · Video (6–8 Nov)
