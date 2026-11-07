@@ -146,7 +146,7 @@ Yang di-embed per film: `judul. genre. sinopsis`. Semua kolom lain disimpan seba
 
 ## Sumber data
 
-- **Film:** [IMDB Dataset of Top 1000 Movies and TV Shows](https://www.kaggle.com/datasets/harshitshankhdhar/imdb-dataset-of-top-1000-movies-and-tv-shows) (Kaggle).
+- **Film:** [IMDB Dataset of Top 1000 Movies and TV Shows](https://www.kaggle.com/datasets/harshitshankhdhar/imdb-dataset-of-top-1000-movies-and-tv-shows) (Kaggle), lisensi CC0: Public Domain.
 - **Bio dan foto sutradara/pemain:** [Wikipedia](https://en.wikipedia.org) (teks berlisensi [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/), foto dari Wikimedia). Diambil sekali oleh `scripts/fetch_people.py` dan disimpan di `data/people.csv` bersama tautan halaman sumber tiap orang. Bio berbahasa Indonesia adalah terjemahan otomatis dari teks Inggris tersebut. Cakupan: bio 92,6% dan foto 84,6% dari 3.202 orang; untuk yang tidak punya, ditampilkan inisial dan daftar filmnya dari dataset.
 
 ## Instalasi

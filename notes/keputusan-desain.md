@@ -849,7 +849,7 @@ Sumber: [OpenRouter Embeddings API](https://openrouter.ai/docs/api-reference/emb
   - Tidak ada jejak HR/Resume di file dilacak.
   - Chat history (`session_state`), tool call, dokumen yang dipakai, dan usage tampil di UI.
   - README: diagram, instalasi, variabel, cara menjalankan, contoh. Ketinggalan: baris prompt `bio-translator` (sudah ditambahkan) dan screenshot (menunggu).
-- **Yang diputuskan Reiner (belum):** (1) teks instruksi LLM di kode (`SCENE_NOTE`, `ENGLISH_ONLY`, `NOT_FOUND_HINT`, petunjuk tool orang, "(Reply in English.)") apakah dipindah ke Langfuse atau dibiarkan; (2) `LICENSE`; (3) menaikkan batas key OpenRouter menjelang rekaman video dan penilaian.
+- **Yang diputuskan Reiner (belum):** (1) teks instruksi LLM di kode (`SCENE_NOTE`, `ENGLISH_ONLY`, `NOT_FOUND_HINT`, petunjuk tool orang, "(Reply in English.)") apakah dipindah ke Langfuse atau dibiarkan; (2) `LICENSE`; (3) menaikkan batas key OpenRouter menjelang rekaman video dan penilaian. **Pembaruan 7 Nov:** (2) diputuskan tanpa `LICENSE` (tidak wajib untuk capstone; repo publik tetap bisa dilihat dan dinilai). Lisensi dataset Kaggle ternyata **CC0: Public Domain** (dicek lewat API Kaggle), bio Wikipedia CC BY-SA 4.0, font OFL (file lisensinya ada di `static/fonts/`).
 - **Status:** ➕ Tambahan
 
 ### K73 · Prompt tertaut ke generation di Langfuse
