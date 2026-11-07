@@ -187,7 +187,7 @@ Tidak ada prompt yang ditulis di kode. Semuanya diambil dari Langfuse dengan lab
 | Nama prompt | Dipakai oleh | Wajib? |
 |---|---|---|
 | `movie-supervisor-system` | system prompt supervisor: aturan memilih sub-agent (`app/agent.py`) | Ya |
-| `movie-agent-system` | system prompt kedua sub-agent (`app/agent.py`) | Ya |
+| `movie-agent-system` | system prompt kedua sub-agent (`app/agent.py`). Namanya dari masa agent tunggal, dipertahankan supaya riwayat v1–v8 tetap utuh | Ya |
 | `story-headline` | headline IG story (`app/story.py`) | Tidak, tanpa prompt ini headline dibuat dari aturan cadangan |
 | `overview-translator` | `scripts/translate_overviews.py` | Tidak, hasil terjemahannya sudah ada di `data/overview_id.csv` |
 | `bio-translator` | `scripts/translate_people.py` | Tidak, hasil terjemahannya sudah ada di `data/people.csv` |

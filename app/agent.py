@@ -16,7 +16,7 @@ from langgraph_supervisor.handoff import create_forward_message_tool
 from app.config import get_llm
 from app.tools import INDONESIAN_WORDS, get_movie_details, get_person_info, rank_movies, search_movies, similar_movies
 
-PROMPT_NAME = "movie-agent-system"  # prompt sub-agent; dibuat lewat UI Langfuse, label "production" (K03)
+PROMPT_NAME = "movie-agent-system"  # prompt sub-agent (nama dari masa agent tunggal, K76); dibuat lewat UI Langfuse (K03)
 SUPERVISOR_PROMPT_NAME = "movie-supervisor-system"  # prompt supervisor; dibuat lewat API Langfuse, label "production"
 
 # Kata penanda bahasa (K65). Heuristik sederhana: bahasa dengan kata penanda terbanyak menang, seri = Indonesia.

@@ -989,4 +989,10 @@ J: Set uji 17 pertanyaan tetap lolos semua. Rata-rata 6,9 dtk vs 4,3 dtk per per
 **T: Apa itu `forward_message`?**
 J: Tool bawaan `langgraph-supervisor`. Supervisor meneruskan jawaban sub-agent tanpa menulis ulang, sehingga tidak ada detail yang hilang dan tidak ada token terbuang. Karena model kadang tetap menulis ulang, layar dijaga di kode: yang tampil selalu jawaban sub-agent.
 
+**T: Kenapa prompt `rag_agent` menyebut `rank_movies`, padahal ia tidak memegangnya? (K76)**
+J: Kedua sub-agent memakai satu prompt bersama (v8). Saya sudah mencoba versi tanpa daftar tool (v9), dua kali: hasilnya turun ke 15/17, karena `data_agent` memakai `get_person_info` untuk menghitung film Miyazaki dan salah hitung. Daftar tool itu yang membantu model memilih tool yang tepat, jadi saya kembali ke v8. Sub-agent tetap hanya bisa memanggil tool miliknya sendiri.
+
+**T: Kenapa namanya `movie-agent-system`, padahal disebut "prompt sub-agent"? (K76)**
+J: Itu satu prompt yang sama. `movie-agent-system` adalah nama teknisnya di Langfuse dan kode, dibuat 22 Okt waktu sistem masih agent tunggal. "Prompt sub-agent" adalah sebutan perannya sekarang. Saya tidak mengganti nama karena di Langfuse nama adalah identitas prompt: nama baru berarti mulai lagi dari v1, dan riwayat v1–v8 beserta metrik dan skor 👍/👎-nya tertinggal di prompt lama.
+
 > 🎬 **Untuk video:** "Sistem ini punya 3 agent: supervisor yang mengatur, dan 2 sub-agent yang mengerjakan. rag_agent mencari di Qdrant, data_agent membaca data terstruktur. Saya uji dengan 17 pertanyaan yang sama seperti agent tunggal: semuanya lolos, dengan biaya ±10% lebih mahal."

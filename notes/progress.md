@@ -129,6 +129,8 @@
 - [x] Artefak "Anatomi Capstone 3" (link sama, versi 19): Ringkasan, Arsitektur (diagram + 21 langkah), bab Agent ditulis ulang, Syarat (16/18), Proses (7 Nov + 3 temuan), Hasil (tunggal vs supervisor). Tab Arsip tidak diubah
 - [ ] Kabari Pak Herman bahwa arsitektur sekarang supervisor (app, README, dan Anatomi sudah diperbarui)
 - [ ] Opsional: pertanyaan lintas domain baru memanggil satu sub-agent
+- [x] Prompt sub-agent tanpa daftar tool (v9) dicoba dua cara, gagal uji (15/17), kembali ke v8 (K76). `production` = v8, v9 berlabel `staging`
+- [x] Nama `movie-agent-system` dipertahankan (riwayat v1–v8 utuh); penjelasannya ditambahkan di README, Anatomi (+ baris v9 di riwayat prompt), komentar `app/agent.py`, `penjelasan-kode.md` (K76)
 
 ## Fase 6 · Video (6–8 Nov)
 - [ ] Naskah dari `penjelasan-kode.md` + set uji
