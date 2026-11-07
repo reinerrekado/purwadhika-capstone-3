@@ -138,7 +138,9 @@
 - [x] Tiap agent tertaut ke prompt Langfuse-nya sendiri (K78): supervisor → `movie-supervisor-system`, sub-agent → `movie-agent-system`. Diuji lewat `stream_agent` + set uji 17 pertanyaan; app Cloud dicek setelah Reboot app (perlu reboot setelah push yang hanya mengubah kode)
 - [x] Panel tool call (K79): rute "supervisor → data_agent" di judul expander, jumlah cocok + rata-rata rating `rank_movies`, keterangan tool ditolak/tidak ketemu; `forward_message` tidak lagi tampil sebagai tool call. Diuji di app lokal (Edge)
 - [x] Reiner me-reboot app; panel baru (K79) dicek di app publik untuk 4 pertanyaan: rute, hasil hitungan, status "tidak ketemu", dan keterangan di luar topik tampil benar
-- [ ] Keputusan: kesalahan sesekali (±1 dari 6) "film Miyazaki" dicari sebagai aktor, dan "ceritakan film Parasite" dioper ke `rag_agent`. Usul perbaikan ada di K79
+- [x] `rank_movies` membetulkan peran orang yang salah (K80, opsi a pilihan Reiner): "Miyazaki" sebagai aktor → dicari sebagai sutradara. 9 kasus tool lolos + set uji 17 pertanyaan
+- [ ] **Reiner:** Reboot app lagi setelah push K80
+- [x] "Ceritakan film Parasite" sesekali ke `rag_agent` (±1 dari 6): tidak dikerjakan (opsi b), dicatat sebagai keterbatasan
 
 ## Fase 6 · Video (6–8 Nov)
 - [ ] Naskah dari `penjelasan-kode.md` + set uji

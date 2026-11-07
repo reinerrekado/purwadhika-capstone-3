@@ -474,7 +474,7 @@ Hanya **tampilan**. Semua logika ada di `app/agent.py` (arahan modular Pak Herma
 | `st.session_state.chat` | Riwayat percakapan yang bertahan selama sesi browser |
 | `st.session_state.session_id` | Id acak per sesi, dikirim ke Langfuse |
 | `tool_json()` | Baca hasil satu tool sebagai dict (semua tool mengembalikan JSON berkunci `movies`, K28). Kalau isinya pesan error teks biasa, kembalikan dict kosong |
-| `tool_status()` | Kalimat untuk tool call yang ditolak (query bukan bahasa Inggris) atau tidak menemukan apa pun (`not_found`), supaya panel tidak sekadar "tidak ada film" (K79) |
+| `tool_status(tool, body)` | Kalimat untuk tool call yang ditolak (query bukan bahasa Inggris), tidak menemukan apa pun (`not_found`), atau perannya dibetulkan (K80). Judul film yang tidak cocok ditulis "Judul tidak cocok", bukan "tidak ada di dataset", karena film non-Inggris tercatat dengan judul aslinya (Spirited Away = Sen to Chihiro no kamikakushi); orang yang tidak ada ditulis "Tidak ada di dataset" (K79) |
 | `summarize_run()` | Dari pesan baru, sesuai urutan kerja: **rute supervisor** (`transfer_to_*` → daftar sub-agent), tool call film beserta sub-agent pemanggilnya, judul hasil, jumlah cocok dan rata-rata rating (`rank_movies`), status, film yang ditemukan, dan jumlah token. Tombol oper dan `forward_message` milik supervisor tidak dihitung sebagai tool film (K79) |
 | `rank_summary()` | "Hasil: 3 film cocok · rata-rata rating 8,17 · teratas: …", supaya angka di jawaban hitungan bisa dicek (K79) |
 | `show_posters()` | Kartu poster (maksimal 5) untuk film yang disebut di jawaban, dengan link "Tonton di mana?" (K37) |
@@ -802,6 +802,7 @@ Tiga aturan di prompt (query berbahasa Inggris, jujur soal adegan, bahasa jawaba
 | Jujur soal adegan atau kutipan (K59) | parameter `describes_scene` + `note` di hasil tool |
 | Bahasa jawaban = bahasa pertanyaan (K65) | `reply_language()` di `agent.py` menambah "(Reply in English.)" di pesan untuk agent |
 | Nama orang tidak boleh di kolom `title` (K66) | `_ranked()` mengabaikan `title` yang tidak cocok kalau ada `director` atau `star` |
+| Nama orang di peran yang benar (K80) | `_fix_role()`: kalau nama dikirim sebagai `star` tapi di seluruh dataset hanya pernah jadi sutradara, dicari sebagai `director` (dan sebaliknya). Hasil tool membawa `role_fixed` + `note` supaya agent menjawab "disutradarai", dan panel menampilkan "Peran dibetulkan tool" |
 
 ```python
 english = sum(w in ENGLISH_MARKERS for w in words); indonesian = sum(w in INDONESIAN_MARKERS for w in words)
@@ -1003,6 +1004,9 @@ J: Itu satu prompt yang sama. `movie-agent-system` adalah nama teknisnya di Lang
 
 **T: Di tab Graph Langfuse, kenapa `supervisor` ada di bawah? Apa urutannya salah?**
 J: Urutannya benar; lihat tab Tree atau Timeline: supervisor → `transfer_to_data_agent` → `data_agent` → `rank_movies` → kembali ke supervisor. Tab Graph menggabungkan kotak dari tiga graf sekaligus: graf utama (`supervisor`, `data_agent`), graf di dalam supervisor (`agent` adalah LLM supervisor, `tools` menjalankan tombol oper), dan graf di dalam sub-agent (`model` adalah LLM sub-agent, `tools` menjalankan tool film). Nomor langkah mulai lagi dari 1 di tiap graf, jadi letak kotaknya tidak menunjukkan urutan kerja.
+
+**T: Panel menulis "Judul tidak cocok: Spirited Away". Apa filmnya tidak ada?**
+J: Ada, dengan judul aslinya, *Sen to Chihiro no kamikakushi* (2001). Dataset menulis film non-Inggris dengan judul asli, jadi pencarian judul "Spirited Away" gagal. Tool lalu memberi petunjuk, dan agent mencoba lagi dengan judul asli dan berhasil. Panel memperlihatkan kedua percobaan itu apa adanya (K32, K79).
 
 **T: Apakah supervisor benar-benar meneruskan jawaban dengan `forward_message`?**
 J: Hanya 1 dari 4 kali (36 dari 145 trace); sisanya ia menulis ulang. Karena itu layar tidak bergantung padanya: `stream_agent` hanya menampilkan jawaban sub-agent. Harganya ±85 token dan ±0,6 detik per tulisan ulang.
