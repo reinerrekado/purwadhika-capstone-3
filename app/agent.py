@@ -45,13 +45,24 @@ OFFER = re.compile(
 
 
 def trim_offer(answer: str) -> str:
-    """Buang kalimat penutup yang hanya menawarkan bantuan lanjutan. Teks lain tidak disentuh."""
-    paragraphs = answer.rstrip().split("\n\n")
-    sentences = re.split(r"(?<=[.!?])\s+", paragraphs[-1])
-    while sentences and OFFER.match(sentences[-1].strip()):
-        sentences.pop()
-    kept = paragraphs[:-1] + ([" ".join(sentences)] if sentences else [])
-    return "\n\n".join(kept) if kept else answer  # jangan pernah mengosongkan jawaban
+    """Buang kalimat penutup yang hanya menawarkan bantuan lanjutan. Hanya ekor jawaban yang dipotong: baris
+    di atasnya tidak disentuh, jadi daftar film tetap satu film per baris (K74, perbaikan K77)."""
+    text = answer.rstrip()
+    lines = text.split("\n")
+    while lines:
+        parts = re.split(r"((?<=[.!?])[ \t]+)", lines[-1].rstrip())  # kalimat + spasi pemisahnya, per baris
+        trimmed = False
+        while parts and OFFER.match(parts[-1].strip()):
+            parts, trimmed = parts[:-2], True  # buang kalimat tawaran beserta spasi sebelumnya
+        if not trimmed:
+            break
+        if "".join(parts).strip():
+            lines[-1] = "".join(parts)
+            break
+        lines.pop()  # seluruh baris berisi tawaran: buang, lalu periksa baris sebelumnya
+        while lines and not lines[-1].strip():
+            lines.pop()
+    return "\n".join(lines) or text  # jangan pernah mengosongkan jawaban
 
 
 @lru_cache(maxsize=4)
