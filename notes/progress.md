@@ -134,6 +134,8 @@
 - [x] Saran SQLite + text-to-SQL + guardrail ditimbang, tidak dikerjakan (K77); celah "rata-rata per genre" dicatat sebagai keterbatasan
 - [x] QA artefak Anatomi terhadap kode, data, Langfuse, dan app (7 Nov): ketidaksesuaian diperbaiki, tab Dataset ditambahkan; README kolom `No_of_Votes` dibetulkan
 - [x] Bug `trim_offer` diperbaiki: daftar di paragraf terakhir tidak lagi tergabung jadi satu paragraf (K77). 11 kasus uji + 190 jawaban asli Langfuse: rusak 38 → 0
+- [x] Cek Langfuse (K75): urutan trace benar; tab Graph menggabungkan 3 graf (bukan diagram urutan); supervisor menulis ulang 75%, Anatomi dikoreksi (versi 22)
+- [x] Tiap agent tertaut ke prompt Langfuse-nya sendiri (K78): supervisor → `movie-supervisor-system`, sub-agent → `movie-agent-system`. Diuji lewat `stream_agent` + set uji 17 pertanyaan
 
 ## Fase 6 · Video (6–8 Nov)
 - [ ] Naskah dari `penjelasan-kode.md` + set uji

@@ -885,6 +885,11 @@ Sumber: [OpenRouter Embeddings API](https://openrouter.ai/docs/api-reference/emb
 - **Hasil set uji 17 pertanyaan:** lolos 17/17 (116/116), sama dengan agent tunggal. Waktu total 117 dtk vs 74 dtk (±6,9 vs 4,3 dtk per pertanyaan); token masuk 83 rb vs 81 rb, keluar 4,9 rb vs 2,9 rb (perkiraan biaya ±+10%). Harga yang dibayar: satu panggilan LLM supervisor sebelum sub-agent bekerja (kata pertama ±1-2 dtk lebih lambat).
 - **Diuji di app sungguhan** (Streamlit lokal, disetir Playwright): jawaban tampil sekali, panel tool call hanya berisi tool film, usage tampil, "Muat lebih banyak" menambah film 6-8, pertanyaan di luar topik dijawab supervisor tanpa tool.
 - **Belum:** pertanyaan lintas domain ("film mirip Interstellar dan siapa sutradaranya") hanya dikirim ke `rag_agent`; jawabannya tetap menyebut sutradara karena tersedia di hasil `similar_movies`, tapi `data_agent` tidak terpanggil.
+- **Pemeriksaan Langfuse sesudah deploy (7 Nov, atas pertanyaan Reiner "kok supervisor di bawah?"):**
+  - **Urutan kerja benar.** Trace `8dc4a6ef…` (Tree/Timeline): `supervisor` (langkah 1) → `transfer_to_data_agent` → `data_agent` (`model` → `rank_movies` → `model`) → `supervisor` (langkah 3).
+  - **Tab Graph bukan diagram urutan.** Graph menggabungkan node dari tiga graf: graf utama (`supervisor`, `data_agent`), graf di dalam supervisor (`agent` = LLM supervisor, `tools` = tombol oper), dan graf di dalam sub-agent (`model`, `tools`). Kedua `tools` digabung jadi satu kotak, dan nomor langkah mulai lagi dari 1 di tiap graf. Letak `supervisor` di bawah hanya soal tata letak.
+  - **`forward_message` jarang dipatuhi.** Dari 145 trace yang punya jawaban sub-agent, supervisor menulis ulang di 109 (75%) dan meneruskan di 36 (25%). Median giliran penutup: 1,8 dtk dan 101 token keluar kalau menulis ulang, 1,2 dtk dan 17 token kalau meneruskan. Layar tidak terpengaruh, karena `stream_agent` hanya menampilkan jawaban sub-agent. Klaim di Anatomi ("kadang menulis ulang", "selisih waktu turun berkat `forward_message`") dikoreksi.
+  - **Generation supervisor salah tautan prompt.** Kedua panggilan LLM supervisor tertaut ke `movie-agent-system` v8, bukan `movie-supervisor-system` v1. Penyebab: `"langfuse_prompt": prompt` di metadata run diwarisi semua chain, dan handler Langfuse menautkan generation ke `langfuse_prompt` dari chain induk terdekat. Akibatnya metrik v8 tercampur panggilan supervisor, dan prompt supervisor tampak tidak pernah dipakai. Diperbaiki di K78.
 - **Status:** 🔁 Revisi arsitektur agent tunggal
 
 ### K76 · Prompt sub-agent tanpa daftar tool (v9): dicoba, gagal uji, kembali ke v8 (7 Nov 2026)
@@ -906,3 +911,18 @@ Sumber: [OpenRouter Embeddings API](https://openrouter.ai/docs/api-reference/emb
 - **Saran 3 (format markdown) menemukan bug sungguhan:** `trim_offer` (K74) memecah kalimat di setiap spasi, termasuk baris baru, lalu menyambung dengan spasi. Kalau paragraf terakhir jawaban berupa daftar yang barisnya diakhiri titik, daftar itu tergabung jadi satu paragraf dan kartu film berubah jadi grid poster. Dibuktikan dengan teks mentah dari trace yang sama (5 baris baru menjadi 3). Eval tidak menangkapnya karena memeriksa isi, bukan susunan baris.
 - **Perbaikan `trim_offer` (disetujui Reiner):** jawaban dipecah per baris; hanya baris terakhir yang dipecah jadi kalimat, di spasi setelah `.`, `!`, atau `?`, tidak di baris baru. Baris yang seluruhnya tawaran dibuang, lalu baris sebelumnya diperiksa. Hasilnya selalu awalan teks asli. Diuji: 11 kasus (7 kasus K74 + daftar bertitik, daftar + tawaran, dua tawaran, ekor kosong) lolos semua; versi lama salah di 2 kasus, termasuk tawaran di baris akhir daftar yang tidak terbuang. Diuji ulang pada 190 jawaban asli model dari Langfuse: versi lama menggabungkan baris di 38 jawaban (±20%), versi baru 0; tawaran terpotong di 7 jawaban; tidak ada tawaran yang dulu terbuang lalu lolos.
 - **Status:** ⏸ Text-to-SQL tidak dikerjakan (keterbatasan dicatat); ✅ bug `trim_offer` diperbaiki
+
+### K78 · Tiap agent tertaut ke prompt Langfuse-nya sendiri (7 Nov 2026)
+- **Masalah (ditemukan saat mengecek Langfuse, lihat K75):** generation supervisor tertaut ke `movie-agent-system` v8, bukan `movie-supervisor-system` v1. Penyebabnya, `"langfuse_prompt": prompt` (K73) dipasang di metadata run, dan semua chain di dalam run mewarisinya. Handler Langfuse menautkan setiap generation ke `langfuse_prompt` milik chain induk terdekat. Akibatnya metrik v8 tercampur panggilan supervisor, dan prompt supervisor tampak tidak pernah dipakai.
+- **Dua percobaan di skrip terpisah, satu pertanyaan masing-masing:**
+  - (a) metadata sub-agent lewat `with_config`, dan metadata run berisi prompt supervisor → **gagal**: metadata run selalu menimpa metadata milik subgraph, jadi keempat generation tertaut ke prompt supervisor.
+  - (b) metadata run tanpa prompt, tiap sub-agent membawa prompt-nya lewat `with_config`, dan supervisor lewat prompt berbentuk `Runnable` yang membawa metadata → **berhasil**.
+- **Keputusan (disetujui Reiner):** pola (b) dipasang di `app/agent.py`:
+  - `_linked(prompt)` mengembalikan config `{"metadata": {"langfuse_prompt": prompt}}`.
+  - `rag_agent` dan `data_agent` diberi `.with_config(_linked(prompt))`.
+  - Prompt supervisor menjadi `RunnableLambda` yang menghasilkan `SystemMessage` + riwayat, isinya sama dengan prompt teks biasa, dengan `_linked(supervisor_prompt)`.
+  - `_build_agent` kini di-cache per **pasangan versi prompt**, bukan per teks, karena butuh objek prompt; teks satu versi di Langfuse tidak bisa berubah, jadi artinya sama.
+  - Metadata run tidak lagi membawa `langfuse_prompt`.
+- **Diuji lewat jalur app (`stream_agent`):** "film yang mirip Interstellar" → 2 generation supervisor tertaut ke `movie-supervisor-system` v1, 2 generation `rag_agent` ke `movie-agent-system` v8; "cara masak rendang" → 1 generation supervisor, tertaut ke v1. Set uji 17 pertanyaan dijalankan ulang (hasil di `notes/hasil-uji.md`).
+- **Batas:** generation lama (sebelum 7 Nov) tetap tercatat dengan tautan lama; Langfuse tidak mengubah riwayat.
+- **Status:** ✅ Baru

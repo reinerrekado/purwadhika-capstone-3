@@ -970,8 +970,9 @@ User → supervisor: "soal peringkat" → transfer_to_data_agent
 "Cara masak rendang": supervisor tidak mengoper, langsung menjawab "Saya hanya membantu soal film."
 
 **Kodenya** (`app/agent.py`):
-1. `_build_agent(system_prompt, supervisor_prompt)`: dua `create_agent(..., name="rag_agent" / "data_agent")` dengan tool masing-masing dan prompt `movie-agent-system`, lalu `create_supervisor([rag_agent, data_agent], prompt=supervisor_prompt, tools=[forward_message], output_mode="full_history")`. Nama sub-agent otomatis jadi tool oper `transfer_to_<nama>`. `output_mode="full_history"` menyimpan semua pesan sub-agent (termasuk tool call) di riwayat, supaya panel tool call dan kartu film tetap terisi.
-2. `get_agent()`: ambil dua prompt dari Langfuse (`movie-agent-system`, `movie-supervisor-system`), kembalikan supervisor + kedua objek prompt.
+1. `_build_agent(prompt_version, supervisor_version)`: di-cache per **pasangan versi prompt** (`@lru_cache`). Mengambil kedua prompt dengan versi itu, lalu membuat dua `create_agent(..., name="rag_agent" / "data_agent")` dengan tool masing-masing dan prompt `movie-agent-system`, dan `create_supervisor([rag_agent, data_agent], prompt=..., tools=[forward_message], output_mode="full_history")`. Nama sub-agent otomatis jadi tool oper `transfer_to_<nama>`. `output_mode="full_history"` menyimpan semua pesan sub-agent (termasuk tool call) di riwayat, supaya panel tool call dan kartu film tetap terisi.
+   - **Tautan prompt per agent (K78).** Setiap sub-agent diberi `.with_config(_linked(prompt))`, yaitu metadata `langfuse_prompt`. Prompt supervisor dibuat sebagai `RunnableLambda` yang menghasilkan pesan yang sama dengan teks biasa (`SystemMessage` + riwayat), supaya bisa membawa `_linked(supervisor_prompt)`. Hasilnya di Langfuse: generation supervisor tertaut ke `movie-supervisor-system`, generation sub-agent ke `movie-agent-system`.
+2. `get_agent()`: ambil dua prompt berlabel `production` dari Langfuse (`movie-agent-system`, `movie-supervisor-system`), lalu panggil `_build_agent` dengan nomor versinya. Kembalikan supervisor + kedua objek prompt. Metadata run di `stream_agent` sengaja **tidak** membawa `langfuse_prompt`: metadata run menimpa metadata tiap agent, sehingga semua generation akan tertaut ke satu prompt.
 3. `stream_agent(...)`: `agent.stream(..., stream_mode=["messages", "values"], subgraphs=True)`.
    - `subgraphs=True` membuat setiap potongan token membawa `namespace`, yaitu asal token: `("rag_agent:…",)`, `("data_agent:…",)`, atau `("supervisor:…",)`.
    - Yang dialirkan ke layar: token sub-agent. Token supervisor hanya kalau belum ada sub-agent yang bicara (di luar topik). Kalau supervisor tetap menyalin jawaban sub-agent, salinan itu tidak ditampilkan.
@@ -997,6 +998,12 @@ J: Kedua sub-agent memakai satu prompt bersama (v8). Saya sudah mencoba versi ta
 
 **T: Kenapa namanya `movie-agent-system`, padahal disebut "prompt sub-agent"? (K76)**
 J: Itu satu prompt yang sama. `movie-agent-system` adalah nama teknisnya di Langfuse dan kode, dibuat 22 Okt waktu sistem masih agent tunggal. "Prompt sub-agent" adalah sebutan perannya sekarang. Saya tidak mengganti nama karena di Langfuse nama adalah identitas prompt: nama baru berarti mulai lagi dari v1, dan riwayat v1–v8 beserta metrik dan skor 👍/👎-nya tertinggal di prompt lama.
+
+**T: Di tab Graph Langfuse, kenapa `supervisor` ada di bawah? Apa urutannya salah?**
+J: Urutannya benar; lihat tab Tree atau Timeline: supervisor → `transfer_to_data_agent` → `data_agent` → `rank_movies` → kembali ke supervisor. Tab Graph menggabungkan kotak dari tiga graf sekaligus: graf utama (`supervisor`, `data_agent`), graf di dalam supervisor (`agent` adalah LLM supervisor, `tools` menjalankan tombol oper), dan graf di dalam sub-agent (`model` adalah LLM sub-agent, `tools` menjalankan tool film). Nomor langkah mulai lagi dari 1 di tiap graf, jadi letak kotaknya tidak menunjukkan urutan kerja.
+
+**T: Apakah supervisor benar-benar meneruskan jawaban dengan `forward_message`?**
+J: Hanya 1 dari 4 kali (36 dari 145 trace); sisanya ia menulis ulang. Karena itu layar tidak bergantung padanya: `stream_agent` hanya menampilkan jawaban sub-agent. Harganya ±85 token dan ±0,6 detik per tulisan ulang.
 
 **T: Kenapa data terstruktur tidak disimpan di SQLite, dengan agent menulis SQL sendiri (text-to-SQL)? (K77)**
 J: Saya menimbangnya. Ada celah nyata: "genre apa yang rating rata-ratanya paling tinggi?" dijawab Drama, padahal yang benar War, karena `rank_movies` hanya menghitung satu kelompok per panggilan dan agent membandingkan 2 dari 21 genre saja. Text-to-SQL bisa menjawabnya dengan satu query, tapi perlu pagar pengaman (koneksi read-only, hanya `SELECT`, batas baris dan waktu) dan uji ulang tiga putaran. Totalnya 2–3 jam, tiga hari sebelum deadline. Jadi saya memilih mencatatnya sebagai keterbatasan, bukan menambah risiko regresi.
