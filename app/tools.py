@@ -316,24 +316,53 @@ def rank_movies(
         star: Part of an actor's name, e.g. DiCaprio.
         limit: Number of movies to return, 1 to 10.
     """
-    df = _ranked(sort_by, order, title, genre, year_from, year_to, director, star)
-    return json.dumps({
+    df, fixed = _ranked(sort_by, order, title, genre, year_from, year_to, director, star)
+    result = {
         "matching_count": len(df),
         "average_rating": round(float(df["rating"].mean()), 2) if len(df) else None,
         "movies": to_records(df.head(max(1, min(limit, 10)))[RANK_FIELDS]),
-    }, ensure_ascii=False)
+    }
+    if fixed:  # nama orang dikirim di peran yang salah (K80): beri tahu agent supaya jawabannya tepat
+        name, role = fixed
+        result["role_fixed"] = {"name": name, "searched_as": role}
+        result["note"] = (f"{name} appears in this dataset only as a {role}, so these are the movies where {name} is the "
+                          f"{role}. Describe them that way.")
+    return json.dumps(result, ensure_ascii=False)
 
 
 def rank_page(sort_by: str = "rating", order: str = "highest", title: str | None = None, genre: str | None = None,
               year_from: int | None = None, year_to: int | None = None, director: str | None = None,
               star: str | None = None, limit: int = PAGE_SIZE, offset: int = 0) -> list[dict]:
     """Satu halaman hasil rank_movies untuk tombol "Muat lebih banyak" di UI (K45, K47)."""
-    df = _ranked(sort_by, order, title, genre, year_from, year_to, director, star)
+    df, _ = _ranked(sort_by, order, title, genre, year_from, year_to, director, star)
     return to_records(df.iloc[offset:offset + limit][RANK_FIELDS])
 
 
+def _directed_by(df, name: str):
+    return df["director"].map(normalize).str.contains(normalize(name), regex=False)
+
+
+def _starring(df, name: str):
+    key = normalize(name)
+    return df["stars"].map(lambda stars: any(key in normalize(s) for s in stars))
+
+
+def _fix_role(director: str | None, star: str | None) -> tuple[str | None, str | None, tuple[str, str] | None]:
+    """Nama orang di peran yang salah (K80). Model kadang mengirim "film Miyazaki" sebagai star; kalau nama itu tidak
+    pernah jadi aktor di dataset tapi ada sebagai sutradara, pakai director (dan sebaliknya). Dicek pada seluruh
+    dataset, bukan hasil filter, supaya "0 film di tahun itu" yang memang benar tidak ikut dibetulkan."""
+    movies = load_movies()
+    if star and not director and not _starring(movies, star).any() and _directed_by(movies, star).any():
+        return star, None, (star, "director")
+    if director and not star and not _directed_by(movies, director).any() and _starring(movies, director).any():
+        return None, director, (director, "star")
+    return director, star, None
+
+
 def _ranked(sort_by, order, title, genre, year_from, year_to, director, star):
-    """Filter lalu urutkan. Dipakai rank_movies (untuk LLM) dan rank_page (untuk UI)."""
+    """Filter lalu urutkan. Dipakai rank_movies (untuk LLM) dan rank_page (untuk UI). Mengembalikan (DataFrame,
+    peran yang dibetulkan atau None)."""
+    director, star, fixed = _fix_role(director, star)
     df = load_movies().dropna(subset=[sort_by])  # gross_usd/meta_score kosong untuk sebagian film
     if title:
         title_ids = find_title(title)
@@ -346,11 +375,11 @@ def _ranked(sort_by, order, title, genre, year_from, year_to, director, star):
     if year_to:
         df = df[df["year"] <= year_to]
     if director:
-        df = df[df["director"].map(normalize).str.contains(normalize(director), regex=False)]
+        df = df[_directed_by(df, director)]
     if star:
-        df = df[df["stars"].map(lambda stars: any(normalize(star) in normalize(s) for s in stars))]
+        df = df[_starring(df, star)]
 
-    return df.sort_values(sort_by, ascending=(order == "lowest"))
+    return df.sort_values(sort_by, ascending=(order == "lowest")), fixed
 
 
 TOOLS = [search_movies, similar_movies, get_movie_details, rank_movies, get_person_info]

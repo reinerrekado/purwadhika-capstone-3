@@ -86,13 +86,20 @@ def tool_person(body: dict) -> dict | None:
     return person if person and person.get("biography") else None
 
 
-def tool_status(body: dict) -> str:
+def tool_status(tool: str, body: dict) -> str:
     """Kalimat untuk tool call yang ditolak atau tidak menemukan apa pun, supaya panel tidak sekadar "tidak ada film" (K79)."""
     if error := body.get("error"):  # search_movies menolak query yang tidak berbahasa Inggris (K61)
         return ("Ditolak tool: query harus berbahasa Inggris, jadi agent diminta mengulang (K61)." if "English" in error
                 else f"Ditolak tool: {error}")
-    if missing := [item["query"] for item in body.get("not_found", [])]:
-        return f"Tidak ketemu di dataset: {', '.join(missing)}. Tool menyertakan petunjuk untuk agent (K32)."
+    if missing := ", ".join(item["query"] for item in body.get("not_found", [])):
+        if tool == "get_person_info":
+            return f"Tidak ada di dataset: {missing} bukan sutradara atau pemeran utama film mana pun (K71)."
+        # Judul tidak cocok belum tentu filmnya tidak ada: film non-Inggris tercatat dengan judul aslinya (K32)
+        return (f"Judul tidak cocok: {missing}. Film non-Inggris tercatat dengan judul aslinya (mis. Parasite = "
+                "Gisaengchung), jadi tool memberi petunjuk agar agent mencoba lagi (K32).")
+    if fixed := body.get("role_fixed"):  # rank_movies membetulkan peran orang (K80)
+        role = "sutradara" if fixed["searched_as"] == "director" else "aktor"
+        return f"Peran dibetulkan tool: {fixed['name']} ada di dataset sebagai {role}, jadi dicari sebagai {role} (K80)."
     return ""
 
 
@@ -129,7 +136,7 @@ def summarize_run(new_messages: list) -> dict:
                                    "docs": call_docs(movies, tool_person(body)),
                                    "ids": [movie["id"] for movie in movies],
                                    "total": body.get("matching_count"), "average": body.get("average_rating"),
-                                   "status": "Galat saat menjalankan tool." if call["id"] in crashed else tool_status(body)})
+                                   "status": "Galat saat menjalankan tool." if call["id"] in crashed else tool_status(call["name"], body)})
     # Pencarian terakhir yang masih punya hasil lanjutan bisa diteruskan dengan "Muat lebih banyak" (K45, K47):
     # rank_movies tahu jumlah totalnya (matching_count); search/similar dianggap berlanjut kalau halamannya penuh.
     pageable = [c for c in tool_calls if c["name"] in PAGERS and c["ids"]
