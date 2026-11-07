@@ -141,7 +141,7 @@
 - [x] `rank_movies` membetulkan peran orang yang salah (K80, opsi a pilihan Reiner): "Miyazaki" sebagai aktor → dicari sebagai sutradara. 9 kasus tool lolos + set uji 17 pertanyaan
 - [x] Reiner me-reboot app setelah push K80 (panel menulis "Judul tidak cocok")
 - [x] `genre=''` diperlakukan sama dengan tanpa genre (K81): ±8% pencarian sejak supervisor sempat "Galat saat menjalankan tool". Reranker tetap hanya untuk `search_movies` (dijelaskan ke Reiner)
-- [ ] **Reiner:** Reboot app lagi setelah push K81
+- [x] Reiner me-reboot app setelah push K81; 3 pertanyaan cerita di app publik: tanpa galat, reranker aktif (Inception 0,97 untuk "pencuri yang masuk ke mimpi orang")
 - [x] "Ceritakan film Parasite" sesekali ke `rag_agent` (±1 dari 6): tidak dikerjakan (opsi b), dicatat sebagai keterbatasan
 
 ## Fase 6 · Video (6–8 Nov)
