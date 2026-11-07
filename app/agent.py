@@ -8,6 +8,8 @@ from collections.abc import Iterator
 from functools import lru_cache
 
 from langchain.agents import create_agent
+from langchain_core.messages import SystemMessage
+from langchain_core.runnables import RunnableLambda
 from langfuse import get_client
 from langfuse.langchain import CallbackHandler
 from langgraph_supervisor import create_supervisor
@@ -65,14 +67,26 @@ def trim_offer(answer: str) -> str:
     return "\n".join(lines) or text  # jangan pernah mengosongkan jawaban
 
 
+def _linked(prompt) -> dict:
+    """Config yang menautkan setiap panggilan LLM di dalam satu agent ke prompt Langfuse-nya sendiri (K73, K78)."""
+    return {"metadata": {"langfuse_prompt": prompt}}
+
+
 @lru_cache(maxsize=4)
-def _build_agent(system_prompt: str, supervisor_prompt: str):
-    """Supervisor + 2 sub-agent. Sub-agent memakai prompt agent; supervisor hanya memilih sub-agent."""
-    llm = get_llm()
-    rag_agent = create_agent(model=llm, tools=[search_movies, similar_movies], system_prompt=system_prompt, name="rag_agent")
+def _build_agent(prompt_version: int, supervisor_version: int):
+    """Supervisor + 2 sub-agent, dibangun sekali per pasangan versi prompt. Sub-agent memakai prompt agent;
+    supervisor hanya memilih sub-agent."""
+    prompt = get_client().get_prompt(PROMPT_NAME, version=prompt_version)
+    supervisor_prompt = get_client().get_prompt(SUPERVISOR_PROMPT_NAME, version=supervisor_version)
+    system_prompt, supervisor_text, llm = prompt.compile(), supervisor_prompt.compile(), get_llm()
+    rag_agent = create_agent(model=llm, tools=[search_movies, similar_movies], system_prompt=system_prompt,
+                             name="rag_agent").with_config(_linked(prompt))
     data_agent = create_agent(model=llm, tools=[get_movie_details, rank_movies, get_person_info],
-                              system_prompt=system_prompt, name="data_agent")
-    return create_supervisor([rag_agent, data_agent], model=llm, prompt=supervisor_prompt, output_mode="full_history",
+                              system_prompt=system_prompt, name="data_agent").with_config(_linked(prompt))
+    # Prompt supervisor berbentuk Runnable (isinya sama dengan teks biasa) supaya bisa membawa tautan prompt-nya sendiri.
+    supervisor_messages = RunnableLambda(lambda state: [SystemMessage(content=supervisor_text), *state["messages"]],
+                                         name="Prompt").with_config(_linked(supervisor_prompt))
+    return create_supervisor([rag_agent, data_agent], model=llm, prompt=supervisor_messages, output_mode="full_history",
                              tools=[create_forward_message_tool("supervisor")]).compile()  # teruskan, jangan tulis ulang
 
 
@@ -80,7 +94,7 @@ def get_agent():
     """Supervisor + objek prompt Langfuse sub-agent dan supervisor. SDK Langfuse menyimpan prompt 60 detik,
     jadi versi baru terpakai tanpa restart (K35)."""
     prompt, supervisor_prompt = get_client().get_prompt(PROMPT_NAME), get_client().get_prompt(SUPERVISOR_PROMPT_NAME)
-    return _build_agent(prompt.compile(), supervisor_prompt.compile()), prompt, supervisor_prompt
+    return _build_agent(prompt.version, supervisor_prompt.version), prompt, supervisor_prompt
 
 
 def stream_agent(messages: list[dict], session_id: str, run: dict) -> Iterator[str]:
@@ -97,7 +111,8 @@ def stream_agent(messages: list[dict], session_id: str, run: dict) -> Iterator[s
         "langfuse_session_id": session_id,  # satu percakapan = satu session
         # feedback bisa dibandingkan per versi prompt sub-agent dan supervisor
         "langfuse_tags": [f"prompt-v{prompt.version}", f"supervisor-v{supervisor_prompt.version}"],
-        "langfuse_prompt": prompt,  # menautkan generation ke prompt: metrik per versi di Langfuse terisi (K73)
+        # Tanpa "langfuse_prompt" di sini: metadata run menimpa milik tiap agent, sehingga semua generation tertaut ke
+        # satu prompt. Tautan dipasang per agent di _build_agent (K78).
     }}
     history, last_source = [], None
     for namespace, mode, data in agent.stream({"messages": messages}, config=config, stream_mode=["messages", "values"],
