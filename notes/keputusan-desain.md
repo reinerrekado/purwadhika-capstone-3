@@ -924,5 +924,23 @@ Sumber: [OpenRouter Embeddings API](https://openrouter.ai/docs/api-reference/emb
   - `_build_agent` kini di-cache per **pasangan versi prompt**, bukan per teks, karena butuh objek prompt; teks satu versi di Langfuse tidak bisa berubah, jadi artinya sama.
   - Metadata run tidak lagi membawa `langfuse_prompt`.
 - **Diuji lewat jalur app (`stream_agent`):** "film yang mirip Interstellar" → 2 generation supervisor tertaut ke `movie-supervisor-system` v1, 2 generation `rag_agent` ke `movie-agent-system` v8; "cara masak rendang" → 1 generation supervisor, tertaut ke v1. Set uji 17 pertanyaan dijalankan ulang (hasil di `notes/hasil-uji.md`).
+- **Di app Cloud:** dua kali dicek (±5 dan ±10 menit setelah push), app publik masih menautkan supervisor ke v8, artinya masih kode lama. Setelah Reiner menekan **Reboot app** di share.streamlit.io: supervisor → `movie-supervisor-system` v1, sub-agent → `movie-agent-system` v8; jawaban, panel tool call, usage, dan "Muat lebih banyak" normal. Dugaan: push yang hanya mengubah kode (tanpa `requirements.txt`) tidak memuat ulang modul yang sudah di-import, jadi setelah push seperti itu app perlu di-reboot.
 - **Batas:** generation lama (sebelum 7 Nov) tetap tercatat dengan tautan lama; Langfuse tidak mengubah riwayat.
+- **Status:** ✅ Baru
+
+### K79 · Panel tool call memperlihatkan rute supervisor, hasil hitungan, dan status tool (7 Nov 2026)
+- **Pertanyaan Reiner:** "apakah sudah lengkap tool call di Streamlit?" Syarat wajib (chat history, tool call, usage) dan dokumen yang di-retrieve (Sesi 17) sudah terpenuhi, tapi ada tiga celah:
+  1. **Supervisor tidak terlihat.** Tombol oper `transfer_*` disaring seluruhnya, jadi layar tidak menunjukkan sub-agent mana yang menjawab, padahal arsitektur supervisor wajib.
+  2. **Angka hitungan tidak bisa dicek.** `rank_movies` mengembalikan `matching_count` dan `average_rating`, tapi panel hanya menampilkan judul.
+  3. **Tool yang ditolak atau tidak ketemu** tampil sebagai "tidak ada film yang cocok".
+  - Ditemukan saat membaca kode: `forward_message` (25% jawaban, K75) ikut tampil sebagai "tool call", padahal itu tombol milik supervisor.
+- **Keputusan (disetujui Reiner, "gas seluruhnya"):** hanya tampilan yang diubah, perilaku agent tidak.
+  - `summarize_run` membaca pesan sesuai urutan kerja. `transfer_to_<x>` menambah `<x>` ke rute dan menjadikannya sub-agent aktif, `transfer_back_to_supervisor` mengembalikan ke supervisor, dan setiap tool film mendapat label sub-agent pemanggilnya. `forward_message` dan tombol oper tidak dihitung sebagai tool film.
+  - Hasil tool dibaca sekali lewat `tool_json`. Dari situ diambil `matching_count`, `average_rating`, dan status (`tool_status`: ditolak, tidak ketemu, atau galat).
+  - Judul expander: "supervisor → data_agent · 1 tool call" (rute terlihat tanpa membuka panel). Jawaban tanpa tool mendapat keterangan "supervisor menjawab sendiri, tanpa sub-agent". Pertanyaan lintas domain menandai sub-agent di tiap tool call (`# rag_agent`).
+- **Diuji:**
+  - `summarize_run` pada pesan asli dari 4 pertanyaan: rute, label sub-agent, dan "3 film cocok · rata-rata rating 8,17" benar.
+  - `tool_status` pada hasil tool asli: ditolak, tidak ketemu (sebagian dan seluruhnya), dan normal.
+  - App lokal disetir Edge untuk 4 pertanyaan (hitungan, orang tidak ada, di luar topik, peringkat): label, isi panel, dan keterangan tampil benar, tanpa galat JS.
+- **Langsung berguna:** panel baru memperlihatkan bahwa untuk "ada berapa film Hayao Miyazaki tahun 2000-an?" agent sekali memanggil `rank_movies(star='Hayao Miyazaki', …)` → "0 film cocok", lalu menjawab "tidak ada" (yang benar 3). Sebelumnya kesalahan ini tidak terlihat di layar. Lihat temuan berikut.
 - **Status:** ✅ Baru

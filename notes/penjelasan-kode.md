@@ -473,10 +473,12 @@ Hanya **tampilan**. Semua logika ada di `app/agent.py` (arahan modular Pak Herma
 |---|---|
 | `st.session_state.chat` | Riwayat percakapan yang bertahan selama sesi browser |
 | `st.session_state.session_id` | Id acak per sesi, dikirim ke Langfuse |
-| `tool_movies()` | Baca daftar `movies` dari hasil tool (K28). Kalau isinya pesan error, kembalikan list kosong |
-| `summarize_run()` | Dari pesan baru, ambil tool call (nama, argumen, judul hasil), id film yang disebut di jawaban, dan jumlah token |
+| `tool_json()` | Baca hasil satu tool sebagai dict (semua tool mengembalikan JSON berkunci `movies`, K28). Kalau isinya pesan error teks biasa, kembalikan dict kosong |
+| `tool_status()` | Kalimat untuk tool call yang ditolak (query bukan bahasa Inggris) atau tidak menemukan apa pun (`not_found`), supaya panel tidak sekadar "tidak ada film" (K79) |
+| `summarize_run()` | Dari pesan baru, sesuai urutan kerja: **rute supervisor** (`transfer_to_*` → daftar sub-agent), tool call film beserta sub-agent pemanggilnya, judul hasil, jumlah cocok dan rata-rata rating (`rank_movies`), status, film yang ditemukan, dan jumlah token. Tombol oper dan `forward_message` milik supervisor tidak dihitung sebagai tool film (K79) |
+| `rank_summary()` | "Hasil: 3 film cocok · rata-rata rating 8,17 · teratas: …", supaya angka di jawaban hitungan bisa dicek (K79) |
 | `show_posters()` | Kartu poster (maksimal 5) untuk film yang disebut di jawaban, dengan link "Tonton di mana?" (K37) |
-| `show_details()` | Poster + expander "🔧 tool call" + baris jumlah token + tombol 👍/👎 |
+| `show_details()` | Expander berjudul rute, mis. "supervisor → data_agent · 1 tool call", berisi tool call, dokumen, dan hasil; tanpa tool: keterangan "supervisor menjawab sendiri". Lalu baris token dan tombol 👍/👎 |
 | `save_feedback()` | Callback saat 👍/👎 diklik → `send_feedback` ke Langfuse |
 | `new_chat()` | Callback tombol "Percakapan baru": kosongkan chat, buat `session_id` baru |
 | `split_answer()` | Pecah jawaban per baris: baris yang diawali "Judul (tahun)" → kartu, lainnya → teks (K44) |
