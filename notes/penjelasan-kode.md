@@ -929,8 +929,11 @@ J: Tool mengembalikan "tidak ketemu" dan petunjuk untuk tidak menjelaskan orang 
 
 **Kodenya** (`app/agent.py`):
 1. `OFFER` adalah satu regex berisi pembuka kalimat tawaran dalam bahasa Indonesia dan Inggris.
-2. `trim_offer(answer)` memecah jawaban jadi paragraf, lalu paragraf terakhir jadi kalimat. Selama kalimat **terakhir** cocok `OFFER`, kalimat itu dibuang. Berhenti begitu ketemu kalimat biasa.
+2. `trim_offer(answer)` memecah jawaban per **baris**, lalu baris terakhir jadi kalimat (dipecah di spasi setelah `.`, `!`, atau `?`, tidak pernah di baris baru). Selama kalimat **terakhir** cocok `OFFER`, kalimat itu dibuang. Kalau seluruh baris terakhir habis, baris itu dibuang dan baris sebelumnya diperiksa. Berhenti begitu ketemu kalimat biasa.
 3. Kalau seluruh jawaban ternyata tawaran, jawaban dikembalikan apa adanya (tidak pernah kosong).
+4. Hasilnya selalu **awalan** teks asli: fungsi ini hanya memotong ekor, tidak pernah mengubah susunan baris di atasnya.
+
+**Bug yang diperbaiki (7 Nov, K77).** Versi pertama memecah kalimat dengan `\s+`, yang juga cocok dengan baris baru, lalu menyambungnya kembali dengan spasi. Akibatnya, kalau paragraf terakhir berupa daftar yang barisnya diakhiri titik, semua film tergabung jadi satu paragraf, dan kartu film berubah jadi grid poster. Ketahuan dari tangkapan layar Reiner. Diuji ulang pada 190 jawaban asli dari Langfuse: versi lama merusak 38 jawaban (±20%), versi baru 0, dan tidak ada tawaran yang lolos.
 
 **Dipakai di** `streamlit_app.py`, tepat setelah `st.write_stream` selesai dan sebelum `show_answer` dan penyimpanan ke riwayat.
 
@@ -939,7 +942,7 @@ J: Tool mengembalikan "tidak ketemu" dan petunjuk untuk tidak menjelaskan orang 
 J: Sudah dicoba dua kali (v5 dan v8). Model ini sering mengabaikan aturan panjang. Aturan yang dipakai berulang di proyek ini: yang penting ditegakkan di kode, lalu diuji.
 
 **T: Apakah bisa salah memotong?**
-J: Hanya kalimat paling akhir yang cocok pola tawaran. Pertanyaan klarifikasi ("film mana yang kamu maksud?") dan kalimat di tengah tidak disentuh. Ada 7 kasus uji untuk batas ini.
+J: Hanya kalimat paling akhir yang cocok pola tawaran. Pertanyaan klarifikasi ("film mana yang kamu maksud?") dan kalimat di tengah tidak disentuh. Ada 11 kasus uji untuk batas ini, ditambah uji ulang pada 190 jawaban asli.
 
 > 🎬 **Untuk video:** "Di screenshot saya sendiri jawaban ditutup tawaran, padahal prompt melarang. Daripada menambah aturan di prompt, saya potong di kode dengan satu fungsi kecil."
 
@@ -994,5 +997,8 @@ J: Kedua sub-agent memakai satu prompt bersama (v8). Saya sudah mencoba versi ta
 
 **T: Kenapa namanya `movie-agent-system`, padahal disebut "prompt sub-agent"? (K76)**
 J: Itu satu prompt yang sama. `movie-agent-system` adalah nama teknisnya di Langfuse dan kode, dibuat 22 Okt waktu sistem masih agent tunggal. "Prompt sub-agent" adalah sebutan perannya sekarang. Saya tidak mengganti nama karena di Langfuse nama adalah identitas prompt: nama baru berarti mulai lagi dari v1, dan riwayat v1–v8 beserta metrik dan skor 👍/👎-nya tertinggal di prompt lama.
+
+**T: Kenapa data terstruktur tidak disimpan di SQLite, dengan agent menulis SQL sendiri (text-to-SQL)? (K77)**
+J: Saya menimbangnya. Ada celah nyata: "genre apa yang rating rata-ratanya paling tinggi?" dijawab Drama, padahal yang benar War, karena `rank_movies` hanya menghitung satu kelompok per panggilan dan agent membandingkan 2 dari 21 genre saja. Text-to-SQL bisa menjawabnya dengan satu query, tapi perlu pagar pengaman (koneksi read-only, hanya `SELECT`, batas baris dan waktu) dan uji ulang tiga putaran. Totalnya 2–3 jam, tiga hari sebelum deadline. Jadi saya memilih mencatatnya sebagai keterbatasan, bukan menambah risiko regresi.
 
 > 🎬 **Untuk video:** "Sistem ini punya 3 agent: supervisor yang mengatur, dan 2 sub-agent yang mengerjakan. rag_agent mencari di Qdrant, data_agent membaca data terstruktur. Saya uji dengan 17 pertanyaan yang sama seperti agent tunggal: semuanya lolos, dengan biaya ±10% lebih mahal."

@@ -137,7 +137,7 @@ notes/                      log keputusan desain, progres, penjelasan kode, hasi
 | `Meta_score` | Skor Metacritic |
 | `Director` | Sutradara |
 | `Star1`–`Star4` | Empat pemeran utama |
-| `No_of_votes` | Jumlah vote di IMDB |
+| `No_of_Votes` | Jumlah vote di IMDB |
 | `Gross` | Pendapatan kotor (USD) |
 
 Yang di-embed per film: `judul. genre. sinopsis`. Semua kolom lain disimpan sebagai metadata di Qdrant dan dipakai untuk filter genre dan tahun. Dataset hanya berisi sinopsis singkat, jadi agent bisa menemukan film dari premis ceritanya, tapi tidak dari adegan atau kutipan spesifik.

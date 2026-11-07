@@ -131,6 +131,9 @@
 - [ ] Opsional: pertanyaan lintas domain baru memanggil satu sub-agent
 - [x] Prompt sub-agent tanpa daftar tool (v9) dicoba dua cara, gagal uji (15/17), kembali ke v8 (K76). `production` = v8, v9 berlabel `staging`
 - [x] Nama `movie-agent-system` dipertahankan (riwayat v1–v8 utuh); penjelasannya ditambahkan di README, Anatomi (+ baris v9 di riwayat prompt), komentar `app/agent.py`, `penjelasan-kode.md` (K76)
+- [x] Saran SQLite + text-to-SQL + guardrail ditimbang, tidak dikerjakan (K77); celah "rata-rata per genre" dicatat sebagai keterbatasan
+- [x] QA artefak Anatomi terhadap kode, data, Langfuse, dan app (7 Nov): ketidaksesuaian diperbaiki, tab Dataset ditambahkan; README kolom `No_of_Votes` dibetulkan
+- [x] Bug `trim_offer` diperbaiki: daftar di paragraf terakhir tidak lagi tergabung jadi satu paragraf (K77). 11 kasus uji + 190 jawaban asli Langfuse: rusak 38 → 0
 
 ## Fase 6 · Video (6–8 Nov)
 - [ ] Naskah dari `penjelasan-kode.md` + set uji
