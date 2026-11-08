@@ -145,7 +145,9 @@
 - [x] "Ceritakan film Parasite" sesekali ke `rag_agent` (±1 dari 6): tidak dikerjakan (opsi b), dicatat sebagai keterbatasan
 
 ## Fase 6 · Video (6–8 Nov)
-- [ ] Naskah dari `penjelasan-kode.md` + set uji
+- [x] Naskah video `notes/naskah-video.md`: 7 bagian ±13,5 menit, pertanyaan demo aman, langkah Langfuse dan Qdrant, nomor baris kode per 7 Nov (7 Nov)
+- [x] README disamakan dengan data dan kode: `forward_message` hanya dipatuhi 25% (tampilan dijaga di kode), rute supervisor dan hasil hitungan di panel tool call (K79), jawaban dua bahasa (7 Nov)
+- [x] Deck slide video [Rakfilm · Video](https://claude.ai/artifact/JiPx25xd1TqpwDXGJyHo1W): 17 slide, mood "Bioskop malam" dari kanvas Rakfilm, rangka dua panel seperti video contoh (layar kiri 1144×952, wajah kanan 600×952) + PNG rangka transparan untuk rekaman layar, catatan pembicara = naskah (7 Nov). Revisi: 19 slide, mode diagram (wajah kecil di pojok) untuk fase offline, tiga agent, peta pemicu P1–P6, dan satu pertanyaan 1–12 dari diagram Anatomi, muncul bertahap per klik; naskah bagian 4 ditulis ulang, total ±14 menit (7 Nov). Revisi 2: diagram urutan 12 langkah ternyata salah di dua titik (prompt diambil `agent.py` sebelum run, bukan supervisor; trace dan jempol dikirim dari app) dan sulit dibaca, jadi diganti **bagan** tiga agent (setiap kartu = LLM + prompt + tool, 4 klik) dan **alur 7 langkah di bagan yang sama** (nomor oranye = LLM, bergaris = kode). Slide peta pemicu dibuang, isinya diucapkan. Deck jadi 17 slide; durasi bagian 4 tetap 2,5 menit (7 Nov)
 - [ ] Uji rekam: kode terbaca jelas
 - [ ] Rekam video 7–15 menit, wajah terlihat
 - [ ] Upload ke Google Drive/YouTube, link publik
