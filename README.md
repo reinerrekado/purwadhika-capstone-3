@@ -1,6 +1,6 @@
 # Rakfilm
 
-Asisten rekomendasi film berbasis **agentic RAG** untuk dataset **IMDB Top 1000**. Ceritakan film yang kamu ingat ("pencuri yang masuk ke mimpi orang"), minta yang mirip dengan film favoritmu, atau minta daftar terbaik per genre, sutradara, dan aktor. Agent supervisor mengoper pertanyaan ke sub-agent yang tepat, sub-agent memilih sendiri tool-nya, lalu menjawab dalam bahasa Indonesia dengan kartu poster yang bisa dibuka.
+Asisten rekomendasi film berbasis **agentic RAG** untuk dataset **IMDB Top 1000**. Ceritakan film yang kamu ingat ("pencuri yang masuk ke mimpi orang"), minta yang mirip dengan film favoritmu, atau minta daftar terbaik per genre, sutradara, dan aktor. Supervisor mengoper pertanyaan ke sub-agent yang tepat, sub-agent memilih sendiri tool-nya, lalu menjawab dalam bahasa pertanyaan (Indonesia atau Inggris) dengan kartu poster yang bisa dibuka.
 
 Capstone Module 3, Purwadhika JCAIEH.
 
@@ -24,7 +24,7 @@ Capstone Module 3, Purwadhika JCAIEH.
 ## Fitur
 
 - **Chat dengan ingatan sesi:** pertanyaan lanjutan ("yang paling lama durasinya?") memahami jawaban sebelumnya.
-- **Tool call dan dokumen terlihat:** setiap jawaban menampilkan tool yang dipanggil beserta argumennya, dokumen film yang di-retrieve dari Qdrant, skor kemiripan vektor, dan skor reranker.
+- **Tool call dan dokumen terlihat:** setiap jawaban menampilkan rute supervisor (misalnya "supervisor → data_agent"), tool yang dipanggil beserta argumennya, dokumen film yang di-retrieve dari Qdrant dengan skor kemiripan vektor dan skor reranker, serta jumlah film yang cocok dan rata-rata ratingnya untuk pertanyaan peringkat dan hitungan. Tool yang menolak atau tidak menemukan apa pun diberi keterangan, bukan sekadar "tidak ada film".
 - **Profil orang:** klik nama sutradara atau pemain di panel film untuk membuka panel orang (foto, bio Wikipedia berbahasa Indonesia atau teks asli, rata-rata rating dan rentang tahun dari dataset, serta filmnya). Agent juga bisa menjawab "siapa Christopher Nolan?" lewat tool `get_person_info`.
 - **Reranker:** `search_movies` mengambil 15 kandidat dari Qdrant, lalu model reranker memilih 5 yang paling relevan terhadap pertanyaan. Kalau reranker gagal, urutan vektor dipakai.
 - **Usage per jawaban dan per sesi:** token input/output dan biaya dalam USD dan Rupiah (kurs harian ECB).
@@ -55,7 +55,7 @@ flowchart TD
     UI --> SV["supervisor<br/>(app/agent.py)<br/>memilih sub-agent"]
     SV -->|transfer_to_rag_agent| RA["rag_agent<br/>sub-agent RAG"]
     SV -->|transfer_to_data_agent| DA["data_agent<br/>sub-agent data"]
-    RA & DA -->|jawaban, diteruskan apa adanya| UI
+    RA & DA -->|jawaban sub-agent yang ditampilkan| UI
     LF[("Langfuse")] -->|prompt supervisor + prompt sub-agent| SV
     SV -.->|trace per sesi| LF
     UI -.->|feedback 👍/👎| LF
@@ -80,7 +80,9 @@ flowchart TD
 | `rag_agent` | `search_movies`, `similar_movies` | pencarian makna di Qdrant |
 | `data_agent` | `get_movie_details`, `rank_movies`, `get_person_info` | data terstruktur: fakta, peringkat, profil orang |
 
-Supervisor meneruskan jawaban sub-agent apa adanya (`forward_message`), tanpa menulis ulang, supaya tidak ada detail yang hilang dan tidak ada token terbuang. **Supervisor, bukan swarm:** pertanyaan film hampir selalu jatuh ke satu bidang, jadi cukup satu pengatur; swarm (agent saling mengoper) cocok untuk percakapan yang pemiliknya berganti. Dibanding agent tunggal, set uji 17 pertanyaan tetap lolos semua, dengan biaya sekitar 10% lebih tinggi dan rata-rata 6,9 vs 4,3 detik per pertanyaan.
+Prompt supervisor memintanya meneruskan jawaban sub-agent apa adanya lewat tool `forward_message`, supaya tidak ada detail yang hilang dan tidak ada token terbuang. Model hanya mematuhinya di 25% jawaban (36 dari 145 trace, 7 Nov); sisanya ia menulis ulang. Karena itu tampilan dijaga di kode: `stream_agent` hanya menampilkan jawaban sub-agent, dan teks supervisor hanya tampil kalau tidak ada sub-agent yang menjawab (pertanyaan di luar topik). Setiap tulisan ulang memakan ±85 token dan ±0,6 detik.
+
+**Supervisor, bukan swarm:** pertanyaan film hampir selalu jatuh ke satu bidang, jadi cukup satu supervisor yang memilih; swarm (agent saling mengoper) cocok untuk percakapan yang pemiliknya berganti. Dibanding agent tunggal, set uji 17 pertanyaan tetap lolos semua, dengan biaya sekitar 10% lebih tinggi dan rata-rata 6,9 vs 4,3 detik per pertanyaan.
 
 **Kenapa lima tool, tiga jenis sumber:**
 - **RAG (Qdrant):** pertanyaan berbasis makna, misalnya "film tentang kesepian di luar angkasa", butuh pencarian vektor.
@@ -204,7 +206,7 @@ Setiap pemanggilan LLM tercatat sebagai trace dan tertaut ke versi prompt yang d
 python scripts/check_connections.py   # 1. pastikan ketiga layanan terhubung
 python -m scripts.ingest              # 2. isi Qdrant (cukup sekali)
 streamlit run streamlit_app.py        # 3. buka http://localhost:8501
-python -m scripts.eval              # 4. (opsional) uji 17 pertanyaan otomatis
+python -m scripts.eval                # 4. (opsional) uji 17 pertanyaan otomatis
 ```
 
 Langkah 2 aman diulang: collection dibuat ulang dari nol, jadi data tidak tergandakan.
