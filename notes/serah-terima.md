@@ -47,7 +47,7 @@ lalu laporkan ringkas pemahamanmu dan tanyakan tugas hari ini. Deadline 10 Nov 2
 | `notes/hasil-uji.md`, `notes/prinsip-kerja.md` | laporan uji terakhir; prinsip kerja yang bisa dipakai ulang |
 | `docs/img/` | 5 screenshot README (yang `jawaban-tool-call.png` diperbarui 9 Nov) |
 | `video-latihan/` (**ikut git sejak 9 Nov siang**, supaya bisa di-pull di Mac) | video latihan v2 (`rakfilm-latihan.mp4`, 92 MB) + MP3 + SRT, `naskah-video.md`, `rangka/` (PNG rangka), `screenshot/` (Langfuse, Qdrant), `pipeline/` (skrip rakit video + hasil render), `claude-memory/` (salinan memori Claude), `CARA-PAKAI.md`, `LANJUT-DI-MAC.md`, `prompt-claude-chrome.md`, `laporan-durasi.md` |
-| **Tidak di git** (hanya di laptop Windows/OneDrive) | `.env`; `video-latihan/arsip/` (v1), `video-latihan/bagian/` (potongan per bagian), `video-latihan/pipeline/pylib/` (paket Python Windows), `video-latihan/pipeline/video/seg/` (klip antara). Tiga yang terakhir dibuat ulang oleh `pip install` + `assemble.py` |
+| **Tidak di git** | `.env`, `video-latihan/arsip/` (v1), `video-latihan/bagian/` (potongan per bagian): ketiganya ada di Google Drive Reiner › Video Untuk Capstone 3 (`.env` di akar folder itu, dua folder video di `video-latihan-tambahan/`). `video-latihan/pipeline/pylib/` (paket Python Windows) dan `pipeline/video/seg/` (klip antara) tidak disalin, dibuat ulang oleh `pip install` + `assemble.py` |
 
 ## 4. Status per 9 Nov 2026 siang
 

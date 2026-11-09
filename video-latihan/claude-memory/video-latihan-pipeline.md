@@ -5,12 +5,12 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 890bbd1c-903a-4344-bdf0-b0c49a01e244
-  modified: 2026-11-09T03:08:52.980Z
+  modified: 2026-11-09T03:20:58.847Z
 ---
 
 On 2026-11-09 I built a rehearsal video for Reiner's Capstone 3 presentation: `video-latihan/rakfilm-latihan.mp4` (v2, 18:17, Edge TTS id-ID-Ardi narration, slide renders, real public-app demo recording, Monaco "VS Code" code frames, 10 real Langfuse/Qdrant screenshots), plus MP3, SRT and `laporan-durasi.md` (per-section durations and start positions). The naskah (`naskah-video.md`) and frame PNGs (`rangka/`) also live there.
 
-**History of where it lives:** early 9 Nov Reiner asked to keep the video notes off GitHub, so `video-latihan/` was gitignored. Later that day his `git clone` on the Mac did not bring it (expected: ignored files never clone, and OneDrive was not set up there), and he decided "push saja": the folder is now committed to the **public** repo (incl. naskah, screenshots, `claude-memory/`), except `arsip/` (v1, 203 MB), `bagian/` (per-section MP4s, 92 MB duplicate), `pipeline/pylib/` (Windows Python packages incl. a 105 MB ffmpeg.exe — over GitHub's 100 MB limit) and `pipeline/video/seg/` (intermediate clips), which stay gitignored and exist only on the Windows laptop/OneDrive.
+**History of where it lives:** early 9 Nov Reiner asked to keep the video notes off GitHub, so `video-latihan/` was gitignored. Later that day his `git clone` on the Mac did not bring it (expected: ignored files never clone, and OneDrive was not set up there), and he decided "push saja": the folder is now committed to the **public** repo (incl. naskah, screenshots, `claude-memory/`), except `arsip/` (v1, 203 MB), `bagian/` (per-section MP4s, 92 MB duplicate), `pipeline/pylib/` (Windows Python packages incl. a 105 MB ffmpeg.exe — over GitHub's 100 MB limit) and `pipeline/video/seg/` (intermediate clips), which stay gitignored. `bagian/` and `arsip/` were also copied (9 Nov) to Reiner's Google Drive folder `Video Untuk Capstone 3/video-latihan-tambahan/` via Google Drive for desktop (`G:\My Drive` on the Windows laptop) so the Mac can download them; his `.env` sits in that same Drive folder (his choice). Large transfers to the Mac: copy into `G:\My Drive\...`, not the Drive MCP (base64 payloads only).
 
 **Why:** Reiner wanted to practice by watching a narrated version before recording himself, and from 10 Nov works on a MacBook (guide `video-latihan/LANJUT-DI-MAC.md`, memory copy `video-latihan/claude-memory/`, handoff `notes/serah-terima.md`). He wants earlier versions kept as archives when overwriting (v1 is in `arsip/v1-placeholder/`). Screenshots came via Google Drive folders (download with `curl -L "https://drive.google.com/uc?export=download&id=<fileId>"` after listing with the Drive MCP).
 

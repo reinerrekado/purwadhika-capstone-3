@@ -8,7 +8,7 @@ Ditulis 9 Nov dini hari, untuk pindah dari laptop Windows ke Mac; diperbarui 9 N
 |---|---|---|
 | Kode, notes, README | GitHub (publik) | `git clone` |
 | `.env` (kunci OpenRouter, Qdrant, Langfuse) | hanya di folder lokal (tidak di git, dan memang jangan) | folder proyek ini ada di **OneDrive**, jadi `.env` ikut tersinkron kalau OneDrive dipasang di Mac. Kalau tidak: AirDrop file-nya dari HP/laptop, atau ketik ulang dari `.env.example` + dashboard tiap layanan. Jangan kirim lewat chat/email |
-| `video-latihan/` (video utuh + MP3 + SRT, naskah, rangka, screenshot, prompt, pipeline, memori Claude) | **ikut git sejak 9 Nov** (±150 MB) | langsung ada setelah `git clone`/`git pull`. Yang sengaja tidak ikut (tetap hanya di laptop Windows/OneDrive): `arsip/` (v1), `bagian/` (potongan per bagian), `pipeline/pylib/` (paket Python Windows), `pipeline/video/seg/` (klip antara). Ketiganya yang terakhir dibuat ulang oleh `pip install` + `assemble.py` (langkah 5); posisi tiap bagian di video utuh ada di `laporan-durasi.md` |
+| `video-latihan/` (video utuh + MP3 + SRT, naskah, rangka, screenshot, prompt, pipeline, memori Claude) | **ikut git sejak 9 Nov** (±150 MB) | langsung ada setelah `git clone`/`git pull`. Yang sengaja tidak ikut: `arsip/` (v1) dan `bagian/` (potongan per bagian) ada di **Google Drive › Video Untuk Capstone 3 › video-latihan-tambahan** (di samping `.env`), unduh lalu taruh di `video-latihan/`; `pipeline/pylib/` (paket Python Windows) dan `pipeline/video/seg/` (klip antara) tidak berguna di Mac, dibuat ulang oleh `pip install` + `assemble.py` (langkah 5). Posisi tiap bagian di video utuh ada di `laporan-durasi.md` |
 | Memori Claude Code (aturan kerja, syarat capstone, link artefak) | per komputer di `~/.claude/projects/<slug>/memory/` | salinannya ada di `video-latihan/claude-memory/` (lihat langkah 4) |
 | Percakapan Claude Code di Windows | tidak bisa dibuka di Mac | konteksnya sudah ada di `notes/progress.md`, `notes/keputusan-desain.md`, `notes/penjelasan-kode.md`, dan `video-latihan/CARA-PAKAI.md` |
 
@@ -26,7 +26,7 @@ pip install -r requirements.txt
 Salin `.env` dari OneDrive: `cp "~/Library/CloudStorage/OneDrive-Personal/Documents/Work Repository/Capstone Project Purwadhika/.env" .` (sesuaikan nama folder OneDrive di Mac). Lalu cek koneksi: `python -m scripts.check_connections`. Set uji (opsional, ±Rp700): `python -m scripts.eval`.
 
 ### 2. Folder video latihan
-Sudah ikut hasil clone. Tonton `video-latihan/rakfilm-latihan.mp4`; kalau mau melompat per bagian, pakai kolom posisi di `laporan-durasi.md`. Potongan `bagian/` dan arsip v1 tidak ikut git (lihat tabel di atas).
+Sudah ikut hasil clone. Tonton `video-latihan/rakfilm-latihan.mp4`; kalau mau melompat per bagian, pakai kolom posisi di `laporan-durasi.md`. Potongan `bagian/` dan arsip v1 diunduh dari Google Drive › Video Untuk Capstone 3 › video-latihan-tambahan (ada `BACA.md` di dalamnya), lalu ditaruh di `video-latihan/`.
 
 ### 3. Claude Code
 Instal Claude Code di Mac (aplikasi desktop atau `npm install -g @anthropic-ai/claude-code`), masuk dengan akun yang sama, buka folder `~/Code/capstone3`.
