@@ -1,6 +1,6 @@
 # Video latihan Rakfilm: isi folder dan cara memperbaruinya
 
-Folder ini **ikut git sejak 9 Nov siang** (supaya bisa di-pull di Mac), kecuali `arsip/` dan `bagian/` (besar; tersedia di Google Drive › Video Untuk Capstone 3 › video-latihan-tambahan) serta `pipeline/pylib/` dan `pipeline/video/seg/` (khusus Windows / klip antara; dibuat ulang oleh `pip install` + `assemble.py`). Dibuat 9 Nov dini hari oleh Claude Code dari deck "Rakfilm · Video" dan `naskah-video.md` (di folder ini juga). Panduan pindah ke Mac: `LANJUT-DI-MAC.md`.
+Folder ini **ikut git sejak 9 Nov siang** (supaya bisa di-pull di Mac), kecuali `arsip/` dan `bagian/` (besar; tersedia di Google Drive › Video Untuk Capstone 3 › video-latihan-tambahan, dipasang dengan `python video-latihan/pipeline/pasang_tambahan.py <path unduhan>`) serta `pipeline/pylib/` dan `pipeline/video/seg/` (khusus Windows / klip antara; dibuat ulang oleh `pip install` + `assemble.py`). Dibuat 9 Nov dini hari oleh Claude Code dari deck "Rakfilm · Video" dan `naskah-video.md` (di folder ini juga). Panduan pindah ke Mac: `LANJUT-DI-MAC.md`.
 
 ## File
 

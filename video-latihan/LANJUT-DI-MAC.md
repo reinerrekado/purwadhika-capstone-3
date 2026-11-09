@@ -26,7 +26,11 @@ pip install -r requirements.txt
 Salin `.env` dari OneDrive: `cp "~/Library/CloudStorage/OneDrive-Personal/Documents/Work Repository/Capstone Project Purwadhika/.env" .` (sesuaikan nama folder OneDrive di Mac). Lalu cek koneksi: `python -m scripts.check_connections`. Set uji (opsional, ±Rp700): `python -m scripts.eval`.
 
 ### 2. Folder video latihan
-Sudah ikut hasil clone. Tonton `video-latihan/rakfilm-latihan.mp4`; kalau mau melompat per bagian, pakai kolom posisi di `laporan-durasi.md`. Potongan `bagian/` dan arsip v1 diunduh dari Google Drive › Video Untuk Capstone 3 › video-latihan-tambahan (ada `BACA.md` di dalamnya), lalu ditaruh di `video-latihan/`.
+Sudah ikut hasil clone. Tonton `video-latihan/rakfilm-latihan.mp4`; kalau mau melompat per bagian, pakai kolom posisi di `laporan-durasi.md`. Potongan `bagian/` dan arsip v1 diunduh dari Google Drive › Video Untuk Capstone 3 › video-latihan-tambahan (ada `BACA.md` di dalamnya). Setelah diekstrak, **tempel path foldernya ke Claude Code** (atau jalankan sendiri):
+```bash
+python video-latihan/pipeline/pasang_tambahan.py ~/Downloads/video-latihan-tambahan   # path sesuai tempat ekstrak
+```
+Skrip menaruh keduanya di `video-latihan/` dan memastikan `git status` tetap bersih.
 
 ### 3. Claude Code
 Instal Claude Code di Mac (aplikasi desktop atau `npm install -g @anthropic-ai/claude-code`), masuk dengan akun yang sama, buka folder `~/Code/capstone3`.

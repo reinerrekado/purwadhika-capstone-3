@@ -75,3 +75,13 @@ lalu laporkan ringkas pemahamanmu dan tanyakan tugas hari ini. Deadline 10 Nov 2
 2. Simpan isi `video-latihan/claude-memory/` sebagai memori proyek (file `MEMORY.md` adalah indeksnya).
 3. Laporkan ke Reiner dalam ±10 baris: status, tugas hari ini yang kamu pahami, dan dua keputusan yang masih menunggu (pangkas naskah ±4 menit; catatan tool ke Langfuse). Tanyakan mana yang mau dikerjakan dulu. **Jangan** memulai pekerjaan besar, commit, atau force push tanpa persetujuan.
 4. Selama bekerja: jelaskan setiap langkah; centang `progress.md` setelah tiap langkah; catat penyimpangan di `keputusan-desain.md`; arsipkan versi lama sebelum menimpa.
+
+## 7. Kalau Reiner hanya menempelkan sebuah path
+
+Itu hasil unduhan Google Drive (`bagian/` dan `arsip/` video latihan, lihat bagian 3). Jalankan tanpa bertanya:
+
+```bash
+python video-latihan/pipeline/pasang_tambahan.py "<path yang ditempel>"
+```
+
+Skrip mengenali folder dari nama dan ukuran file (v1 vs v2), menyalin ke `video-latihan/bagian/` dan `video-latihan/arsip/v1-placeholder/`, melewati yang sudah sama, mengarsipkan file lama yang berbeda (`.lama-<waktu>`), lalu mengecek keduanya ter-ignore dan `git status` tidak kemasukan file baru. Laporkan ringkasannya ke Reiner. `--coba` = hanya menunjukkan rencana. Aturan ini juga ada di `CLAUDE.md` akar repo supaya terbaca walau sesi belum membaca file ini.
