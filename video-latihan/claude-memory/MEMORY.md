@@ -1,0 +1,8 @@
+- [Capstone 3 requirements](capstone-m3-requirements.md) — locked stack Qdrant/Streamlit/Langfuse, deadline 2026-11-10 23:59, video & README points
+- [Reiner's learning style](user-capstone-learning-style.md) — must explain every step; study repo paths; likes Clipper artifact style
+- [Capstone build principles](capstone-build-principles.md) — simple, structural, logical, efficient; above all impressive
+- [Deviation log rule](deviation-log-rule.md) — every departure from tutor guidance/class code goes in notes/keputusan-desain.md with reason
+- [Explaining agent terms](explain-agent-terms.md) — define agent = LLM+prompt+tool first; say "supervisor"/"sub-agent" only, no synonyms
+- [Streamlit Cloud reboot](streamlit-cloud-reboot.md) — code-only push stayed old on Cloud until Reboot app; verify via Langfuse after push
+- [Capstone docs workflow](capstone-docs-workflow.md) — tick notes/progress.md + extend notes/penjelasan-kode.md after every step
+- [Video latihan pipeline](video-latihan-pipeline.md) — rehearsal MP4 + re-runnable TTS/render/ffmpeg pipeline in gitignored video-latihan/; swap in real Langfuse/Qdrant screenshots via shots-real/

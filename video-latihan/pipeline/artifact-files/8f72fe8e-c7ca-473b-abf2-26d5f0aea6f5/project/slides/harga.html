@@ -1,0 +1,28 @@
+<section id="harga" data-transition="fade" style="background:#0E0D0C;color:#EDEAE4;font-family:'IBM Plex Sans', Arial, sans-serif;padding:64px;display:flex;flex-direction:row;gap:48px">
+<div style="width:1144px;height:952px;padding:64px;border-radius:28px;background:#161513;border:1px solid #2E2B28;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:24px;color:#9A948B">04 · Alur app dan tools</p>
+<h2 style="font-size:56px;font-weight:600;line-height:1.1;color:#EDEAE4">Supervisor: alasan dan harganya</h2>
+</div>
+<div style="display:grid;grid-template-columns:484px 484px;gap:48px">
+<div style="display:flex;flex-direction:column;gap:12px">
+<h3 style="font-size:28px;font-weight:600;line-height:1.3;color:#EDEAE4">Kenapa supervisor, bukan swarm?</h3>
+<p style="font-size:28px;line-height:1.4;color:#CFC9C0">Pertanyaan film hampir selalu jatuh ke satu bidang, jadi cukup satu supervisor yang memilih.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px">
+<h3 style="font-size:28px;font-weight:600;line-height:1.3;color:#EDEAE4">Kenapa dua sub-agent, bukan lima?</h3>
+<p style="font-size:28px;line-height:1.4;color:#CFC9C0">Pembagiannya mengikuti dua jenis sumber: vektor di Qdrant dan tabel di pandas.</p>
+</div>
+</div>
+<table style="width:1016px;font-family:'IBM Plex Sans', Arial, sans-serif;font-size:24px;color:#EDEAE4">
+<tr style="background:#0E0D0C"><th style="width:44%">Diukur dengan set uji 17 pertanyaan</th><th style="width:28%">Agent tunggal</th><th style="width:28%">Supervisor</th></tr>
+<tr><td>Pertanyaan lolos</td><td style="color:#CFC9C0">17/17</td><td style="color:#CFC9C0">17/17</td></tr>
+<tr><td>Rata-rata per pertanyaan</td><td style="color:#CFC9C0">4,3 detik</td><td style="color:#CFC9C0">6,9 detik</td></tr>
+<tr><td>Biaya</td><td style="color:#CFC9C0">patokan</td><td style="color:#CFC9C0">±10% lebih mahal</td></tr>
+</table>
+</div>
+<div style="width:600px;height:952px;border-radius:28px;background:#1A1917;border:1px solid #2E2B28"></div>
+<aside>KENAPA BENTUKNYA BEGINI (±20 detik).
+
+Kenapa supervisor, bukan swarm? Pertanyaan film hampir selalu jatuh ke satu bidang, jadi cukup satu supervisor yang memilih. Kenapa dua sub-agent, bukan lima? Pembagiannya mengikuti dua jenis sumber: vektor dan tabel. Harganya saya ukur: set uji tetap 17 dari 17, biaya sekitar 10% lebih mahal, dan rata-rata 6,9 detik per pertanyaan dibanding 4,3 detik dengan agent tunggal.</aside>
+</section>

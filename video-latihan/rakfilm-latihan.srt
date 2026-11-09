@@ -1,0 +1,315 @@
+1
+00:00:00,000 --> 00:00:13,580
+Halo, saya Reiner, peserta Purwadhika JCAIEH. Ini video Capstone Modul 3 saya: Rakfilm, asisten film berbasis agentic RAG di atas dataset IMDB Top 1000.
+
+2
+00:00:13,580 --> 00:00:24,860
+Dalam kurang lebih 14 menit saya tunjukkan masalah yang diselesaikan, cara saya membangunnya, demo langsung di app, Langfuse, dan Qdrant, lalu kodenya fungsi per fungsi.
+
+3
+00:00:27,360 --> 00:00:46,920
+Bayangkan Anda mengelola katalog film. Masalah pengguna bukan kurang pilihan. Mereka tahu suasana film yang ingin ditonton, tapi tidak tahu judulnya: film tentang pencuri yang masuk ke mimpi orang. Pencarian biasa butuh judul atau genre yang persis, jadi pencarian seperti ini gagal, dan pengguna pergi.
+
+4
+00:00:46,920 --> 00:01:15,000
+Rakfilm menerima cerita bebas seperti itu, mencarikan film yang cocok dari 1.000 film terbaik IMDB, dan menjelaskan alasannya dengan data: rating, sutradara, dan pemain. Rakfilm juga menjawab pertanyaan yang jawabannya pasti, misalnya ada berapa film Miyazaki tahun 2000-an, langsung dari tabel, bukan tebakan. Pengguna bahkan bisa mengubah rak tontonannya jadi IG story berlogo Rakfilm, jadi setiap story yang dibagikan adalah promosi gratis.
+
+5
+00:01:15,000 --> 00:01:43,770
+Ada tiga hal yang penting untuk bisnis. Pertama, jawaban hanya dari data: Rakfilm tidak mengarang film di luar katalog. Kedua, setiap jawaban bisa diaudit: tool yang dipanggil, dokumen yang dipakai, dan biayanya terlihat di layar, dan semuanya tercatat di Langfuse. Ketiga, murah dan terukur: sekitar 20 sampai 60 rupiah per pertanyaan, dan kualitasnya diukur dengan 17 pertanyaan uji otomatis yang saat ini lolos semua.
+
+6
+00:01:43,770 --> 00:01:56,700
+Saya membangun bertahap: versi paling sederhana yang jalan dari ujung ke ujung dibuat dan di-deploy dulu, baru dilengkapi. Masalah integrasi jadi ketahuan di hari-hari pertama, bukan di minggu terakhir.
+
+7
+00:01:56,700 --> 00:02:27,850
+Ada 104 commit di repo, dan empat langkah ini urutannya. Langkah pertama, 21 sampai 22 Oktober: saya memilih kasus IMDB, lalu EDA. Datanya punya masalah: tahun Apollo 13 berisi PG, ada dua film berbeda berjudul Drishyam, dan pendapatan tersimpan sebagai teks. Semua pembersihan saya taruh di satu file, data.py. Sebelum menulis kode, saya mengajukan klarifikasi ke Pak Herman dan mencatat setiap keputusan.
+
+8
+00:02:27,850 --> 00:03:11,410
+Langkah kedua, 23 Oktober: versi pertama. Saya cek dulu koneksi ke OpenRouter, Qdrant, dan Langfuse. Lalu ingest: 1.000 film menjadi 1.000 vektor di Qdrant dalam sekitar 39 detik. Saya tidak memakai chunking, karena teks per film rata-rata hanya 185 karakter; dengan potongan 500 karakter, tidak ada satu film pun yang terpecah. Hari itu juga satu tool, agent, Streamlit, dan prompt di Langfuse berjalan dan di-deploy ke Streamlit Cloud; tool kedua dan ketiga menyusul malamnya. Jalur bawah: bio dan foto 3.202 sutradara dan pemain diambil dari Wikipedia, diterjemahkan, dan disimpan di people.csv.
+
+9
+00:03:11,410 --> 00:03:32,450
+Langkah ketiga, 24 sampai 25 Oktober, dua hari terpadat dengan 56 commit: tool bertambah jadi lima, ditambah reranker, bio dan foto dari Wikipedia tadi, UI Rakfilm, dan set uji otomatis 17 pertanyaan yang menjalankan agent sungguhan. Setelah itu jeda sampai 6 November karena Modul 4 berjalan.
+
+10
+00:03:32,450 --> 00:04:02,730
+Langkah keempat, 7 November: arsitektur supervisor, satu hari. Prototipe pertama hanya lolos 12 dari 17 pertanyaan. Setelah tiga perbaikan, 17 dari 17. Semua keputusan saya catat beserta alasannya: ada 81 keputusan di keputusan-desain.md. Pola yang paling sering muncul: model sering mengabaikan aturan yang hanya ditulis di prompt. Jadi aturan yang penting saya tegakkan di kode, lalu saya uji ulang.
+
+11
+00:04:05,230 --> 00:04:16,430
+Definisinya dulu: agent sama dengan LLM ditambah prompt ditambah tool. Setiap kartu bergaris oranye di sini adalah satu agent, dan isinya selalu tiga hal itu.
+
+12
+00:04:16,430 --> 00:04:38,510
+Pertanyaan dari layar Streamlit masuk ke supervisor. LLM-nya gpt-4.1-mini, prompt-nya movie-supervisor-system, dan tool-nya tiga: dua tombol oper, satu ke tiap sub-agent, dan forward_message untuk meneruskan jawaban sub-agent apa adanya. Tugasnya memilih sub-agent; ia menjawab sendiri hanya untuk pertanyaan di luar topik film.
+
+13
+00:04:38,510 --> 00:04:49,570
+rag_agent untuk cari dari cerita. search_movies dan similar_movies membaca vektor di Qdrant; search_movies juga memakai reranker yang memilih 5 dari 15 kandidat.
+
+14
+00:04:49,570 --> 00:05:01,640
+data_agent untuk fakta, peringkat, dan orang. get_movie_details dan rank_movies membaca tabel 1.000 film dengan pandas, get_person_info membaca bio di people.csv.
+
+15
+00:05:01,640 --> 00:05:09,150
+Prompt ketiga agent disimpan di Langfuse, bukan di kode, dan setiap run dicatat balik ke sana sebagai trace.
+
+16
+00:05:09,150 --> 00:05:19,390
+Sekarang satu pertanyaan: film tentang pencuri yang masuk ke mimpi orang. Nomor berlatar oranye dikerjakan LLM, nomor bergaris dikerjakan kode.
+
+17
+00:05:19,390 --> 00:05:25,390
+Satu, Streamlit mengirim pertanyaan beserta seluruh riwayat sesi ke supervisor.
+
+18
+00:05:25,390 --> 00:05:31,070
+Dua, LLM supervisor memilih rag_agent, lewat tombol oper.
+
+19
+00:05:31,070 --> 00:05:42,200
+Tiga, LLM rag_agent menulis tool call: search_movies, beserta argumennya. LLM tidak menjalankan apa pun; ia hanya menulis permintaan.
+
+20
+00:05:42,200 --> 00:05:48,750
+Empat, kode yang menjalankannya: Qdrant mengambil 15 kandidat yang maknanya paling dekat.
+
+21
+00:05:48,750 --> 00:05:55,320
+Lima, reranker memilih 5 terbaik, dan hasilnya kembali ke rag_agent sebagai JSON.
+
+22
+00:05:55,320 --> 00:06:03,620
+Enam, LLM rag_agent menulis jawaban dari JSON itu, dan jawabannya mengalir ke layar bersama tool call dan usage.
+
+23
+00:06:03,620 --> 00:06:21,620
+Tujuh, kendali kembali ke supervisor, dan LLM supervisor menutup giliran. Idealnya ia meneruskan jawaban dengan forward_message, tapi tiga dari empat kali ia menulis ulang. Karena itu layar dikunci di kode pada jawaban sub-agent, apa pun yang ditulis supervisor.
+
+24
+00:06:21,620 --> 00:06:43,020
+Delapan, seluruh run tercatat di Langfuse sebagai satu trace, dan jempol pengguna masuk sebagai skor di trace itu. Jadi LLM hanya memilih dan menulis. Mencari, menyaring, dan menghitung dikerjakan kode. Untuk pertanyaan peringkat atau fakta, jalurnya sama, hanya lewat data_agent dan pandas.
+
+25
+00:06:43,020 --> 00:07:11,260
+Kenapa supervisor, bukan swarm? Pertanyaan film hampir selalu jatuh ke satu bidang, jadi cukup satu supervisor yang memilih. Kenapa dua sub-agent, bukan lima? Pembagiannya mengikuti dua jenis sumber: vektor dan tabel. Harganya saya ukur: set uji tetap 17 dari 17, biaya sekitar 10 persen lebih mahal, dan rata-rata 6,9 detik per pertanyaan dibanding 4,3 detik dengan agent tunggal.
+
+26
+00:07:13,760 --> 00:07:24,315
+Ini app publiknya. Dinding poster diacak dari 1.000 film. Di bawah ada contoh pertanyaan, dan di sidebar ada rak tontonan.
+
+27
+00:07:24,315 --> 00:07:34,024
+Saya klik contoh pencuri yang masuk ke mimpi. Jawabannya mengalir kata demi kata. Inception muncul sebagai kartu poster.
+
+28
+00:07:34,024 --> 00:07:59,571
+Di judul expander terlihat rutenya: supervisor mengoper ke rag_agent. Argumennya search_movies dengan query berbahasa Inggris, karena sinopsis di dataset berbahasa Inggris. Di bawahnya dokumen yang dipakai: 15 kandidat dari Qdrant yang diurutkan ulang reranker, masing-masing dengan skor kemiripan vektor dan skor reranker. Paling bawah: token input dan output serta biayanya dalam rupiah dan dolar.
+
+29
+00:07:59,571 --> 00:08:10,667
+Saya sengaja salah ketik: film christoper nolan. Kali ini supervisor mengoper ke data_agent, yang memanggil rank_movies dengan sutradara Nolan.
+
+30
+00:08:10,667 --> 00:08:17,949
+Angka di jawaban bisa dicek langsung di panel: 8 film, rata-rata rating 8,46.
+
+31
+00:08:17,949 --> 00:08:29,077
+Tombol Muat lebih banyak mengambil sisa hasil langsung dari tool, tanpa memanggil LLM. Lalu saya beri jempol untuk jawaban ini; nanti kita lihat di Langfuse.
+
+32
+00:08:29,077 --> 00:08:46,988
+Yang mana paling lama? Saya tidak menyebut Nolan lagi. Agent tahu dari riwayat sesi: jawabannya Interstellar, 2014, 169 menit. Riwayat dikirim utuh dari Streamlit setiap giliran, tanpa database tambahan.
+
+33
+00:08:46,988 --> 00:09:00,924
+Klik poster Interstellar: panel film dengan sinopsis bahasa Indonesia dan fakta menarik. Panel ini tanpa LLM, jadi tanpa biaya token. Sinopsis sudah diterjemahkan sekali secara offline.
+
+34
+00:09:00,924 --> 00:09:09,057
+Klik nama Christopher Nolan: panel orang dengan foto, bio dari Wikipedia, dan semua filmnya di Top 1000.
+
+35
+00:09:09,057 --> 00:09:15,088
+Di sidebar terlihat total pertanyaan, token, dan biaya sesi ini.
+
+36
+00:09:17,588 --> 00:09:24,208
+Satu percakapan di app menjadi satu session di Langfuse, dan setiap pertanyaan menjadi satu trace.
+
+37
+00:09:24,208 --> 00:09:46,258
+Saya buka trace film christoper nolan, tab Tree. Urutan kerjanya terlihat lengkap: supervisor mengoper, data_agent memanggil rank_movies dengan argumen ini, hasilnya 8 film, lalu kembali ke supervisor. Di atas ada tag versi prompt, prompt-v8 dan supervisor-v1, latensi, token, dan biaya.
+
+38
+00:09:46,258 --> 00:10:02,408
+Jempol pengguna menempel di trace sebagai score user_feedback. Di halaman Scores semua jempol terkumpul, lengkap dengan tanggal dan trace-nya; filter user_feedback sama dengan nol adalah cara saya mencari jawaban yang perlu diperiksa, lalu membuka trace-nya persis seperti tadi.
+
+39
+00:10:02,408 --> 00:10:11,328
+Tidak ada prompt di kode. Prompt supervisor, movie-supervisor-system versi 1, berisi aturan memilih sub-agent.
+
+40
+00:10:11,328 --> 00:10:30,478
+Ini prompt kedua sub-agent, movie-agent-system, versi 1 sampai 9, dengan label production di versi 8 dan staging di versi 9. Namanya dari masa agent tunggal, jadi saya pertahankan supaya riwayat versi 1 sampai 8 tidak hilang. Setiap versi lahir dari satu temuan uji.
+
+41
+00:10:30,478 --> 00:11:13,558
+Satu contoh. Saya mencoba versi 9 untuk merapikan prompt, dengan label staging, sehingga app publik tetap memakai versi 8. Set uji turun ke 15 dari 17. Di trace terlihat penyebabnya: untuk ada berapa film Hayao Miyazaki tahun 2000-an, data_agent memakai tool yang salah lalu menghitung sendiri, dan hasilnya 4 film, padahal yang benar 3. Jadi production tetap di versi 8. Mengganti versi di Langfuse cukup memindah label, tanpa deploy ulang. Pertanyaan Miyazaki yang sama pernah gagal dengan cara lain: Miyazaki dicari sebagai aktor, bukan sutradara. Itu saya perbaiki di kode, nanti saya tunjukkan di tools.py.
+
+42
+00:11:16,058 --> 00:11:23,538
+File ini hanya tampilan. Logika agent ada di app/agent.py, sesuai arahan modular.
+
+43
+00:11:23,538 --> 00:11:29,338
+chat menyimpan riwayat percakapan, session_id jadi id session di Langfuse.
+
+44
+00:11:29,338 --> 00:11:34,538
+Pertanyaan datang dari kotak ketik, atau dari tombol contoh dan panel.
+
+45
+00:11:34,538 --> 00:11:38,948
+Setiap rerun, seluruh riwayat chat digambar ulang.
+
+46
+00:11:38,948 --> 00:11:47,008
+Yang dikirim ke agent hanya role dan content, seluruh riwayat. Inilah yang membuat agent ingat percakapan.
+
+47
+00:11:47,008 --> 00:11:50,608
+Jawaban dialirkan potong demi potong.
+
+48
+00:11:50,608 --> 00:11:56,168
+Kalimat penutup berupa tawaran dipotong di kode, karena prompt saja tidak cukup.
+
+49
+00:11:56,168 --> 00:12:08,478
+Dari pesan baru, fungsi summarize_run mengambil rute supervisor dari tombol transfer_to, setiap tool call beserta argumen dan hasilnya, dan menjumlahkan usage_metadata dari semua panggilan LLM.
+
+50
+00:12:08,478 --> 00:12:21,458
+show_details: expander berjudul rute, argumen tool di st.code, dokumen dengan skor vektor dan reranker, usage dalam rupiah dan dolar, lalu tombol jempol yang dikirim ke Langfuse lewat save_feedback.
+
+51
+00:12:21,458 --> 00:12:27,698
+Kalau layanan gagal, pengunjung melihat pesan yang jelas, dan galat lengkapnya masuk log.
+
+52
+00:12:27,698 --> 00:12:36,458
+Agent sama dengan LLM ditambah prompt ditambah tool. Supervisor memilih sub-agent, sub-agent memanggil tool film.
+
+53
+00:12:36,458 --> 00:13:06,308
+Di sini tiga agent dibuat. Kedua prompt diambil dari Langfuse dengan nomor versinya. rag_agent dibuat dengan create_agent dan dua tool Qdrant, data_agent dengan tiga tool data. create_supervisor menggabungkan keduanya, dengan forward_message untuk meneruskan jawaban sub-agent. with_config linked prompt menautkan setiap agent ke prompt Langfuse-nya sendiri. lru_cache membuat agent sekali per versi prompt, bukan setiap pertanyaan dan bukan saat file di-import.
+
+54
+00:13:06,308 --> 00:13:16,548
+Prompt berlabel production diambil setiap pertanyaan, tapi SDK menyimpannya 60 detik. Jadi versi baru di Langfuse terpakai tanpa deploy ulang.
+
+55
+00:13:16,548 --> 00:13:24,848
+Kalau pertanyaannya berbahasa Inggris, satu baris Reply in English ditambahkan di kode, karena aturan bahasa di prompt sering diabaikan.
+
+56
+00:13:24,848 --> 00:13:31,328
+Setiap run di-trace ke Langfuse, dikelompokkan per session, dan diberi tag versi prompt.
+
+57
+00:13:31,328 --> 00:13:52,228
+subgraphs True memberi tahu asal setiap potongan teks. Yang tampil di layar adalah jawaban sub-agent. Saya ukur di 145 trace: supervisor hanya meneruskan dengan forward_message di 25 persen, sisanya menulis ulang. Jadi layar dijaga di sini: tulisan ulang supervisor tidak ditampilkan dua kali.
+
+58
+00:13:52,228 --> 00:13:58,468
+Setelah selesai, pesan baru dan trace_id dititipkan untuk panel tool call dan feedback.
+
+59
+00:13:58,468 --> 00:14:07,628
+Jempol disimpan sebagai score di trace yang sama. score_id-nya tetap, jadi mengganti jempol menimpa, bukan menambah.
+
+60
+00:14:07,628 --> 00:14:21,788
+Genre dikunci ke 21 nilai persis dari dataset, jadi LLM tidak bisa mengarang genre. String kosong diubah jadi tanpa genre, karena sejak supervisor sekitar 8 persen pencarian mengirim genre kosong dan sempat galat.
+
+61
+00:14:21,788 --> 00:14:34,938
+Decorator tool mengubah fungsi jadi skema yang dibaca LLM: nama, docstring, dan deskripsi tiap argumen. Docstring ini instruksi untuk LLM, jadi ditulis dalam bahasa Inggris.
+
+62
+00:14:34,938 --> 00:14:41,338
+Kalau query masih berbahasa Indonesia, tool menolak dan agent mengulang dalam bahasa Inggris.
+
+63
+00:14:41,338 --> 00:14:53,378
+Qdrant mengambil 15 kandidat dengan filter genre dan tahun, reranker memilih 5 terbaik. Kalau reranker gagal, urutan vektor dipakai, jadi pencarian tidak pernah mati.
+
+64
+00:14:53,378 --> 00:15:02,228
+Satu panggilan ke endpoint rerank OpenRouter, model qwen3-reranker-8b. Kalau gagal, hasilnya None.
+
+65
+00:15:02,228 --> 00:15:11,418
+similar_movies: query-nya id film, jadi Qdrant memakai vektor film itu sendiri. Tidak ada panggilan embedding tambahan.
+
+66
+00:15:11,418 --> 00:15:23,148
+Tool data dengan pandas: filter, urutkan, dan kembalikan matching_count serta average_rating. Angka 8 film dan 8,46 di demo tadi datang dari sini.
+
+67
+00:15:23,148 --> 00:15:43,228
+Ini perbaikan Miyazaki tadi. Panel tool call memperlihatkan rank_movies dengan star Hayao Miyazaki, 0 film, lalu dijawab tidak ada. Sekarang kalau nama itu di seluruh dataset hanya pernah jadi sutradara, kode mencarinya sebagai sutradara. Diuji 9 kasus dan set uji 17 pertanyaan.
+
+68
+00:15:43,228 --> 00:15:51,578
+Dua tool lain: detail judul dengan pencarian 4 lapis yang tahan typo, dan profil orang dari bio Wikipedia yang diambil offline.
+
+69
+00:15:51,578 --> 00:16:13,678
+Satu-satunya tempat pembersihan data, dibaca sekali lalu disimpan di memori. Tahun Apollo 13 dibetulkan. Id memakai nomor baris karena judul Drishyam ada dua. Metascore memakai Int64, bulat tapi boleh kosong: kalau 157 nilai kosong diisi nol, rata-ratanya turun dari 78 ke 66.
+
+70
+00:16:13,678 --> 00:16:25,118
+Satu film menjadi satu Document. Yang di-embed hanya judul, genre, dan sinopsis. Semua kolom lain ikut sebagai metadata atau payload.
+
+71
+00:16:25,118 --> 00:16:35,268
+Satu panggilan untuk membuat collection, meng-embed per 100 teks, dan mengunggah. force_recreate dan id tetap membuat skrip ini aman diulang.
+
+72
+00:16:35,268 --> 00:16:43,568
+Index untuk genre dan tahun, supaya filter tidak memindai semua point. Hasilnya saya tunjukkan langsung di Qdrant.
+
+73
+00:16:46,068 --> 00:16:56,888
+Ini hasil ingest tadi di Qdrant Cloud: koleksi imdb_movies, 1.000 point, satu per film, vektor 1.536 dimensi, jarak Cosine.
+
+74
+00:16:56,888 --> 00:17:05,788
+Dua index payload dari create_payload_indexes: metadata genres dan metadata year, jadi filter genre dan tahun tidak memindai semua point.
+
+75
+00:17:05,788 --> 00:17:18,528
+Satu point, Inception, id 8: berisi page_content, yaitu teks yang di-embed: judul, genre, sinopsis, dan metadata lengkap yang dipakai tool dan kartu poster.
+
+76
+00:17:18,528 --> 00:17:26,848
+Untuk penilaian, saya menyertakan API key read-only di Google Form, jadi koleksi ini bisa dilihat tanpa bisa diubah.
+
+77
+00:17:29,348 --> 00:17:40,338
+Ringkasnya: 3 agent, 5 tool, 1.000 film di Qdrant, prompt dan trace di Langfuse, app publik, dan 17 dari 17 pertanyaan uji lolos.
+
+78
+00:17:40,338 --> 00:18:08,628
+Ada keterbatasan yang saya ketahui. Pertanyaan agregat per kelompok, misalnya genre apa yang rata-rata ratingnya paling tinggi, belum benar, karena rank_movies menghitung satu kelompok per panggilan. Langkah berikutnya adalah text-to-SQL dengan koneksi read-only. Supervisor juga lebih sering menulis ulang daripada meneruskan, seperti di langkah 7 tadi; layar tetap benar karena dijaga di kode. Dan pertanyaan lintas domain baru memanggil satu sub-agent.
+
+79
+00:18:08,628 --> 00:18:16,708
+Link app, repo, README, dan laporan lengkapnya ada di deskripsi. Terima kasih.

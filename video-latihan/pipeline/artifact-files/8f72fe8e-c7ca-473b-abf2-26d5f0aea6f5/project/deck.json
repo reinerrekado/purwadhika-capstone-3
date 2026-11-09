@@ -1,0 +1,25 @@
+{
+  "v": 4,
+  "createdOnFiles": {"v": 1, "at": "2026-11-07T12:00:00Z"},
+  "lists": "css",
+  "title": "Rakfilm · Video",
+  "cover": "cover",
+  "order": ["cover", "ch02", "masalah", "solusi", "bukti", "ch03", "timeline", "ingest", "ch04", "agents", "alur", "harga", "ch05", "ch05b", "ch06", "ch06b", "ch07", "outro", "end"],
+  "sections": {
+    "s1": {"description": "Intro: siapa saya dan apa itu Rakfilm.", "start": "cover"},
+    "s2": {"description": "Tujuan: pitch untuk C-level.", "start": "ch02"},
+    "s3": {"description": "Langkah membangun, 21 Oktober sampai 7 November.", "start": "ch03"},
+    "s4": {"description": "Alur app dan tools: susunan tiga agent, lalu jalannya satu pertanyaan.", "start": "ch04"},
+    "s5": {"description": "Demo langsung di app publik.", "start": "ch05"},
+    "s5b": {"description": "Langfuse: session, trace, skor jempol, prompt.", "start": "ch05b"},
+    "s6": {"description": "Kode per fungsi: Streamlit, agent, tools, DB.", "start": "ch06"},
+    "s6b": {"description": "Qdrant Cloud: koleksi imdb_movies.", "start": "ch06b"},
+    "s7": {"description": "Penutup: ringkasan dan keterbatasan.", "start": "ch07"}
+  },
+  "faces": {
+    "anton": {"family": "Anton", "href": "https://fonts.googleapis.com/css2?family=Anton&display=swap"},
+    "ibm-plex-sans": {"family": "IBM Plex Sans", "href": "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&display=swap"},
+    "ibm-plex-mono": {"family": "IBM Plex Mono", "href": "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap"}
+  },
+  "designSystems": []
+}

@@ -19,5 +19,10 @@ Thumbs.db
 # Artefak alat
 repomix-output.xml
 
-# video latihan (mp4, screenshot), bukan bagian repo
-video-latihan/
+# video latihan: ikut repo supaya bisa di-pull di Mac (9 Nov),
+# kecuali yang besar atau bisa dibuat ulang oleh pipeline/video/assemble.py
+video-latihan/arsip/
+video-latihan/bagian/
+video-latihan/pipeline/pylib/
+video-latihan/pipeline/video/seg/
+video-latihan/pipeline/qa-*.png

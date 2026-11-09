@@ -46,17 +46,18 @@ lalu laporkan ringkas pemahamanmu dan tanyakan tugas hari ini. Deadline 10 Nov 2
 | `notes/penjelasan-kode.md` | penjelasan per fungsi + tanya-jawab |
 | `notes/hasil-uji.md`, `notes/prinsip-kerja.md` | laporan uji terakhir; prinsip kerja yang bisa dipakai ulang |
 | `docs/img/` | 5 screenshot README (yang `jawaban-tool-call.png` diperbarui 9 Nov) |
-| **Tidak di git** (lokal, ikut OneDrive dari laptop Windows) | `.env`; `video-latihan/` berisi video latihan v2, `naskah-video.md`, `rangka/` (PNG rangka), `screenshot/` (Langfuse, Qdrant), `pipeline/` (skrip rakit video), `claude-memory/` (salinan memori Claude), `CARA-PAKAI.md`, `LANJUT-DI-MAC.md`, `prompt-claude-chrome.md`, `arsip/` |
+| `video-latihan/` (**ikut git sejak 9 Nov siang**, supaya bisa di-pull di Mac) | video latihan v2 (`rakfilm-latihan.mp4`, 92 MB) + MP3 + SRT, `naskah-video.md`, `rangka/` (PNG rangka), `screenshot/` (Langfuse, Qdrant), `pipeline/` (skrip rakit video + hasil render), `claude-memory/` (salinan memori Claude), `CARA-PAKAI.md`, `LANJUT-DI-MAC.md`, `prompt-claude-chrome.md`, `laporan-durasi.md` |
+| **Tidak di git** (hanya di laptop Windows/OneDrive) | `.env`; `video-latihan/arsip/` (v1), `video-latihan/bagian/` (potongan per bagian), `video-latihan/pipeline/pylib/` (paket Python Windows), `video-latihan/pipeline/video/seg/` (klip antara). Tiga yang terakhir dibuat ulang oleh `pip install` + `assemble.py` |
 
-## 4. Status per 9 Nov 2026 pagi
+## 4. Status per 9 Nov 2026 siang
 
-**Selesai:** app publik dengan arsitektur supervisor; set uji 17/17; README; laporan Anatomi; deck video 19 slide; naskah video (±14:15 rencana); video latihan bernarasi TTS dengan screenshot asli Langfuse dan Qdrant; panduan pindah ke Mac; `.gitignore` menutup `video-latihan/`.
+**Selesai:** app publik dengan arsitektur supervisor; set uji 17/17; README; laporan Anatomi; deck video 19 slide; naskah video (±14:15 rencana); video latihan bernarasi TTS dengan screenshot asli Langfuse dan Qdrant; panduan pindah ke Mac; `video-latihan/` masuk git (9 Nov siang) karena clone pertama di Mac tidak membawanya.
 
 **Belum, milik Reiner:** rekam video 7–15 menit (wajah terlihat, kode terbaca); unggah (YouTube/Drive publik); isi Google Form (repo, video, app, URL Qdrant + key read-only) sebelum 10 Nov 23:59; naikkan batas key OpenRouter (sisa ±$1,6 dari $5 per 9 Nov); bangunkan app sebelum merekam dan sebelum mengumpulkan (tidur ±12 jam); kabari Pak Herman bahwa arsitektur sekarang supervisor; pastikan cluster Qdrant aktif (free tier nonaktif setelah 1 minggu tanpa pemakaian).
 
 **Menunggu keputusan Reiner:**
 1. **Pangkas naskah ±4 menit.** Video latihan membaca naskah penuh = 18:15, batas 15:00. Usulan: §6 kode satu kalimat per baris dan gabungkan baris (−2:00); §3 buang daftar masalah data di langkah 1 dan kalimat Wikipedia di langkah 2 (−0:45); §4 langkah 7 satu kalimat, ringkasan langkah 8 dihapus (−0:35); §5b cerita perbaikan dipadatkan (−0:25). Kalau disetujui: ubah `video-latihan/naskah-video.md`, catatan pembicara deck, dan `video-latihan/pipeline/video/segments.py`, lalu rakit ulang.
-2. **Bersihkan riwayat git** dari `notes/naskah-video.md` dan `docs/video/*.png` (masih ada di commit `dd41e1f`, `70d4145`, `81f1fe6`): perlu `git filter-repo` + force push; hanya kalau diminta, dan sebaiknya sebelum clone di Mac.
+2. ~~Bersihkan riwayat git dari naskah dan PNG rangka~~ — **tidak relevan lagi**: 9 Nov siang Reiner memutuskan memasukkan `video-latihan/` (termasuk naskah) ke git supaya bisa di-pull di Mac. Jangan tawarkan lagi kecuali ia berubah pikiran.
 3. Memindahkan catatan tool (`SCENE_NOTE`, `ENGLISH_ONLY`, `NOT_FOUND_HINT`, "(Reply in English.)") ke satu prompt Langfuse: tertunda sejak 25 Okt, Reiner condong ke pilihan B.
 
 ## 5. Hal teknis yang menghemat waktu
@@ -70,7 +71,7 @@ lalu laporkan ringkas pemahamanmu dan tanyakan tugas hari ini. Deadline 10 Nov 2
 
 ## 6. Cara memulai sesi ini (untuk Claude)
 
-1. Baca file ini, lalu `notes/progress.md` (fokus Fase 6–7 dan daftar "Menunggu"), `notes/keputusan-desain.md` K75–K81, dan `video-latihan/CARA-PAKAI.md` kalau foldernya sudah ada.
-2. Kalau `video-latihan/claude-memory/` ada, simpan isinya sebagai memori proyek (file `MEMORY.md` adalah indeksnya).
-3. Laporkan ke Reiner dalam ±10 baris: status, tugas hari ini yang kamu pahami, dan dua keputusan yang masih menunggu (pangkas naskah, bersihkan riwayat). Tanyakan mana yang mau dikerjakan dulu. **Jangan** memulai pekerjaan besar, commit, atau force push tanpa persetujuan.
+1. Baca file ini, lalu `notes/progress.md` (fokus Fase 6–7 dan daftar "Menunggu"), `notes/keputusan-desain.md` K75–K81, dan `video-latihan/CARA-PAKAI.md` + `video-latihan/LANJUT-DI-MAC.md` (ikut clone).
+2. Simpan isi `video-latihan/claude-memory/` sebagai memori proyek (file `MEMORY.md` adalah indeksnya).
+3. Laporkan ke Reiner dalam ±10 baris: status, tugas hari ini yang kamu pahami, dan dua keputusan yang masih menunggu (pangkas naskah ±4 menit; catatan tool ke Langfuse). Tanyakan mana yang mau dikerjakan dulu. **Jangan** memulai pekerjaan besar, commit, atau force push tanpa persetujuan.
 4. Selama bekerja: jelaskan setiap langkah; centang `progress.md` setelah tiap langkah; catat penyimpangan di `keputusan-desain.md`; arsipkan versi lama sebelum menimpa.

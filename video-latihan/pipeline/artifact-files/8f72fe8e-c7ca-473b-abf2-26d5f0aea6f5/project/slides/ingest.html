@@ -1,0 +1,65 @@
+<section id="ingest" data-transition="fade" style="background:#0E0D0C;color:#EDEAE4;font-family:'IBM Plex Sans', Arial, sans-serif;padding:64px;display:flex;flex-direction:column">
+<div style="width:1792px;height:952px;padding:56px;border-radius:28px;background:#161513;border:1px solid #2E2B28;display:flex;flex-direction:column;gap:32px">
+<div style="display:flex;flex-direction:column;gap:12px">
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:24px;color:#9A948B">03 · Langkah membangun</p>
+<h2 style="font-size:56px;font-weight:600;line-height:1.1;color:#EDEAE4">Fase offline: sekali jalan, sebelum app dipakai</h2>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;color:#9A948B">Film → vektor</p>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px">
+<div style="width:260px;display:flex;flex-direction:column;gap:6px;padding:16px;border:1px solid #2E2B28;border-radius:6px;background:#0E0D0C">
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:24px;color:#EDEAE4">CSV</p>
+<p style="font-size:24px;line-height:1.4;color:#CFC9C0">1.000 film IMDB</p>
+</div>
+<x-shape kind="arrow-right" style="width:56px;height:28px;background:#9A948B"></x-shape>
+<div style="width:260px;display:flex;flex-direction:column;gap:6px;padding:16px;border:1px solid #2E2B28;border-radius:6px;background:#0E0D0C">
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:24px;color:#EDEAE4">data.py</p>
+<p style="font-size:24px;line-height:1.4;color:#CFC9C0">dibersihkan sekali</p>
+</div>
+<x-shape kind="arrow-right" style="width:56px;height:28px;background:#9A948B"></x-shape>
+<div style="width:260px;display:flex;flex-direction:column;gap:6px;padding:16px;border:1px solid #2E2B28;border-radius:6px;background:#0E0D0C">
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:24px;color:#EDEAE4">ingest.py</p>
+<p style="font-size:24px;line-height:1.4;color:#CFC9C0">1 film = 1 dokumen</p>
+</div>
+<x-shape kind="arrow-right" style="width:56px;height:28px;background:#9A948B"></x-shape>
+<div style="width:260px;display:flex;flex-direction:column;gap:6px;padding:16px;border:1px solid #2E2B28;border-radius:6px;background:#0E0D0C">
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:24px;color:#EDEAE4">OpenRouter</p>
+<p style="font-size:24px;line-height:1.4;color:#CFC9C0">1.536 dimensi</p>
+</div>
+<x-shape kind="arrow-right" style="width:56px;height:28px;background:#F2531B"></x-shape>
+<div style="width:260px;display:flex;flex-direction:column;gap:6px;padding:16px;border:1px solid #F2531B;border-radius:6px;background:#0E0D0C">
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:24px;color:#EDEAE4">Qdrant Cloud</p>
+<p style="font-size:24px;line-height:1.4;color:#CFC9C0">imdb_movies</p>
+</div>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;color:#9A948B">Orang → bio</p>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px">
+<div style="width:260px;display:flex;flex-direction:column;gap:6px;padding:16px;border:1px solid #2E2B28;border-radius:6px;background:#0E0D0C">
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:24px;color:#EDEAE4">Wikipedia</p>
+<p style="font-size:24px;line-height:1.4;color:#CFC9C0">bio dan foto</p>
+</div>
+<x-shape kind="arrow-right" style="width:56px;height:28px;background:#9A948B"></x-shape>
+<div style="width:260px;display:flex;flex-direction:column;gap:6px;padding:16px;border:1px solid #2E2B28;border-radius:6px;background:#0E0D0C">
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:24px;color:#EDEAE4">fetch_people</p>
+<p style="font-size:24px;line-height:1.4;color:#CFC9C0">+ terjemahan</p>
+</div>
+<x-shape kind="arrow-right" style="width:56px;height:28px;background:#9A948B"></x-shape>
+<div style="width:260px;display:flex;flex-direction:column;gap:6px;padding:16px;border:1px solid #2E2B28;border-radius:6px;background:#0E0D0C">
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:24px;color:#EDEAE4">people.csv</p>
+<p style="font-size:24px;line-height:1.4;color:#CFC9C0">3.202 orang</p>
+</div>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;width:1290px">
+<p style="font-size:28px;line-height:1.4;color:#CFC9C0">Yang di-embed: judul, genre, dan sinopsis. Tanpa chunking: teks per film rata-rata 185 karakter, dan dengan potongan 500 karakter, 0 dari 1.000 film terpecah.</p>
+<p style="font-size:24px;line-height:1.4;color:#9A948B">±39 detik sekali jalan · id = nomor baris, jadi aman diulang</p>
+</div>
+</div>
+<div style="position:absolute;left:1456px;top:528px;width:400px;height:488px;border-radius:52px 0px 28px 0px;background:#0E0D0C"></div>
+<div style="position:absolute;left:1480px;top:552px;width:352px;height:440px;border-radius:28px;background:#1A1917;border:1px solid #2E2B28"></div>
+<aside>DETAIL LANGKAH 2 · FASE OFFLINE (±30 detik). Mode diagram: wajah di kotak kecil kanan bawah.
+
+Satu langkah yang saya perjelas: fase offline, dijalankan sekali sebelum app dipakai. Jalur atas: CSV dibersihkan di data.py, lalu ingest.py mengubah 1.000 film menjadi 1.000 vektor lewat OpenRouter dan menyimpannya di Qdrant, kurang lebih 39 detik. Saya tidak memakai chunking, karena teks per film rata-rata hanya 185 karakter; dengan potongan 500 karakter, tidak ada satu film pun yang terpecah. Jalur bawah: bio dan foto 3.202 sutradara dan pemain diambil dari Wikipedia, diterjemahkan, dan disimpan di people.csv.</aside>
+</section>

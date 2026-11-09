@@ -1,0 +1,43 @@
+<section id="timeline" data-transition="fade" style="background:#0E0D0C;color:#EDEAE4;font-family:'IBM Plex Sans', Arial, sans-serif;padding:64px;display:flex;flex-direction:row;gap:48px">
+<div style="width:1144px;height:952px;padding:64px;border-radius:28px;background:#161513;border:1px solid #2E2B28;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:24px;color:#9A948B">03 · Langkah membangun</p>
+<h2 style="font-size:56px;font-weight:600;line-height:1.1;color:#EDEAE4">Jalan dulu, baru dilengkapi</h2>
+</div>
+<div style="display:grid;grid-template-columns:484px 484px;gap:40px 48px">
+<div style="display:flex;flex-direction:column;gap:10px;padding:20px 0px 0px 0px;border-top:2px solid #2E2B28">
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:24px;color:#9A948B">21–22 Okt · 8 commit</p>
+<h3 style="font-size:28px;font-weight:600;line-height:1.3;color:#EDEAE4">Rencana dan data</h3>
+<p style="font-size:24px;line-height:1.4;color:#CFC9C0">EDA, pembersihan di satu file data.py, klarifikasi ke Pak Herman.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;padding:20px 0px 0px 0px;border-top:2px solid #2E2B28">
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:24px;color:#9A948B">23 Okt · 18 commit</p>
+<h3 style="font-size:28px;font-weight:600;line-height:1.3;color:#EDEAE4">Versi pertama di-deploy</h3>
+<p style="font-size:24px;line-height:1.4;color:#CFC9C0">Ingest 1.000 film, ±39 detik. Satu tool, agent, Streamlit, prompt Langfuse: hari itu juga online.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;padding:20px 0px 0px 0px;border-top:2px solid #2E2B28">
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:24px;color:#9A948B">24–25 Okt · 56 commit</p>
+<h3 style="font-size:28px;font-weight:600;line-height:1.3;color:#EDEAE4">Fitur dan uji</h3>
+<p style="font-size:24px;line-height:1.4;color:#CFC9C0">5 tool, reranker, bio 3.202 orang, UI Rakfilm, set uji 17 pertanyaan.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;padding:20px 0px 0px 0px;border-top:2px solid #F2531B">
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:24px;color:#F2531B">7 Nov · 18 commit</p>
+<h3 style="font-size:28px;font-weight:600;line-height:1.3;color:#EDEAE4">Arsitektur supervisor</h3>
+<p style="font-size:24px;line-height:1.4;color:#CFC9C0">Prototipe 12/17. Setelah tiga perbaikan, 17/17.</p>
+</div>
+</div>
+<p style="font-size:28px;line-height:1.4;color:#CFC9C0">104 commit; 26 Okt–6 Nov jeda karena Modul 4. 81 keputusan tercatat beserta alasannya; aturan penting ditegakkan di kode, lalu diuji ulang.</p>
+</div>
+<div style="width:600px;height:952px;border-radius:28px;background:#1A1917;border:1px solid #2E2B28"></div>
+<aside>GARIS WAKTU (±1:30 total, empat langkah). Angka commit dari git log repo.
+
+Ada 104 commit di repo, dan empat langkah ini urutannya.
+
+Langkah 1 · 21–22 Okt: Saya memilih kasus IMDB, lalu EDA. Datanya punya masalah: tahun Apollo 13 berisi “PG”, ada dua film berbeda berjudul Drishyam, dan pendapatan tersimpan sebagai teks. Semua pembersihan saya taruh di satu file, data.py. Sebelum menulis kode, saya mengajukan klarifikasi ke Pak Herman dan mencatat setiap keputusan.
+
+Langkah 2 · 23 Okt: Versi pertama. Ingest 1.000 film ke Qdrant, lalu satu tool, agent, Streamlit, dan prompt di Langfuse, dan hari itu juga di-deploy ke Streamlit Cloud. Tool kedua dan ketiga menyusul di hari yang sama. Detail ingest ada di slide berikutnya.
+
+Langkah 3 · 24–25 Okt: Dua hari terpadat, 56 commit: tool jadi lima, reranker, bio dan foto 3.202 sutradara dan pemain dari Wikipedia, UI Rakfilm, dan set uji otomatis 17 pertanyaan yang menjalankan agent sungguhan. Setelah itu jeda sampai 6 November, karena Modul 4 berjalan.
+
+Langkah 4 · 7 Nov: Arsitektur supervisor, satu hari. Prototipe pertama hanya lolos 12 dari 17 pertanyaan. Setelah tiga perbaikan, 17 dari 17. Semua keputusan saya catat beserta alasannya: ada 81 keputusan di keputusan-desain.md. Pola yang paling sering muncul: model sering mengabaikan aturan yang hanya ditulis di prompt. Jadi aturan yang penting saya tegakkan di kode, lalu saya uji ulang.</aside>
+</section>
